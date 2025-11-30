@@ -1,4 +1,3 @@
-
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.Level
 import io.ygdrasil.webgpu.BufferDescriptor
@@ -11,6 +10,7 @@ import io.ygdrasil.webgpu.GPULoadOp
 import io.ygdrasil.webgpu.GPUPrimitiveTopology
 import io.ygdrasil.webgpu.GPUStoreOp
 import io.ygdrasil.webgpu.GPUVertexFormat
+import io.ygdrasil.webgpu.HTMLCanvasElement
 import io.ygdrasil.webgpu.PrimitiveState
 import io.ygdrasil.webgpu.RenderPassColorAttachment
 import io.ygdrasil.webgpu.RenderPassDescriptor
@@ -20,9 +20,12 @@ import io.ygdrasil.webgpu.SurfaceConfiguration
 import io.ygdrasil.webgpu.VertexAttribute
 import io.ygdrasil.webgpu.VertexBufferLayout
 import io.ygdrasil.webgpu.VertexState
+import io.ygdrasil.webgpu.asJsNumber
 import io.ygdrasil.webgpu.beginRenderPass
 import io.ygdrasil.webgpu.canvasContextRenderer
 import io.ygdrasil.webgpu.writeInto
+import kotlinx.browser.document
+import kotlinx.browser.window
 
 external fun setInterval(
   callback: () -> Unit,
@@ -31,7 +34,14 @@ external fun setInterval(
 
 fun main() =
   application(loggerLevel = Level.DEBUG) {
-    val ctx = canvasContextRenderer()
+    val canvas =
+      canvas()?.apply { fit() } ?: run {
+        logger.error { "Canvas element not found" }
+        return@application
+      }
+    window.onresize = { canvas.fit() }
+
+    val ctx = canvasContextRenderer(canvas)
     val device = ctx.wgpuContext.device
     ctx.wgpuContext.surface.configure(
       SurfaceConfiguration(
@@ -212,3 +222,13 @@ private val code =
     return color;
   }
   """.trimIndent()
+
+private fun canvas(): HTMLCanvasElement? =
+  document
+    .getElementById("canvas")
+    .unsafeCast<HTMLCanvasElement?>()
+
+private fun HTMLCanvasElement.fit() {
+  width = window.innerWidth.asJsNumber()
+  height = window.innerHeight.asJsNumber()
+}
