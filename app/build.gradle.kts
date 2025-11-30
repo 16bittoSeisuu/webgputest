@@ -3,9 +3,12 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.kotest)
+  alias(libs.plugins.ksp)
 }
 
 repositories {
@@ -18,6 +21,12 @@ kotlin {
       commonWebpackConfig {
         outputFileName = "main.js"
       }
+      testTask {
+        useKarma {
+          useChromeHeadless()
+          useFirefoxHeadless()
+        }
+      }
     }
     binaries.executable()
   }
@@ -29,6 +38,7 @@ kotlin {
         api(libs.arrow.core)
         api(libs.arrow.fx.coroutines)
         api(libs.arrow.resilience)
+        implementation(libs.korge.foundation)
       }
     }
     commonTest {
@@ -44,7 +54,7 @@ kotlin {
   }
 }
 
-tasks.withType<Test>().configureEach {
+tasks.withType<KotlinJsTest>().configureEach {
   testLogging {
     showStandardStreams = true
 

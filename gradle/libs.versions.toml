@@ -5,8 +5,10 @@
 kotlin = "2.3.0-RC"
 kotlin-logging = "7.0.13"
 kotest = "6.0.5"
+ksp = "2.3.3"
 coroutines = "1.10.2"
 arrow = "2.2.0"
+korge-foundation = "5.4.0"
 
 [libraries]
 kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlin-logging" }
@@ -16,6 +18,9 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 arrow-fx-coroutines = { module = "io.arrow-kt:arrow-fx-coroutines", version.ref = "arrow" }
 arrow-resilience = { module = "io.arrow-kt:arrow-resilience", version.ref = "arrow" }
+korge-foundation = { module = "com.soywiz.korge:korge-foundation", version.ref = "korge-foundation" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotest = { id = "io.kotest", version.ref = "kotest" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
