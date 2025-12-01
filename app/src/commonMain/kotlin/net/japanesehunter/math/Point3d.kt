@@ -53,6 +53,12 @@ sealed interface Point3d {
    */
   operator fun component3() = z
 
+  override fun toString(): String
+
+  override fun equals(other: Any?): Boolean
+
+  override fun hashCode(): Int
+
   companion object
 }
 
@@ -554,7 +560,18 @@ private data class ImmutablePoint3dImpl(
   override var x: Double,
   override var y: Double,
   override var z: Double,
-) : ImmutablePoint3d
+) : ImmutablePoint3d {
+  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+
+  override fun equals(other: Any?): Boolean =
+    when {
+      this === other -> true
+      other !is Point3d -> false
+      else -> componentsEqual(this, other)
+    }
+
+  override fun hashCode(): Int = componentsHash(x, y, z)
+}
 
 private value class Point3dMutableWrapper(
   private val impl: ImmutablePoint3dImpl,
@@ -574,6 +591,9 @@ private value class Point3dMutableWrapper(
     set(value) {
       impl.z = value
     }
+
+  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+
   override val xFlow: StateFlow<Double>
     get() = throw UnsupportedOperationException()
   override val yFlow: StateFlow<Double>
@@ -624,6 +644,17 @@ private class MutablePoint3dImpl(
   override val yFlow: StateFlow<Double> get() = _yFlow.asStateFlow()
   override val zFlow: StateFlow<Double> get() = _zFlow.asStateFlow()
 
+  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+
+  override fun equals(other: Any?): Boolean =
+    when {
+      this === other -> true
+      other !is Point3d -> false
+      else -> componentsEqual(this, other)
+    }
+
+  override fun hashCode(): Int = componentsHash(x, y, z)
+
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
@@ -658,6 +689,42 @@ private class MutablePoint3dImpl(
         }
       } ?: false
   }
+}
+
+private fun componentsEqual(
+  a: Point3d,
+  b: Point3d,
+): Boolean =
+  doublesEqual(a.x, b.x) &&
+    doublesEqual(a.y, b.y) &&
+    doublesEqual(a.z, b.z)
+
+private fun componentsHash(
+  x: Double,
+  y: Double,
+  z: Double,
+): Int {
+  var result = 17
+  result = 31 * result + normalizedHash(x)
+  result = 31 * result + normalizedHash(y)
+  result = 31 * result + normalizedHash(z)
+  return result
+}
+
+private fun doublesEqual(
+  a: Double,
+  b: Double,
+): Boolean = a == b || (a.isNaN() && b.isNaN())
+
+private fun normalizedHash(value: Double): Int {
+  val normalized =
+    when {
+      value == 0.0 -> 0.0
+      value.isNaN() -> Double.NaN
+      else -> value
+    }
+  val bits = normalized.toRawBits()
+  return (bits xor (bits ushr 32)).toInt()
 }
 
 // endregion

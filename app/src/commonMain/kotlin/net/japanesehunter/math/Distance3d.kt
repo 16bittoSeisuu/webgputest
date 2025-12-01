@@ -54,6 +54,12 @@ sealed interface Distance3d {
    */
   operator fun component3() = dz
 
+  override fun toString(): String
+
+  override fun equals(other: Any?): Boolean
+
+  override fun hashCode(): Int
+
   companion object
 }
 
@@ -473,7 +479,18 @@ private data class ImmutableDistance3dImpl(
   override var dx: Double,
   override var dy: Double,
   override var dz: Double,
-) : ImmutableDistance3d
+) : ImmutableDistance3d {
+  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+
+  override fun equals(other: Any?): Boolean =
+    when {
+      this === other -> true
+      other !is Distance3d -> false
+      else -> componentsEqual(this, other)
+    }
+
+  override fun hashCode(): Int = componentsHash(dx, dy, dz)
+}
 
 private value class Distance3dMutableWrapper(
   private val impl: ImmutableDistance3dImpl,
@@ -493,6 +510,9 @@ private value class Distance3dMutableWrapper(
     set(value) {
       impl.dz = value
     }
+
+  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+
   override val dxFlow: StateFlow<Double>
     get() = throw UnsupportedOperationException()
   override val dyFlow: StateFlow<Double>
@@ -543,6 +563,17 @@ private class MutableDistance3dImpl(
   override val dyFlow: StateFlow<Double> get() = _dyFlow.asStateFlow()
   override val dzFlow: StateFlow<Double> get() = _dzFlow.asStateFlow()
 
+  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+
+  override fun equals(other: Any?): Boolean =
+    when {
+      this === other -> true
+      other !is Distance3d -> false
+      else -> componentsEqual(this, other)
+    }
+
+  override fun hashCode(): Int = componentsHash(dx, dy, dz)
+
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
@@ -577,6 +608,42 @@ private class MutableDistance3dImpl(
         }
       } ?: false
   }
+}
+
+private fun componentsEqual(
+  a: Distance3d,
+  b: Distance3d,
+): Boolean =
+  doublesEqual(a.dx, b.dx) &&
+    doublesEqual(a.dy, b.dy) &&
+    doublesEqual(a.dz, b.dz)
+
+private fun componentsHash(
+  dx: Double,
+  dy: Double,
+  dz: Double,
+): Int {
+  var result = 17
+  result = 31 * result + normalizedHash(dx)
+  result = 31 * result + normalizedHash(dy)
+  result = 31 * result + normalizedHash(dz)
+  return result
+}
+
+private fun doublesEqual(
+  a: Double,
+  b: Double,
+): Boolean = a == b || (a.isNaN() && b.isNaN())
+
+private fun normalizedHash(value: Double): Int {
+  val normalized =
+    when {
+      value == 0.0 -> 0.0
+      value.isNaN() -> Double.NaN
+      else -> value
+    }
+  val bits = normalized.toRawBits()
+  return (bits xor (bits ushr 32)).toInt()
 }
 
 // endregion
