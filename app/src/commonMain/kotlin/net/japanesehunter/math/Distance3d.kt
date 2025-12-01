@@ -257,6 +257,20 @@ inline infix fun Distance3d.cross(other: Distance3d): Distance3d =
   )
 
 /**
+ * Returns the left-handed cross product of this distance with [other].
+ * Equivalent to `-(this cross other)` when using a right-handed system.
+ *
+ * @param other The distance to take the left-handed cross product with.
+ * @return A new [Distance3d] representing the left-handed cross product.
+ */
+inline infix fun Distance3d.crossLH(other: Distance3d): Distance3d =
+  Distance3d(
+    dx = dz * other.dy - dy * other.dz,
+    dy = dx * other.dz - dz * other.dx,
+    dz = dy * other.dx - dx * other.dy,
+  )
+
+/**
  * Negates all components of this mutable distance.
  * After this operation, dx, dy, and dz become -dx, -dy, and -dz respectively.
  * This operation mutates the original distance.
