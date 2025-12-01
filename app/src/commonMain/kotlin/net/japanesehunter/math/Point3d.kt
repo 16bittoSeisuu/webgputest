@@ -3,22 +3,14 @@
 
 package net.japanesehunter.math
 
-import korlibs.datastructure.WeakMap
 import kotlinx.atomicfu.locks.ReentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.concurrent.atomics.update
 import kotlin.math.abs
-import kotlin.math.hypot
 import kotlin.math.sign
-import kotlin.math.sqrt
-import kotlin.properties.PropertyDelegateProvider
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
 
 // region interfaces
 
@@ -240,7 +232,7 @@ fun Point3d(
     "Point3d coordinates must be finite values: ($x, $y, $z)"
   }
   if (x == 0.0 && y == 0.0 && z == 0.0 && mutator == null) {
-    return POINT3D_ZERO
+    return Point3d.zero
   }
   val impl = ImmutablePoint3dImpl(x, y, z)
   if (mutator != null) {
@@ -350,37 +342,68 @@ inline operator fun Point3d.unaryMinus(): ImmutablePoint3d =
     negate()
   }
 
-// TODO
-inline operator fun MutablePoint3d.plusAssign(other: Point3d) =
-  map("Addition of $other") { index, value ->
+/**
+ * Translates this mutable point by the given [distance].
+ *
+ * @param distance The displacement to apply to this point.
+ */
+inline operator fun MutablePoint3d.plusAssign(distance: Distance3d) =
+  map("Addition of $distance") { index, value ->
     when (index) {
-      0 -> value + other.x
-      1 -> value + other.y
-      else -> value + other.z
+      0 -> value + distance.dx
+      1 -> value + distance.dy
+      else -> value + distance.dz
     }
   }
 
-// TODO
-inline operator fun Point3d.plus(other: Point3d): ImmutablePoint3d =
+/**
+ * Returns a new [ImmutablePoint3d] translated by the given [distance].
+ *
+ * @param distance The displacement to add.
+ * @return A new point after applying the displacement.
+ */
+inline operator fun Point3d.plus(distance: Distance3d): ImmutablePoint3d =
   Point3d.copyOf(this) {
-    this += other
+    this += distance
   }
 
-// TODO
-inline operator fun MutablePoint3d.minusAssign(other: Point3d) =
-  map("Subtraction of $other") { index, value ->
+/**
+ * Translates this mutable point by the negative of the given [distance].
+ *
+ * @param distance The displacement to subtract.
+ */
+inline operator fun MutablePoint3d.minusAssign(distance: Distance3d) =
+  map("Subtraction of $distance") { index, value ->
     when (index) {
-      0 -> value - other.x
-      1 -> value - other.y
-      else -> value - other.z
+      0 -> value - distance.dx
+      1 -> value - distance.dy
+      else -> value - distance.dz
     }
   }
 
-// TODO
-inline operator fun Point3d.minus(other: Point3d): ImmutablePoint3d =
+/**
+ * Returns a new [ImmutablePoint3d] translated by the negative of the given [distance].
+ *
+ * @param distance The displacement to subtract.
+ * @return A new point after applying the negative displacement.
+ */
+inline operator fun Point3d.minus(distance: Distance3d): ImmutablePoint3d =
   Point3d.copyOf(this) {
-    this -= other
+    this -= distance
   }
+
+/**
+ * Returns the component-wise displacement from [other] to this point as a [Distance3d].
+ *
+ * @param other The origin point of the displacement.
+ * @return The [Distance3d] representing this - [other].
+ */
+inline operator fun Point3d.minus(other: Point3d): Distance3d =
+  Distance3d(
+    dx = x - other.x,
+    dy = y - other.y,
+    dz = z - other.z,
+  )
 
 /**
  * Multiplies all coordinates of this mutable point by the given scalar.
@@ -479,20 +502,7 @@ inline operator fun Point3d.div(scalar: Double): ImmutablePoint3d =
  * @param other The other point to measure the distance to.
  * @return The distance between this point and [other].
  */
-inline infix fun Point3d.distanceTo(other: Point3d): Double {
-  val dx = x - other.x
-  val dy = y - other.y
-  val dz = z - other.z
-  val max = maxOf(abs(dx), abs(dy), abs(dz))
-  if (max == 0.0) return 0.0
-  val minThreshold = 1e-154
-  val maxThreshold = 1e154
-  return if (minThreshold < max && max < maxThreshold) {
-    sqrt(dx * dx + dy * dy + dz * dz)
-  } else {
-    hypot(hypot(dx, dy), dz)
-  }
-}
+inline infix fun Point3d.distanceTo(other: Point3d): Double = (this - other).magnitude
 
 /**
  * Returns the distance from this point to the origin (0, 0, 0).
@@ -647,44 +657,6 @@ private class MutablePoint3dImpl(
           dirty
         }
       } ?: false
-  }
-}
-
-@OptIn(ExperimentalAtomicApi::class)
-private class WeakProperty<V>(
-  value: V,
-) : PropertyDelegateProvider<Any, ReadWriteProperty<Any, V?>> {
-  private var tmp: AtomicReference<V?> = AtomicReference(value)
-  private val map = WeakMap<Any, V>()
-
-  override fun provideDelegate(
-    thisRef: Any,
-    property: KProperty<*>,
-  ): ReadWriteProperty<Any, V?> {
-    tmp.update {
-      if (it != null) {
-        map[thisRef] = it
-      }
-      null
-    }
-    return object : ReadWriteProperty<Any, V?> {
-      override fun getValue(
-        thisRef: Any,
-        property: KProperty<*>,
-      ): V? = map[thisRef]
-
-      override fun setValue(
-        thisRef: Any,
-        property: KProperty<*>,
-        value: V?,
-      ) {
-        if (value == null) {
-          map.remove(thisRef)
-        } else {
-          map[thisRef] = value
-        }
-      }
-    }
   }
 }
 
