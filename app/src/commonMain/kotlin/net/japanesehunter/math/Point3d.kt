@@ -9,34 +9,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.math.abs
-import kotlin.math.sign
 
 // region interfaces
 
 /**
  * Represents a read-only point in 3D space.
  * This struct may be mutable. If so, then `is MutablePoint3d == true`.
- * [x], [y], and [z] are all expected to be finite values
- * (`Double.isFinite() == true`).
+ * [x], [y], and [z] are all represented as [Distance] values.
  *
  * @author Int16
  */
 sealed interface Point3d {
   /**
-   * The x-coordinate of the point. Always expected to be a finite value.
+   * The x-coordinate of the point as a [Distance].
    */
-  val x: Double
+  val x: Distance
 
   /**
-   * The y-coordinate of the point. Always expected to be a finite value.
+   * The y-coordinate of the point as a [Distance].
    */
-  val y: Double
+  val y: Distance
 
   /**
-   * The z-coordinate of the point. Always expected to be a finite value.
+   * The z-coordinate of the point as a [Distance].
    */
-  val z: Double
+  val z: Distance
 
   /**
    * Component operator for destructuring declarations.
@@ -66,41 +63,39 @@ sealed interface Point3d {
  * Represents an immutable point in 3D space.
  * Because it is immutable, all operations produce a new instance.
  * To preserve immutability, users cannot implement this interface.
- * [x], [y], and [z] are all expected to be finite values
- * ([Double.isFinite()] == true).
+ * [x], [y], and [z] are all represented as [Distance] values.
  */
 sealed interface ImmutablePoint3d : Point3d
 
 /**
  * Represents a mutable point in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
- * It is expected that [x], [y], and [z] are all finite values
- * (Double.isFinite() == true).
+ * [x], [y], and [z] are all represented as [Distance] values.
  */
 interface MutablePoint3d :
   Point3d,
   Observable {
-  override var x: Double
-  override var y: Double
-  override var z: Double
+  override var x: Distance
+  override var y: Distance
+  override var z: Distance
 
   /**
    * A [StateFlow] that emits the current x-coordinate of the point.
-   * Always expected to emit finite values.
+   * Always emits [Distance] values.
    */
-  val xFlow: StateFlow<Double>
+  val xFlow: StateFlow<Distance>
 
   /**
    * A [StateFlow] that emits the current y-coordinate of the point.
-   * Always expected to emit finite values.
+   * Always emits [Distance] values.
    */
-  val yFlow: StateFlow<Double>
+  val yFlow: StateFlow<Distance>
 
   /**
    * A [StateFlow] that emits the current z-coordinate of the point.
-   * Always expected to emit finite values.
+   * Always emits [Distance] values.
    */
-  val zFlow: StateFlow<Double>
+  val zFlow: StateFlow<Distance>
 
   override fun observe(): ObserveTicket
 
@@ -221,23 +216,20 @@ val Point3d.Companion.zero: ImmutablePoint3d get() = POINT3D_ZERO
  * Even if you use `as MutablePoint3d` after freezing, the value cannot be
  * changed and will result in an error.
  *
- * @param x The x-coordinate in space. Expected to be finite.
- * @param y The y-coordinate in space. Expected to be finite.
- * @param z The z-coordinate in space. Expected to be finite.
+ * @param x The x-coordinate in space.
+ * @param y The y-coordinate in space.
+ * @param z The z-coordinate in space.
  * @param mutator A scope for [MutablePoint3d] for initialization. If null, nothing is done.
  * @return The frozen, immutable [ImmutablePoint3d].
  */
 @Suppress("FunctionName")
 fun Point3d(
-  x: Double = 0.0,
-  y: Double = 0.0,
-  z: Double = 0.0,
+  x: Distance = Distance.ZERO,
+  y: Distance = Distance.ZERO,
+  z: Distance = Distance.ZERO,
   mutator: (MutablePoint3d.() -> Unit)? = null,
 ): ImmutablePoint3d {
-  require(x.isFinite() && y.isFinite() && z.isFinite()) {
-    "Point3d coordinates must be finite values: ($x, $y, $z)"
-  }
-  if (x == 0.0 && y == 0.0 && z == 0.0 && mutator == null) {
+  if (x.isZero && y.isZero && z.isZero && mutator == null) {
     return Point3d.zero
   }
   val impl = ImmutablePoint3dImpl(x, y, z)
@@ -275,19 +267,16 @@ inline fun Point3d.Companion.copyOf(
 /**
  * Creates a [MutablePoint3d] by specifying each coordinate in three-dimensional space.
  *
- * @param x The x-coordinate in space. Expected to be finite.
- * @param y The y-coordinate in space. Expected to be finite.
- * @param z The z-coordinate in space. Expected to be finite.
+ * @param x The x-coordinate in space.
+ * @param y The y-coordinate in space.
+ * @param z The z-coordinate in space.
  * @return The created [MutablePoint3d].
  */
 fun MutablePoint3d(
-  x: Double = 0.0,
-  y: Double = 0.0,
-  z: Double = 0.0,
+  x: Distance = Distance.ZERO,
+  y: Distance = Distance.ZERO,
+  z: Distance = Distance.ZERO,
 ): MutablePoint3d {
-  require(x.isFinite() && y.isFinite() && z.isFinite()) {
-    "MutablePoint3d coordinates must be finite values: ($x, $y, $z)"
-  }
   return MutablePoint3dImpl(x, y, z)
 }
 
@@ -305,30 +294,39 @@ fun MutablePoint3d.Companion.copyOf(copyFrom: Point3d): MutablePoint3d = Mutable
 
 /**
  * Returns the corresponding octant from the signs of x/y/z.
- * Returns null if any of x, y, or z are 0 or `NaN`.
+ * Returns null if any of x, y, or z are 0.
  *
  * @return the unique corresponding octant if this [Point3d] has one;
  *         otherwise null.
  */
 inline val Point3d.octant: Octant?
   get() {
-    val xSign = x.sign.toInt()
-    val ySign = y.sign.toInt()
-    val zSign = z.sign.toInt()
+    val xSign =
+      when {
+        x.isPositive -> 1
+        x.isNegative -> -1
+        else -> 0
+      }
+    val ySign =
+      when {
+        y.isPositive -> 1
+        y.isNegative -> -1
+        else -> 0
+      }
+    val zSign =
+      when {
+        z.isPositive -> 1
+        z.isNegative -> -1
+        else -> 0
+      }
     return Octant.fromSigns(xSign, ySign, zSign)
   }
 
 /**
- * Returns `true` if this point is at the origin (0, 0, 0),
- * within a small epsilon (1e-5), and `false` otherwise.
- *
- * @return Whether this point is approximately the zero point.
+ * Returns `true` if this point is exactly at the origin (0, 0, 0).
  */
 inline val Point3d.isZero: Boolean
-  get() {
-    val eps = 1e-5
-    return abs(x) < eps && abs(y) < eps && abs(z) < eps
-  }
+  get() = x.isZero && y.isZero && z.isZero
 
 /**
  * Negates all coordinates of this mutable point.
@@ -417,7 +415,10 @@ inline operator fun Point3d.minus(other: Point3d): Distance3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutablePoint3d.timesAssign(scalar: Int) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutablePoint3d.timesAssign(scalar: Int) =
+  map("Multiplication by $scalar") { _, value ->
+    value * scalar.toLong()
+  }
 
 /**
  * Returns a new [ImmutablePoint3d] with all coordinates multiplied by the given scalar.
@@ -460,7 +461,7 @@ inline operator fun Point3d.times(scalar: Double): ImmutablePoint3d =
  */
 inline operator fun MutablePoint3d.divAssign(scalar: Int) {
   require(scalar != 0) { "Cannot divide a Point3d by 0" }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map("Division by $scalar") { _, value -> value / scalar.toLong() }
 }
 
 /**
@@ -508,14 +509,14 @@ inline operator fun Point3d.div(scalar: Double): ImmutablePoint3d =
  * @param other The other point to measure the distance to.
  * @return The distance between this point and [other].
  */
-inline infix fun Point3d.distanceTo(other: Point3d): Double = (this - other).magnitude
+inline infix fun Point3d.distanceTo(other: Point3d): Distance = (this - other).magnitude
 
 /**
  * Returns the distance from this point to the origin (0, 0, 0).
  *
  * @return The distance from this point to the origin.
  */
-inline val Point3d.distanceFromZero: Double get() = this distanceTo Point3d.zero
+inline val Point3d.distanceFromZero: Distance get() = this distanceTo Point3d.zero
 
 /**
  * Maps each coordinate of this mutable point using the given [action],
@@ -523,30 +524,18 @@ inline val Point3d.distanceFromZero: Double get() = this distanceTo Point3d.zero
  * The [action] receives the index (0 for x, 1 for y, 2 for z)
  * and the current value of the coordinate, and should return
  * the new value for that coordinate.
- * After applying the [action], it is verified that all new values
- * are finite; if not, an [ArithmeticException] is thrown.
- *
  * @param actionName An optional name for the action, used in error messages.
  * @param action The mapping function to apply to each coordinate.
  * 0: x-coordinate, 1: y-coordinate, 2: z-coordinate.
- * @throws ArithmeticException if any resulting coordinate is not finite.
  */
+@Suppress("UNUSED_PARAMETER")
 inline fun MutablePoint3d.map(
   actionName: String? = null,
-  action: (index: Int, value: Double) -> Double,
+  action: (index: Int, value: Distance) -> Distance,
 ) {
   val newX = action(0, x)
   val newY = action(1, y)
   val newZ = action(2, z)
-  require(newX.isFinite() && newY.isFinite() && newZ.isFinite()) {
-    val message =
-      if (actionName == null) {
-        "Mutation resulted in non-finite values: ($x, $y, $z)"
-      } else {
-        "$actionName resulted in non-finite values: ($x, $y, $z)"
-      }
-    throw ArithmeticException(message)
-  }
   x = newX
   y = newY
   z = newZ
@@ -556,12 +545,12 @@ inline fun MutablePoint3d.map(
 
 // region implementations
 
-private val POINT3D_ZERO: ImmutablePoint3d = ImmutablePoint3dImpl(0.0, 0.0, 0.0)
+private val POINT3D_ZERO: ImmutablePoint3d = ImmutablePoint3dImpl(Distance.ZERO, Distance.ZERO, Distance.ZERO)
 
 private data class ImmutablePoint3dImpl(
-  override var x: Double,
-  override var y: Double,
-  override var z: Double,
+  override var x: Distance,
+  override var y: Distance,
+  override var z: Distance,
 ) : ImmutablePoint3d {
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
@@ -578,17 +567,17 @@ private data class ImmutablePoint3dImpl(
 private value class Point3dMutableWrapper(
   private val impl: ImmutablePoint3dImpl,
 ) : MutablePoint3d {
-  override var x: Double
+  override var x: Distance
     get() = impl.x
     set(value) {
       impl.x = value
     }
-  override var y: Double
+  override var y: Distance
     get() = impl.y
     set(value) {
       impl.y = value
     }
-  override var z: Double
+  override var z: Distance
     get() = impl.z
     set(value) {
       impl.z = value
@@ -596,28 +585,28 @@ private value class Point3dMutableWrapper(
 
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
-  override val xFlow: StateFlow<Double>
+  override val xFlow: StateFlow<Distance>
     get() = throw UnsupportedOperationException()
-  override val yFlow: StateFlow<Double>
+  override val yFlow: StateFlow<Distance>
     get() = throw UnsupportedOperationException()
-  override val zFlow: StateFlow<Double>
+  override val zFlow: StateFlow<Distance>
     get() = throw UnsupportedOperationException()
 
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
 private class MutablePoint3dImpl(
-  x: Double,
-  y: Double,
-  z: Double,
+  x: Distance,
+  y: Distance,
+  z: Distance,
 ) : MutablePoint3d {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _xFlow: MutableStateFlow<Double> = MutableStateFlow(x)
-  private val _yFlow: MutableStateFlow<Double> = MutableStateFlow(y)
-  private val _zFlow: MutableStateFlow<Double> = MutableStateFlow(z)
+  private val _xFlow: MutableStateFlow<Distance> = MutableStateFlow(x)
+  private val _yFlow: MutableStateFlow<Distance> = MutableStateFlow(y)
+  private val _zFlow: MutableStateFlow<Distance> = MutableStateFlow(z)
 
-  override var x: Double
+  override var x: Distance
     get() = lock.withLock { _xFlow.value }
     set(value) {
       lock.withLock {
@@ -625,7 +614,7 @@ private class MutablePoint3dImpl(
         _xFlow.value = value
       }
     }
-  override var y: Double
+  override var y: Distance
     get() = lock.withLock { _yFlow.value }
     set(value) {
       lock.withLock {
@@ -633,7 +622,7 @@ private class MutablePoint3dImpl(
         _yFlow.value = value
       }
     }
-  override var z: Double
+  override var z: Distance
     get() = lock.withLock { _zFlow.value }
     set(value) {
       lock.withLock {
@@ -642,9 +631,9 @@ private class MutablePoint3dImpl(
       }
     }
 
-  override val xFlow: StateFlow<Double> get() = _xFlow.asStateFlow()
-  override val yFlow: StateFlow<Double> get() = _yFlow.asStateFlow()
-  override val zFlow: StateFlow<Double> get() = _zFlow.asStateFlow()
+  override val xFlow: StateFlow<Distance> get() = _xFlow.asStateFlow()
+  override val yFlow: StateFlow<Distance> get() = _yFlow.asStateFlow()
+  override val zFlow: StateFlow<Distance> get() = _zFlow.asStateFlow()
 
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
@@ -697,36 +686,19 @@ private fun componentsEqual(
   a: Point3d,
   b: Point3d,
 ): Boolean =
-  doublesEqual(a.x, b.x) &&
-    doublesEqual(a.y, b.y) &&
-    doublesEqual(a.z, b.z)
+  a.x == b.x &&
+    a.y == b.y &&
+    a.z == b.z
 
 private fun componentsHash(
-  x: Double,
-  y: Double,
-  z: Double,
+  x: Distance,
+  y: Distance,
+  z: Distance,
 ): Int {
   var result = 17
-  result = 31 * result + normalizedHash(x)
-  result = 31 * result + normalizedHash(y)
-  result = 31 * result + normalizedHash(z)
+  result = 31 * result + x.inWholeNanometers.hashCode()
+  result = 31 * result + y.inWholeNanometers.hashCode()
+  result = 31 * result + z.inWholeNanometers.hashCode()
   return result
 }
-
-private fun doublesEqual(
-  a: Double,
-  b: Double,
-): Boolean = a == b || (a.isNaN() && b.isNaN())
-
-private fun normalizedHash(value: Double): Int {
-  val normalized =
-    when {
-      value == 0.0 -> 0.0
-      value.isNaN() -> Double.NaN
-      else -> value
-    }
-  val bits = normalized.toRawBits()
-  return (bits xor (bits ushr 32)).toInt()
-}
-
 // endregion
