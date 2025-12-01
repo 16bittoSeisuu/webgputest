@@ -8,6 +8,9 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import net.japanesehunter.math.Area
+import net.japanesehunter.math.AreaUnit
+import net.japanesehunter.math.ObserveTicket
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -21,7 +24,7 @@ import kotlin.math.sqrt
  *
  * @author Int16
  */
-sealed interface Area3d {
+sealed interface Area3 {
   /**
    * The component along the x-axis stored as an [Area].
    */
@@ -66,14 +69,14 @@ sealed interface Area3d {
  * Because it is immutable, all operations produce a new instance.
  * To preserve immutability, users cannot implement this interface.
  */
-sealed interface ImmutableArea3d : Area3d
+sealed interface ImmutableArea3 : Area3
 
 /**
  * Represents a mutable area in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
  */
-interface MutableArea3d :
-  Area3d,
+interface MutableArea3 :
+  Area3,
   Observable {
   override var ax: Area
   override var ay: Area
@@ -106,60 +109,60 @@ interface MutableArea3d :
 /**
  * The zero area vector (0, 0, 0) in nanometer².
  */
-val Area3d.Companion.zero: ImmutableArea3d get() = AREA3D_ZERO
+val Area3.Companion.zero: ImmutableArea3 get() = AREA3_ZERO
 
 // endregion
 
 // region factory functions
 
 /**
- * Creates an [Area3d] by specifying each component.
- * You can treat it as a [MutableArea3d] only at the very beginning using
- * a [mutator], but after that, it is frozen as an [ImmutableArea3d].
- * Even if you use `as MutableArea3d` after freezing, the value cannot be
+ * Creates an [Area3] by specifying each component.
+ * You can treat it as a [MutableArea3] only at the very beginning using
+ * a [mutator], but after that, it is frozen as an [ImmutableArea3].
+ * Even if you use `as MutableArea3` after freezing, the value cannot be
  * changed and will result in an error.
  *
  * @param ax The component along the x-axis.
  * @param ay The component along the y-axis.
  * @param az The component along the z-axis.
- * @param mutator A scope for [MutableArea3d] for initialization. If null, nothing is done.
- * @return The frozen, immutable [ImmutableArea3d].
+ * @param mutator A scope for [MutableArea3] for initialization. If null, nothing is done.
+ * @return The frozen, immutable [ImmutableArea3].
  */
 @Suppress("FunctionName")
-fun Area3d(
+fun Area3(
   ax: Area = Area.ZERO,
   ay: Area = Area.ZERO,
   az: Area = Area.ZERO,
-  mutator: (MutableArea3d.() -> Unit)? = null,
-): ImmutableArea3d {
+  mutator: (MutableArea3.() -> Unit)? = null,
+): ImmutableArea3 {
   if (ax.isZero && ay.isZero && az.isZero && mutator == null) {
-    return Area3d.zero
+    return Area3.zero
   }
-  val impl = ImmutableArea3dImpl(ax, ay, az)
+  val impl = ImmutableArea3Impl(ax, ay, az)
   if (mutator != null) {
-    val mutableWrapper = Area3dMutableWrapper(impl)
+    val mutableWrapper = Area3MutableWrapper(impl)
     mutator(mutableWrapper)
   }
   return impl
 }
 
 /**
- * Creates an [ImmutableArea3d] by copying an existing one.
- * If the original instance is an [ImmutableArea3d] and [mutator] is null,
+ * Creates an [ImmutableArea3] by copying an existing one.
+ * If the original instance is an [ImmutableArea3] and [mutator] is null,
  * the same instance is returned without creating anything new.
  *
  * @param copyFrom The instance to copy from. This will be reused if possible.
- * @param mutator A [MutableArea3d] scope to adjust the values immediately after copying.
- * @return The frozen, immutable [ImmutableArea3d].
+ * @param mutator A [MutableArea3] scope to adjust the values immediately after copying.
+ * @return The frozen, immutable [ImmutableArea3].
  */
-inline fun Area3d.Companion.copyOf(
-  copyFrom: Area3d,
-  noinline mutator: (MutableArea3d.() -> Unit)? = null,
-): ImmutableArea3d =
-  if (copyFrom is ImmutableArea3d && mutator == null) {
+inline fun Area3.Companion.copyOf(
+  copyFrom: Area3,
+  noinline mutator: (MutableArea3.() -> Unit)? = null,
+): ImmutableArea3 =
+  if (copyFrom is ImmutableArea3 && mutator == null) {
     copyFrom
   } else {
-    Area3d(
+    Area3(
       ax = copyFrom.ax,
       ay = copyFrom.ay,
       az = copyFrom.az,
@@ -168,29 +171,26 @@ inline fun Area3d.Companion.copyOf(
   }
 
 /**
- * Creates a [MutableArea3d] by specifying each component.
+ * Creates a [MutableArea3] by specifying each component.
  *
  * @param ax The component along the x-axis.
  * @param ay The component along the y-axis.
  * @param az The component along the z-axis.
- * @return The created [MutableArea3d].
+ * @return The created [MutableArea3].
  */
-fun MutableArea3d(
+fun MutableArea3(
   ax: Area = Area.ZERO,
   ay: Area = Area.ZERO,
   az: Area = Area.ZERO,
-): MutableArea3d {
-  return MutableArea3dImpl(ax, ay, az)
-}
+): MutableArea3 = MutableArea3Impl(ax, ay, az)
 
 /**
- * Creates a [MutableArea3d] by copying an existing [Area3d].
+ * Creates a [MutableArea3] by copying an existing [Area3].
  *
  * @param copyFrom The instance to copy from.
- * @return The created [MutableArea3d].
+ * @return The created [MutableArea3].
  */
-fun MutableArea3d.Companion.copyOf(copyFrom: Area3d): MutableArea3d =
-  MutableArea3d(copyFrom.ax, copyFrom.ay, copyFrom.az)
+fun MutableArea3.Companion.copyOf(copyFrom: Area3): MutableArea3 = MutableArea3(copyFrom.ax, copyFrom.ay, copyFrom.az)
 
 // endregion
 
@@ -199,7 +199,7 @@ fun MutableArea3d.Companion.copyOf(copyFrom: Area3d): MutableArea3d =
 /**
  * Returns `true` if this area is exactly (0, 0, 0).
  */
-inline val Area3d.isZero: Boolean
+inline val Area3.isZero: Boolean
   get() = ax.isZero && ay.isZero && az.isZero
 
 /**
@@ -207,7 +207,7 @@ inline val Area3d.isZero: Boolean
  * Uses a numerically stable algorithm to avoid overflow/underflow by working
  * in square nanometers.
  */
-inline val Area3d.magnitude: Area
+inline val Area3.magnitude: Area
   get() {
     val axNm2 = ax.toDouble(AreaUnit.SQUARE_NANOMETER)
     val ayNm2 = ay.toDouble(AreaUnit.SQUARE_NANOMETER)
@@ -231,7 +231,7 @@ inline val Area3d.magnitude: Area
  * @param other The area to take the dot product with.
  * @return The scalar dot product in [unit]⁴.
  */
-inline infix fun Area3d.dot(other: Area3d): Double = dot(other, AreaUnit.SQUARE_NANOMETER)
+inline infix fun Area3.dot(other: Area3): Double = dot(other, AreaUnit.SQUARE_NANOMETER)
 
 /**
  * Returns the dot product of this area with [other] in the provided [unit]⁴.
@@ -240,8 +240,8 @@ inline infix fun Area3d.dot(other: Area3d): Double = dot(other, AreaUnit.SQUARE_
  * @param unit The squared distance unit to express the result in (raised to the fourth power).
  * @return The scalar dot product in [unit]⁴.
  */
-fun Area3d.dot(
-  other: Area3d,
+fun Area3.dot(
+  other: Area3,
   unit: AreaUnit,
 ): Double {
   val ax = this.ax.toDouble(unit)
@@ -253,20 +253,20 @@ fun Area3d.dot(
 /**
  * Negates all components of this mutable area.
  */
-inline fun MutableArea3d.negate() = map("Negation") { _, value -> -value }
+inline fun MutableArea3.negate() = map("Negation") { _, value -> -value }
 
 /**
- * Returns a new [ImmutableArea3d] with all components negated.
+ * Returns a new [ImmutableArea3] with all components negated.
  */
-inline operator fun Area3d.unaryMinus(): ImmutableArea3d =
-  Area3d.copyOf(this) {
+inline operator fun Area3.unaryMinus(): ImmutableArea3 =
+  Area3.copyOf(this) {
     negate()
   }
 
 /**
  * Adds the corresponding components of [other] to this mutable area.
  */
-inline operator fun MutableArea3d.plusAssign(other: Area3d) {
+inline operator fun MutableArea3.plusAssign(other: Area3) {
   map("Addition of $other") { index, value ->
     when (index) {
       0 -> value + other.ax
@@ -277,17 +277,17 @@ inline operator fun MutableArea3d.plusAssign(other: Area3d) {
 }
 
 /**
- * Returns a new [ImmutableArea3d] representing the sum of this area and [other].
+ * Returns a new [ImmutableArea3] representing the sum of this area and [other].
  */
-inline operator fun Area3d.plus(other: Area3d): ImmutableArea3d =
-  Area3d.copyOf(this) {
+inline operator fun Area3.plus(other: Area3): ImmutableArea3 =
+  Area3.copyOf(this) {
     this += other
   }
 
 /**
  * Subtracts the corresponding components of [other] from this mutable area.
  */
-inline operator fun MutableArea3d.minusAssign(other: Area3d) {
+inline operator fun MutableArea3.minusAssign(other: Area3) {
   map("Subtraction of $other") { index, value ->
     when (index) {
       0 -> value - other.ax
@@ -298,10 +298,10 @@ inline operator fun MutableArea3d.minusAssign(other: Area3d) {
 }
 
 /**
- * Returns a new [ImmutableArea3d] representing the difference of this area and [other].
+ * Returns a new [ImmutableArea3] representing the difference of this area and [other].
  */
-inline operator fun Area3d.minus(other: Area3d): ImmutableArea3d =
-  Area3d.copyOf(this) {
+inline operator fun Area3.minus(other: Area3): ImmutableArea3 =
+  Area3.copyOf(this) {
     this -= other
   }
 
@@ -309,14 +309,13 @@ inline operator fun Area3d.minus(other: Area3d): ImmutableArea3d =
  * Multiplies all components of this mutable area by the given scalar.
  * This operation mutates the original area.
  */
-inline operator fun MutableArea3d.timesAssign(scalar: Double) =
-  map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutableArea3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
 
 /**
- * Returns a new [ImmutableArea3d] with all components multiplied by the given scalar.
+ * Returns a new [ImmutableArea3] with all components multiplied by the given scalar.
  */
-inline operator fun Area3d.times(scalar: Double): ImmutableArea3d =
-  Area3d.copyOf(this) {
+inline operator fun Area3.times(scalar: Double): ImmutableArea3 =
+  Area3.copyOf(this) {
     this *= scalar
   }
 
@@ -326,18 +325,18 @@ inline operator fun Area3d.times(scalar: Double): ImmutableArea3d =
  *
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableArea3d.divAssign(scalar: Double) {
-  require(scalar != 0.0) { "Cannot divide an Area3d by 0.0" }
+inline operator fun MutableArea3.divAssign(scalar: Double) {
+  require(scalar != 0.0) { "Cannot divide an Area3 by 0.0" }
   map("Division by $scalar") { _, value -> value / scalar }
 }
 
 /**
- * Returns a new [ImmutableArea3d] with all components divided by the given scalar.
+ * Returns a new [ImmutableArea3] with all components divided by the given scalar.
  *
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Area3d.div(scalar: Double): ImmutableArea3d =
-  Area3d.copyOf(this) {
+inline operator fun Area3.div(scalar: Double): ImmutableArea3 =
+  Area3.copyOf(this) {
     this /= scalar
   }
 
@@ -354,7 +353,7 @@ inline operator fun Area3d.div(scalar: Double): ImmutableArea3d =
  * @throws ArithmeticException if any resulting component is not finite.
  */
 @Suppress("UNUSED_PARAMETER")
-inline fun MutableArea3d.map(
+inline fun MutableArea3.map(
   actionName: String? = null,
   action: (index: Int, value: Area) -> Area,
 ) {
@@ -370,28 +369,28 @@ inline fun MutableArea3d.map(
 
 // region implementations
 
-private val AREA3D_ZERO: ImmutableArea3d = ImmutableArea3dImpl(Area.ZERO, Area.ZERO, Area.ZERO)
+private val AREA3_ZERO: ImmutableArea3 = ImmutableArea3Impl(Area.ZERO, Area.ZERO, Area.ZERO)
 
-private data class ImmutableArea3dImpl(
+private data class ImmutableArea3Impl(
   override var ax: Area,
   override var ay: Area,
   override var az: Area,
-) : ImmutableArea3d {
-  override fun toString(): String = "Area3d(ax=$ax, ay=$ay, az=$az)"
+) : ImmutableArea3 {
+  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Area3d -> false
+      other !is Area3 -> false
       else -> componentsEqual(this, other)
     }
 
   override fun hashCode(): Int = componentsHash(ax, ay, az)
 }
 
-private value class Area3dMutableWrapper(
-  private val impl: ImmutableArea3dImpl,
-) : MutableArea3d {
+private value class Area3MutableWrapper(
+  private val impl: ImmutableArea3Impl,
+) : MutableArea3 {
   override var ax: Area
     get() = impl.ax
     set(value) {
@@ -408,7 +407,7 @@ private value class Area3dMutableWrapper(
       impl.az = value
     }
 
-  override fun toString(): String = "Area3d(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
 
   override val axFlow: StateFlow<Area>
     get() = throw UnsupportedOperationException()
@@ -420,11 +419,11 @@ private value class Area3dMutableWrapper(
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
-private class MutableArea3dImpl(
+private class MutableArea3Impl(
   ax: Area,
   ay: Area,
   az: Area,
-) : MutableArea3d {
+) : MutableArea3 {
   private var generation: Int = 0
   private val lock = ReentrantLock()
   private val _axFlow: MutableStateFlow<Area> = MutableStateFlow(ax)
@@ -460,12 +459,12 @@ private class MutableArea3dImpl(
   override val ayFlow: StateFlow<Area> get() = _ayFlow.asStateFlow()
   override val azFlow: StateFlow<Area> get() = _azFlow.asStateFlow()
 
-  override fun toString(): String = "Area3d(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Area3d -> false
+      other !is Area3 -> false
       else -> componentsEqual(this, other)
     }
 
@@ -474,7 +473,7 @@ private class MutableArea3dImpl(
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
-    original: MutableArea3dImpl,
+    original: MutableArea3Impl,
   ) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
     private val knownGeneration: Int = original.lock.withLock { original.generation }
@@ -508,8 +507,8 @@ private class MutableArea3dImpl(
 }
 
 private fun componentsEqual(
-  a: Area3d,
-  b: Area3d,
+  a: Area3,
+  b: Area3,
 ): Boolean =
   a.ax == b.ax &&
     a.ay == b.ay &&

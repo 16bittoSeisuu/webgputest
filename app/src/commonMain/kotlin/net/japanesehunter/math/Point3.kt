@@ -14,12 +14,12 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Represents a read-only point in 3D space.
- * This struct may be mutable. If so, then `is MutablePoint3d == true`.
+ * This struct may be mutable. If so, then `is MutablePoint3 == true`.
  * [x], [y], and [z] are all represented as [Length] values.
  *
  * @author Int16
  */
-sealed interface Point3d {
+sealed interface Point3 {
   /**
    * The x-coordinate of the point as a [Length].
    */
@@ -65,15 +65,15 @@ sealed interface Point3d {
  * To preserve immutability, users cannot implement this interface.
  * [x], [y], and [z] are all represented as [Length] values.
  */
-sealed interface ImmutablePoint3d : Point3d
+sealed interface ImmutablePoint3 : Point3
 
 /**
  * Represents a mutable point in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
  * [x], [y], and [z] are all represented as [Length] values.
  */
-interface MutablePoint3d :
-  Point3d,
+interface MutablePoint3 :
+  Point3,
   Observable {
   override var x: Length
   override var y: Length
@@ -203,60 +203,60 @@ enum class Octant(
 /**
  * The origin point (0, 0, 0) in three-dimensional space.
  */
-val Point3d.Companion.zero: ImmutablePoint3d get() = POINT3D_ZERO
+val Point3.Companion.zero: ImmutablePoint3 get() = POINT3_ZERO
 
 // endregion
 
 // region factory functions
 
 /**
- * Creates a [Point3d] by specifying each coordinate in three-dimensional space.
- * You can treat it as a [MutablePoint3d] only at the very beginning using
- * a [mutator], but after that, it is frozen as an [ImmutablePoint3d].
- * Even if you use `as MutablePoint3d` after freezing, the value cannot be
+ * Creates a [Point3] by specifying each coordinate in three-dimensional space.
+ * You can treat it as a [MutablePoint3] only at the very beginning using
+ * a [mutator], but after that, it is frozen as an [ImmutablePoint3].
+ * Even if you use `as MutablePoint3` after freezing, the value cannot be
  * changed and will result in an error.
  *
  * @param x The x-coordinate in space.
  * @param y The y-coordinate in space.
  * @param z The z-coordinate in space.
- * @param mutator A scope for [MutablePoint3d] for initialization. If null, nothing is done.
- * @return The frozen, immutable [ImmutablePoint3d].
+ * @param mutator A scope for [MutablePoint3] for initialization. If null, nothing is done.
+ * @return The frozen, immutable [ImmutablePoint3].
  */
 @Suppress("FunctionName")
-fun Point3d(
+fun Point3(
   x: Length = Length.ZERO,
   y: Length = Length.ZERO,
   z: Length = Length.ZERO,
-  mutator: (MutablePoint3d.() -> Unit)? = null,
-): ImmutablePoint3d {
+  mutator: (MutablePoint3.() -> Unit)? = null,
+): ImmutablePoint3 {
   if (x.isZero && y.isZero && z.isZero && mutator == null) {
-    return Point3d.zero
+    return Point3.zero
   }
-  val impl = ImmutablePoint3dImpl(x, y, z)
+  val impl = ImmutablePoint3Impl(x, y, z)
   if (mutator != null) {
-    val mutableWrapper = Point3dMutableWrapper(impl)
+    val mutableWrapper = Point3MutableWrapper(impl)
     mutator(mutableWrapper)
   }
   return impl
 }
 
 /**
- * Creates an [ImmutablePoint3d] by copying an existing one.
- * If the original instance is an [ImmutablePoint3d] and [mutator] is null,
+ * Creates an [ImmutablePoint3] by copying an existing one.
+ * If the original instance is an [ImmutablePoint3] and [mutator] is null,
  * the same instance is returned without creating anything new.
  *
  * @param copyFrom The instance to copy from. This will be reused if possible.
- * @param mutator A [MutablePoint3d] scope to adjust the values immediately after copying.
- * @return The frozen, immutable [ImmutablePoint3d].
+ * @param mutator A [MutablePoint3] scope to adjust the values immediately after copying.
+ * @return The frozen, immutable [ImmutablePoint3].
  */
-inline fun Point3d.Companion.copyOf(
-  copyFrom: Point3d,
-  noinline mutator: (MutablePoint3d.() -> Unit)? = null,
-): ImmutablePoint3d =
-  if (copyFrom is ImmutablePoint3d && mutator == null) {
+inline fun Point3.Companion.copyOf(
+  copyFrom: Point3,
+  noinline mutator: (MutablePoint3.() -> Unit)? = null,
+): ImmutablePoint3 =
+  if (copyFrom is ImmutablePoint3 && mutator == null) {
     copyFrom
   } else {
-    Point3d(
+    Point3(
       x = copyFrom.x,
       y = copyFrom.y,
       z = copyFrom.z,
@@ -265,28 +265,28 @@ inline fun Point3d.Companion.copyOf(
   }
 
 /**
- * Creates a [MutablePoint3d] by specifying each coordinate in three-dimensional space.
+ * Creates a [MutablePoint3] by specifying each coordinate in three-dimensional space.
  *
  * @param x The x-coordinate in space.
  * @param y The y-coordinate in space.
  * @param z The z-coordinate in space.
- * @return The created [MutablePoint3d].
+ * @return The created [MutablePoint3].
  */
-fun MutablePoint3d(
+fun MutablePoint3(
   x: Length = Length.ZERO,
   y: Length = Length.ZERO,
   z: Length = Length.ZERO,
-): MutablePoint3d {
-  return MutablePoint3dImpl(x, y, z)
+): MutablePoint3 {
+  return MutablePoint3Impl(x, y, z)
 }
 
 /**
- * Creates a [MutablePoint3d] by copying an existing [Point3d].
+ * Creates a [MutablePoint3] by copying an existing [Point3].
  *
  * @param copyFrom The instance to copy from.
- * @return The created [MutablePoint3d].
+ * @return The created [MutablePoint3].
  */
-fun MutablePoint3d.Companion.copyOf(copyFrom: Point3d): MutablePoint3d = MutablePoint3d(copyFrom.x, copyFrom.y, copyFrom.z)
+fun MutablePoint3.Companion.copyOf(copyFrom: Point3): MutablePoint3 = MutablePoint3(copyFrom.x, copyFrom.y, copyFrom.z)
 
 // endregion
 
@@ -296,10 +296,10 @@ fun MutablePoint3d.Companion.copyOf(copyFrom: Point3d): MutablePoint3d = Mutable
  * Returns the corresponding octant from the signs of x/y/z.
  * Returns null if any of x, y, or z are 0.
  *
- * @return the unique corresponding octant if this [Point3d] has one;
+ * @return the unique corresponding octant if this [Point3] has one;
  *         otherwise null.
  */
-inline val Point3d.octant: Octant?
+inline val Point3.octant: Octant?
   get() {
     val xSign =
       when {
@@ -325,7 +325,7 @@ inline val Point3d.octant: Octant?
 /**
  * Returns `true` if this point is exactly at the origin (0, 0, 0).
  */
-inline val Point3d.isZero: Boolean
+inline val Point3.isZero: Boolean
   get() = x.isZero && y.isZero && z.isZero
 
 /**
@@ -333,16 +333,16 @@ inline val Point3d.isZero: Boolean
  * After this operation, x, y, and z become -x, -y, and -z respectively.
  * This operation mutates the original point.
  */
-inline fun MutablePoint3d.negate() = map("Negation") { _, value -> -value }
+inline fun MutablePoint3.negate() = map("Negation") { _, value -> -value }
 
 /**
- * Returns a new [ImmutablePoint3d] with all coordinates negated.
+ * Returns a new [ImmutablePoint3] with all coordinates negated.
  * The original point remains unchanged.
  *
  * @return A new point with negated coordinates.
  */
-inline operator fun Point3d.unaryMinus(): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.unaryMinus(): ImmutablePoint3 =
+  Point3.copyOf(this) {
     negate()
   }
 
@@ -351,7 +351,7 @@ inline operator fun Point3d.unaryMinus(): ImmutablePoint3d =
  *
  * @param distance The displacement to apply to this point.
  */
-inline operator fun MutablePoint3d.plusAssign(distance: Length3d) =
+inline operator fun MutablePoint3.plusAssign(distance: Length3) =
   map("Addition of $distance") { index, value ->
     when (index) {
       0 -> value + distance.dx
@@ -361,13 +361,13 @@ inline operator fun MutablePoint3d.plusAssign(distance: Length3d) =
   }
 
 /**
- * Returns a new [ImmutablePoint3d] translated by the given [distance].
+ * Returns a new [ImmutablePoint3] translated by the given [distance].
  *
  * @param distance The displacement to add.
  * @return A new point after applying the displacement.
  */
-inline operator fun Point3d.plus(distance: Length3d): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.plus(distance: Length3): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this += distance
   }
 
@@ -376,7 +376,7 @@ inline operator fun Point3d.plus(distance: Length3d): ImmutablePoint3d =
  *
  * @param distance The displacement to subtract.
  */
-inline operator fun MutablePoint3d.minusAssign(distance: Length3d) =
+inline operator fun MutablePoint3.minusAssign(distance: Length3) =
   map("Subtraction of $distance") { index, value ->
     when (index) {
       0 -> value - distance.dx
@@ -386,24 +386,24 @@ inline operator fun MutablePoint3d.minusAssign(distance: Length3d) =
   }
 
 /**
- * Returns a new [ImmutablePoint3d] translated by the negative of the given [distance].
+ * Returns a new [ImmutablePoint3] translated by the negative of the given [distance].
  *
  * @param distance The displacement to subtract.
  * @return A new point after applying the negative displacement.
  */
-inline operator fun Point3d.minus(distance: Length3d): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.minus(distance: Length3): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this -= distance
   }
 
 /**
- * Returns the component-wise displacement from [other] to this point as a [Length3d].
+ * Returns the component-wise displacement from [other] to this point as a [Length3].
  *
  * @param other The origin point of the displacement.
- * @return The [Length3d] representing this - [other].
+ * @return The [Length3] representing this - [other].
  */
-inline operator fun Point3d.minus(other: Point3d): Length3d =
-  Length3d(
+inline operator fun Point3.minus(other: Point3): Length3 =
+  Length3(
     dx = x - other.x,
     dy = y - other.y,
     dz = z - other.z,
@@ -415,20 +415,20 @@ inline operator fun Point3d.minus(other: Point3d): Length3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutablePoint3d.timesAssign(scalar: Int) =
+inline operator fun MutablePoint3.timesAssign(scalar: Int) =
   map("Multiplication by $scalar") { _, value ->
     value * scalar.toLong()
   }
 
 /**
- * Returns a new [ImmutablePoint3d] with all coordinates multiplied by the given scalar.
+ * Returns a new [ImmutablePoint3] with all coordinates multiplied by the given scalar.
  * The original point remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new point with multiplied coordinates.
  */
-inline operator fun Point3d.times(scalar: Int): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.times(scalar: Int): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this *= scalar
   }
 
@@ -438,17 +438,17 @@ inline operator fun Point3d.times(scalar: Int): ImmutablePoint3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutablePoint3d.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutablePoint3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
 
 /**
- * Returns a new [ImmutablePoint3d] with all coordinates multiplied by the given scalar.
+ * Returns a new [ImmutablePoint3] with all coordinates multiplied by the given scalar.
  * The original point remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new point with multiplied coordinates.
  */
-inline operator fun Point3d.times(scalar: Double): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.times(scalar: Double): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this *= scalar
   }
 
@@ -459,21 +459,21 @@ inline operator fun Point3d.times(scalar: Double): ImmutablePoint3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutablePoint3d.divAssign(scalar: Int) {
-  require(scalar != 0) { "Cannot divide a Point3d by 0" }
+inline operator fun MutablePoint3.divAssign(scalar: Int) {
+  require(scalar != 0) { "Cannot divide a Point3 by 0" }
   map("Division by $scalar") { _, value -> value / scalar.toLong() }
 }
 
 /**
- * Returns a new [ImmutablePoint3d] with all coordinates divided by the given scalar.
+ * Returns a new [ImmutablePoint3] with all coordinates divided by the given scalar.
  * The original point remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new point with divided coordinates.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Point3d.div(scalar: Int): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.div(scalar: Int): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this /= scalar
   }
 
@@ -484,21 +484,21 @@ inline operator fun Point3d.div(scalar: Int): ImmutablePoint3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutablePoint3d.divAssign(scalar: Double) {
-  require(scalar != 0.0) { "Cannot divide a Point3d by 0.0" }
+inline operator fun MutablePoint3.divAssign(scalar: Double) {
+  require(scalar != 0.0) { "Cannot divide a Point3 by 0.0" }
   map("Division by $scalar") { _, value -> value / scalar }
 }
 
 /**
- * Returns a new [ImmutablePoint3d] with all coordinates divided by the given scalar.
+ * Returns a new [ImmutablePoint3] with all coordinates divided by the given scalar.
  * The original point remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new point with divided coordinates.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Point3d.div(scalar: Double): ImmutablePoint3d =
-  Point3d.copyOf(this) {
+inline operator fun Point3.div(scalar: Double): ImmutablePoint3 =
+  Point3.copyOf(this) {
     this /= scalar
   }
 
@@ -509,14 +509,14 @@ inline operator fun Point3d.div(scalar: Double): ImmutablePoint3d =
  * @param other The other point to measure the distance to.
  * @return The distance between this point and [other].
  */
-inline infix fun Point3d.distanceTo(other: Point3d): Length = (this - other).magnitude
+inline infix fun Point3.distanceTo(other: Point3): Length = (this - other).magnitude
 
 /**
  * Returns the distance from this point to the origin (0, 0, 0).
  *
  * @return The distance from this point to the origin.
  */
-inline val Point3d.distanceFromZero: Length get() = this distanceTo Point3d.zero
+inline val Point3.distanceFromZero: Length get() = this distanceTo Point3.zero
 
 /**
  * Maps each coordinate of this mutable point using the given [action],
@@ -529,7 +529,7 @@ inline val Point3d.distanceFromZero: Length get() = this distanceTo Point3d.zero
  * 0: x-coordinate, 1: y-coordinate, 2: z-coordinate.
  */
 @Suppress("UNUSED_PARAMETER")
-inline fun MutablePoint3d.map(
+inline fun MutablePoint3.map(
   actionName: String? = null,
   action: (index: Int, value: Length) -> Length,
 ) {
@@ -545,28 +545,28 @@ inline fun MutablePoint3d.map(
 
 // region implementations
 
-private val POINT3D_ZERO: ImmutablePoint3d = ImmutablePoint3dImpl(Length.ZERO, Length.ZERO, Length.ZERO)
+private val POINT3_ZERO: ImmutablePoint3 = ImmutablePoint3Impl(Length.ZERO, Length.ZERO, Length.ZERO)
 
-private data class ImmutablePoint3dImpl(
+private data class ImmutablePoint3Impl(
   override var x: Length,
   override var y: Length,
   override var z: Length,
-) : ImmutablePoint3d {
-  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+) : ImmutablePoint3 {
+  override fun toString(): String = "Point3(x=$x, y=$y, z=$z)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Point3d -> false
+      other !is Point3 -> false
       else -> componentsEqual(this, other)
     }
 
   override fun hashCode(): Int = componentsHash(x, y, z)
 }
 
-private value class Point3dMutableWrapper(
-  private val impl: ImmutablePoint3dImpl,
-) : MutablePoint3d {
+private value class Point3MutableWrapper(
+  private val impl: ImmutablePoint3Impl,
+) : MutablePoint3 {
   override var x: Length
     get() = impl.x
     set(value) {
@@ -583,7 +583,7 @@ private value class Point3dMutableWrapper(
       impl.z = value
     }
 
-  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+  override fun toString(): String = "Point3(x=$x, y=$y, z=$z)"
 
   override val xFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
@@ -595,11 +595,11 @@ private value class Point3dMutableWrapper(
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
-private class MutablePoint3dImpl(
+private class MutablePoint3Impl(
   x: Length,
   y: Length,
   z: Length,
-) : MutablePoint3d {
+) : MutablePoint3 {
   private var generation: Int = 0
   private val lock = ReentrantLock()
   private val _xFlow: MutableStateFlow<Length> = MutableStateFlow(x)
@@ -635,12 +635,12 @@ private class MutablePoint3dImpl(
   override val yFlow: StateFlow<Length> get() = _yFlow.asStateFlow()
   override val zFlow: StateFlow<Length> get() = _zFlow.asStateFlow()
 
-  override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
+  override fun toString(): String = "Point3(x=$x, y=$y, z=$z)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Point3d -> false
+      other !is Point3 -> false
       else -> componentsEqual(this, other)
     }
 
@@ -649,7 +649,7 @@ private class MutablePoint3dImpl(
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
-    original: MutablePoint3dImpl,
+    original: MutablePoint3Impl,
   ) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
     private val knownGeneration: Int = original.lock.withLock { original.generation }
@@ -683,8 +683,8 @@ private class MutablePoint3dImpl(
 }
 
 private fun componentsEqual(
-  a: Point3d,
-  b: Point3d,
+  a: Point3,
+  b: Point3,
 ): Boolean =
   a.x == b.x &&
     a.y == b.y &&

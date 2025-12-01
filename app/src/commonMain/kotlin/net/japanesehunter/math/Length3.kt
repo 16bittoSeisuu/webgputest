@@ -8,6 +8,12 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import net.japanesehunter.math.Area
+import net.japanesehunter.math.Area3
+import net.japanesehunter.math.AreaUnit
+import net.japanesehunter.math.Length
+import net.japanesehunter.math.LengthUnit
+import net.japanesehunter.math.ObserveTicket
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -17,12 +23,12 @@ import kotlin.math.sqrt
 
 /**
  * Represents a distance or displacement in 3D space.
- * This struct may be mutable. If so, then `is MutableLength3d == true`.
+ * This struct may be mutable. If so, then `is MutableLength3 == true`.
  * [dx], [dy], and [dz] are all represented as [Length] values.
  *
  * @author Int16
  */
-sealed interface Length3d {
+sealed interface Length3 {
   /**
    * The delta along the x-axis as a [Length].
    */
@@ -68,15 +74,15 @@ sealed interface Length3d {
  * To preserve immutability, users cannot implement this interface.
  * [dx], [dy], and [dz] are all represented as [Length] values.
  */
-sealed interface ImmutableLength3d : Length3d
+sealed interface ImmutableLength3 : Length3
 
 /**
  * Represents a mutable distance in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
  * [dx], [dy], and [dz] are all represented as [Length] values.
  */
-interface MutableLength3d :
-  Length3d,
+interface MutableLength3 :
+  Length3,
   Observable {
   override var dx: Length
   override var dy: Length
@@ -112,60 +118,60 @@ interface MutableLength3d :
 /**
  * The zero distance (0, 0, 0) in three-dimensional space.
  */
-val Length3d.Companion.zero: ImmutableLength3d get() = LENGTH3D_ZERO
+val Length3.Companion.zero: ImmutableLength3 get() = LENGTH3_ZERO
 
 // endregion
 
 // region factory functions
 
 /**
- * Creates a [Length3d] by specifying each component in three-dimensional space.
- * You can treat it as a [MutableLength3d] only at the very beginning using
- * a [mutator], but after that, it is frozen as an [ImmutableLength3d].
- * Even if you use `as MutableLength3d` after freezing, the value cannot be
+ * Creates a [Length3] by specifying each component in three-dimensional space.
+ * You can treat it as a [MutableLength3] only at the very beginning using
+ * a [mutator], but after that, it is frozen as an [ImmutableLength3].
+ * Even if you use `as MutableLength3` after freezing, the value cannot be
  * changed and will result in an error.
  *
  * @param dx The delta along the x-axis.
  * @param dy The delta along the y-axis.
  * @param dz The delta along the z-axis.
- * @param mutator A scope for [MutableLength3d] for initialization. If null, nothing is done.
- * @return The frozen, immutable [ImmutableLength3d].
+ * @param mutator A scope for [MutableLength3] for initialization. If null, nothing is done.
+ * @return The frozen, immutable [ImmutableLength3].
  */
 @Suppress("FunctionName")
-fun Length3d(
+fun Length3(
   dx: Length = Length.ZERO,
   dy: Length = Length.ZERO,
   dz: Length = Length.ZERO,
-  mutator: (MutableLength3d.() -> Unit)? = null,
-): ImmutableLength3d {
+  mutator: (MutableLength3.() -> Unit)? = null,
+): ImmutableLength3 {
   if (dx.isZero && dy.isZero && dz.isZero && mutator == null) {
-    return Length3d.zero
+    return Length3.zero
   }
-  val impl = ImmutableLength3dImpl(dx, dy, dz)
+  val impl = ImmutableLength3Impl(dx, dy, dz)
   if (mutator != null) {
-    val mutableWrapper = Length3dMutableWrapper(impl)
+    val mutableWrapper = Length3MutableWrapper(impl)
     mutator(mutableWrapper)
   }
   return impl
 }
 
 /**
- * Creates an [ImmutableLength3d] by copying an existing one.
- * If the original instance is an [ImmutableLength3d] and [mutator] is null,
+ * Creates an [ImmutableLength3] by copying an existing one.
+ * If the original instance is an [ImmutableLength3] and [mutator] is null,
  * the same instance is returned without creating anything new.
  *
  * @param copyFrom The instance to copy from. This will be reused if possible.
- * @param mutator A [MutableLength3d] scope to adjust the values immediately after copying.
- * @return The frozen, immutable [ImmutableLength3d].
+ * @param mutator A [MutableLength3] scope to adjust the values immediately after copying.
+ * @return The frozen, immutable [ImmutableLength3].
  */
-inline fun Length3d.Companion.copyOf(
-  copyFrom: Length3d,
-  noinline mutator: (MutableLength3d.() -> Unit)? = null,
-): ImmutableLength3d =
-  if (copyFrom is ImmutableLength3d && mutator == null) {
+inline fun Length3.Companion.copyOf(
+  copyFrom: Length3,
+  noinline mutator: (MutableLength3.() -> Unit)? = null,
+): ImmutableLength3 =
+  if (copyFrom is ImmutableLength3 && mutator == null) {
     copyFrom
   } else {
-    Length3d(
+    Length3(
       dx = copyFrom.dx,
       dy = copyFrom.dy,
       dz = copyFrom.dz,
@@ -174,28 +180,26 @@ inline fun Length3d.Companion.copyOf(
   }
 
 /**
- * Creates a [MutableLength3d] by specifying each component in three-dimensional space.
+ * Creates a [MutableLength3] by specifying each component in three-dimensional space.
  *
  * @param dx The delta along the x-axis.
  * @param dy The delta along the y-axis.
  * @param dz The delta along the z-axis.
- * @return The created [MutableLength3d].
+ * @return The created [MutableLength3].
  */
-fun MutableLength3d(
+fun MutableLength3(
   dx: Length = Length.ZERO,
   dy: Length = Length.ZERO,
   dz: Length = Length.ZERO,
-): MutableLength3d {
-  return MutableLength3dImpl(dx, dy, dz)
-}
+): MutableLength3 = MutableLength3Impl(dx, dy, dz)
 
 /**
- * Creates a [MutableLength3d] by copying an existing [Length3d].
+ * Creates a [MutableLength3] by copying an existing [Length3].
  *
  * @param copyFrom The instance to copy from.
- * @return The created [MutableLength3d].
+ * @return The created [MutableLength3].
  */
-fun MutableLength3d.Companion.copyOf(copyFrom: Length3d): MutableLength3d = MutableLength3d(copyFrom.dx, copyFrom.dy, copyFrom.dz)
+fun MutableLength3.Companion.copyOf(copyFrom: Length3): MutableLength3 = MutableLength3(copyFrom.dx, copyFrom.dy, copyFrom.dz)
 
 // endregion
 
@@ -204,7 +208,7 @@ fun MutableLength3d.Companion.copyOf(copyFrom: Length3d): MutableLength3d = Muta
 /**
  * Returns `true` if this distance is exactly (0, 0, 0).
  */
-inline val Length3d.isZero: Boolean
+inline val Length3.isZero: Boolean
   get() = dx.isZero && dy.isZero && dz.isZero
 
 /**
@@ -214,7 +218,7 @@ inline val Length3d.isZero: Boolean
  *
  * @return The magnitude of this distance.
  */
-inline val Length3d.magnitude: Length
+inline val Length3.magnitude: Length
   get() {
     val dxNm = dx.toDouble(LengthUnit.NANOMETER)
     val dyNm = dy.toDouble(LengthUnit.NANOMETER)
@@ -238,7 +242,7 @@ inline val Length3d.magnitude: Length
  * @param unit The unit to measure the magnitude in (default: meters).
  * @throws IllegalArgumentException if the vector has zero length.
  */
-inline fun MutableLength3d.normalize(unit: LengthUnit = LengthUnit.METER) {
+inline fun MutableLength3.normalize(unit: LengthUnit = LengthUnit.METER) {
   val mag = magnitude.toDouble(unit)
   require(mag != 0.0) { "Cannot normalize a zero-length vector." }
   val inv = 1.0 / mag
@@ -251,8 +255,8 @@ inline fun MutableLength3d.normalize(unit: LengthUnit = LengthUnit.METER) {
  * @param unit The unit to measure the magnitude in (default: meters).
  * @throws IllegalArgumentException if the vector has zero length.
  */
-inline fun Length3d.normalized(unit: LengthUnit = LengthUnit.METER): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline fun Length3.normalized(unit: LengthUnit = LengthUnit.METER): ImmutableLength3 =
+  Length3.copyOf(this) {
     normalize(unit)
   }
 
@@ -262,38 +266,40 @@ inline fun Length3d.normalized(unit: LengthUnit = LengthUnit.METER): ImmutableLe
  * @param other The distance to take the dot product with.
  * @return The dot product in nm².
  */
-inline infix fun Length3d.dot(other: Length3d): Area {
+inline infix fun Length3.dot(other: Length3): Area {
   val dx = this.dx.toDouble(LengthUnit.NANOMETER)
   val dy = this.dy.toDouble(LengthUnit.NANOMETER)
   val dz = this.dz.toDouble(LengthUnit.NANOMETER)
-  val dot = dx * other.dx.toDouble(LengthUnit.NANOMETER) + dy * other.dy.toDouble(LengthUnit.NANOMETER) + dz * other.dz.toDouble(LengthUnit.NANOMETER)
+  val dot =
+    dx * other.dx.toDouble(LengthUnit.NANOMETER) + dy * other.dy.toDouble(LengthUnit.NANOMETER) +
+      dz * other.dz.toDouble(LengthUnit.NANOMETER)
   return Area.from(dot, AreaUnit.SQUARE_NANOMETER)
 }
 
 /**
- * Returns the cross product of this distance with [other] as an [Area3d] in nanometer².
+ * Returns the cross product of this distance with [other] as an [Area3] in nanometer².
  *
  * @param other The distance to take the cross product with.
- * @return A new [Area3d] representing the cross product in nm².
+ * @return A new [Area3] representing the cross product in nm².
  */
-inline infix fun Length3d.cross(other: Length3d): Area3d = cross(other, LengthUnit.NANOMETER)
+inline infix fun Length3.cross(other: Length3): Area3 = cross(other, LengthUnit.NANOMETER)
 
 /**
- * Returns the cross product of this distance with [other] as an [Area3d].
+ * Returns the cross product of this distance with [other] as an [Area3].
  *
  * @param other The distance to take the cross product with.
  * @param unit The unit the result is expressed in (squared).
- * @return A new [Area3d] representing the cross product in [unit]².
+ * @return A new [Area3] representing the cross product in [unit]².
  */
-fun Length3d.cross(
-  other: Length3d,
+fun Length3.cross(
+  other: Length3,
   unit: LengthUnit,
-): Area3d {
+): Area3 {
   val dx = this.dx.toDouble(unit)
   val dy = this.dy.toDouble(unit)
   val dz = this.dz.toDouble(unit)
   val areaUnit = AreaUnit.from(unit)
-  return Area3d(
+  return Area3(
     ax = Area.from(dy * other.dz.toDouble(unit) - dz * other.dy.toDouble(unit), areaUnit),
     ay = Area.from(dz * other.dx.toDouble(unit) - dx * other.dz.toDouble(unit), areaUnit),
     az = Area.from(dx * other.dy.toDouble(unit) - dy * other.dx.toDouble(unit), areaUnit),
@@ -301,31 +307,31 @@ fun Length3d.cross(
 }
 
 /**
- * Returns the left-handed cross product of this distance with [other] as an [Area3d] in nanometer².
+ * Returns the left-handed cross product of this distance with [other] as an [Area3] in nanometer².
  * Equivalent to `-(this cross other)` when using a right-handed system.
  *
  * @param other The distance to take the left-handed cross product with.
- * @return A new [Area3d] representing the left-handed cross product in nm².
+ * @return A new [Area3] representing the left-handed cross product in nm².
  */
-inline infix fun Length3d.crossLH(other: Length3d): Area3d = crossLH(other, LengthUnit.NANOMETER)
+inline infix fun Length3.crossLH(other: Length3): Area3 = crossLH(other, LengthUnit.NANOMETER)
 
 /**
- * Returns the left-handed cross product of this distance with [other] as an [Area3d].
+ * Returns the left-handed cross product of this distance with [other] as an [Area3].
  * Equivalent to the negated right-handed cross when interpreted in a right-handed system.
  *
  * @param other The distance to take the left-handed cross product with.
  * @param unit The unit the result is expressed in (squared).
- * @return A new [Area3d] representing the left-handed cross product in [unit]².
+ * @return A new [Area3] representing the left-handed cross product in [unit]².
  */
-fun Length3d.crossLH(
-  other: Length3d,
+fun Length3.crossLH(
+  other: Length3,
   unit: LengthUnit,
-): Area3d {
+): Area3 {
   val dx = this.dx.toDouble(unit)
   val dy = this.dy.toDouble(unit)
   val dz = this.dz.toDouble(unit)
   val areaUnit = AreaUnit.from(unit)
-  return Area3d(
+  return Area3(
     ax = Area.from(dz * other.dy.toDouble(unit) - dy * other.dz.toDouble(unit), areaUnit),
     ay = Area.from(dx * other.dz.toDouble(unit) - dz * other.dx.toDouble(unit), areaUnit),
     az = Area.from(dy * other.dx.toDouble(unit) - dx * other.dy.toDouble(unit), areaUnit),
@@ -337,16 +343,16 @@ fun Length3d.crossLH(
  * After this operation, dx, dy, and dz become -dx, -dy, and -dz respectively.
  * This operation mutates the original distance.
  */
-inline fun MutableLength3d.negate() = map("Negation") { _, value -> -value }
+inline fun MutableLength3.negate() = map("Negation") { _, value -> -value }
 
 /**
- * Returns a new [ImmutableLength3d] with all components negated.
+ * Returns a new [ImmutableLength3] with all components negated.
  * The original distance remains unchanged.
  *
  * @return A new distance with negated components.
  */
-inline operator fun Length3d.unaryMinus(): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.unaryMinus(): ImmutableLength3 =
+  Length3.copyOf(this) {
     negate()
   }
 
@@ -356,7 +362,7 @@ inline operator fun Length3d.unaryMinus(): ImmutableLength3d =
  *
  * @param other The distance to add.
  */
-inline operator fun MutableLength3d.plusAssign(other: Length3d) =
+inline operator fun MutableLength3.plusAssign(other: Length3) =
   map("Addition of $other") { index, value ->
     when (index) {
       0 -> value + other.dx
@@ -366,13 +372,13 @@ inline operator fun MutableLength3d.plusAssign(other: Length3d) =
   }
 
 /**
- * Returns a new [ImmutableLength3d] representing the sum of this distance and [other].
+ * Returns a new [ImmutableLength3] representing the sum of this distance and [other].
  *
  * @param other The distance to add.
  * @return A new immutable distance containing the component-wise sum.
  */
-inline operator fun Length3d.plus(other: Length3d): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.plus(other: Length3): ImmutableLength3 =
+  Length3.copyOf(this) {
     this += other
   }
 
@@ -382,7 +388,7 @@ inline operator fun Length3d.plus(other: Length3d): ImmutableLength3d =
  *
  * @param other The distance to subtract.
  */
-inline operator fun MutableLength3d.minusAssign(other: Length3d) =
+inline operator fun MutableLength3.minusAssign(other: Length3) =
   map("Subtraction of $other") { index, value ->
     when (index) {
       0 -> value - other.dx
@@ -392,13 +398,13 @@ inline operator fun MutableLength3d.minusAssign(other: Length3d) =
   }
 
 /**
- * Returns a new [ImmutableLength3d] representing the difference of this distance and [other].
+ * Returns a new [ImmutableLength3] representing the difference of this distance and [other].
  *
  * @param other The distance to subtract.
  * @return A new immutable distance containing the component-wise difference.
  */
-inline operator fun Length3d.minus(other: Length3d): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.minus(other: Length3): ImmutableLength3 =
+  Length3.copyOf(this) {
     this -= other
   }
 
@@ -408,20 +414,20 @@ inline operator fun Length3d.minus(other: Length3d): ImmutableLength3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutableLength3d.timesAssign(scalar: Int) =
+inline operator fun MutableLength3.timesAssign(scalar: Int) =
   map("Multiplication by $scalar") { _, value ->
     value * scalar.toLong()
   }
 
 /**
- * Returns a new [ImmutableLength3d] with all components multiplied by the given scalar.
+ * Returns a new [ImmutableLength3] with all components multiplied by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new distance with multiplied components.
  */
-inline operator fun Length3d.times(scalar: Int): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.times(scalar: Int): ImmutableLength3 =
+  Length3.copyOf(this) {
     this *= scalar
   }
 
@@ -431,17 +437,17 @@ inline operator fun Length3d.times(scalar: Int): ImmutableLength3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutableLength3d.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutableLength3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
 
 /**
- * Returns a new [ImmutableLength3d] with all components multiplied by the given scalar.
+ * Returns a new [ImmutableLength3] with all components multiplied by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new distance with multiplied components.
  */
-inline operator fun Length3d.times(scalar: Double): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.times(scalar: Double): ImmutableLength3 =
+  Length3.copyOf(this) {
     this *= scalar
   }
 
@@ -452,21 +458,21 @@ inline operator fun Length3d.times(scalar: Double): ImmutableLength3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableLength3d.divAssign(scalar: Int) {
-  require(scalar != 0) { "Cannot divide a Length3d by 0" }
+inline operator fun MutableLength3.divAssign(scalar: Int) {
+  require(scalar != 0) { "Cannot divide a Length3 by 0" }
   map("Division by $scalar") { _, value -> value / scalar.toLong() }
 }
 
 /**
- * Returns a new [ImmutableLength3d] with all components divided by the given scalar.
+ * Returns a new [ImmutableLength3] with all components divided by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new distance with divided components.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Length3d.div(scalar: Int): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.div(scalar: Int): ImmutableLength3 =
+  Length3.copyOf(this) {
     this /= scalar
   }
 
@@ -477,21 +483,21 @@ inline operator fun Length3d.div(scalar: Int): ImmutableLength3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableLength3d.divAssign(scalar: Double) {
-  require(scalar != 0.0) { "Cannot divide a Length3d by 0.0" }
+inline operator fun MutableLength3.divAssign(scalar: Double) {
+  require(scalar != 0.0) { "Cannot divide a Length3 by 0.0" }
   map("Division by $scalar") { _, value -> value / scalar }
 }
 
 /**
- * Returns a new [ImmutableLength3d] with all components divided by the given scalar.
+ * Returns a new [ImmutableLength3] with all components divided by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new distance with divided components.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Length3d.div(scalar: Double): ImmutableLength3d =
-  Length3d.copyOf(this) {
+inline operator fun Length3.div(scalar: Double): ImmutableLength3 =
+  Length3.copyOf(this) {
     this /= scalar
   }
 
@@ -507,7 +513,7 @@ inline operator fun Length3d.div(scalar: Double): ImmutableLength3d =
  * 0: dx, 1: dy, 2: dz.
  */
 @Suppress("UNUSED_PARAMETER")
-inline fun MutableLength3d.map(
+inline fun MutableLength3.map(
   actionName: String? = null,
   action: (index: Int, value: Length) -> Length,
 ) {
@@ -523,28 +529,28 @@ inline fun MutableLength3d.map(
 
 // region implementations
 
-private val LENGTH3D_ZERO: ImmutableLength3d = ImmutableLength3dImpl(Length.ZERO, Length.ZERO, Length.ZERO)
+private val LENGTH3_ZERO: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, Length.ZERO, Length.ZERO)
 
-private data class ImmutableLength3dImpl(
+private data class ImmutableLength3Impl(
   override var dx: Length,
   override var dy: Length,
   override var dz: Length,
-) : ImmutableLength3d {
-  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
+) : ImmutableLength3 {
+  override fun toString(): String = "Length3(dx=$dx, dy=$dy, dz=$dz)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Length3d -> false
+      other !is Length3 -> false
       else -> componentsEqual(this, other)
     }
 
   override fun hashCode(): Int = componentsHash(dx, dy, dz)
 }
 
-private value class Length3dMutableWrapper(
-  private val impl: ImmutableLength3dImpl,
-) : MutableLength3d {
+private value class Length3MutableWrapper(
+  private val impl: ImmutableLength3Impl,
+) : MutableLength3 {
   override var dx: Length
     get() = impl.dx
     set(value) {
@@ -561,7 +567,7 @@ private value class Length3dMutableWrapper(
       impl.dz = value
     }
 
-  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
+  override fun toString(): String = "Length3(dx=$dx, dy=$dy, dz=$dz)"
 
   override val dxFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
@@ -573,11 +579,11 @@ private value class Length3dMutableWrapper(
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
-private class MutableLength3dImpl(
+private class MutableLength3Impl(
   dx: Length,
   dy: Length,
   dz: Length,
-) : MutableLength3d {
+) : MutableLength3 {
   private var generation: Int = 0
   private val lock = ReentrantLock()
   private val _dxFlow: MutableStateFlow<Length> = MutableStateFlow(dx)
@@ -613,12 +619,12 @@ private class MutableLength3dImpl(
   override val dyFlow: StateFlow<Length> get() = _dyFlow.asStateFlow()
   override val dzFlow: StateFlow<Length> get() = _dzFlow.asStateFlow()
 
-  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
+  override fun toString(): String = "Length3(dx=$dx, dy=$dy, dz=$dz)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Length3d -> false
+      other !is Length3 -> false
       else -> componentsEqual(this, other)
     }
 
@@ -627,7 +633,7 @@ private class MutableLength3dImpl(
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
-    original: MutableLength3dImpl,
+    original: MutableLength3Impl,
   ) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
     private val knownGeneration: Int = original.lock.withLock { original.generation }
@@ -661,8 +667,8 @@ private class MutableLength3dImpl(
 }
 
 private fun componentsEqual(
-  a: Length3d,
-  b: Length3d,
+  a: Length3,
+  b: Length3,
 ): Boolean =
   a.dx == b.dx &&
     a.dy == b.dy &&

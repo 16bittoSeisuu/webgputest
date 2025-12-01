@@ -230,15 +230,25 @@ value class Area internal constructor(
     val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
     val (value, unit) =
       when {
-        absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER && SQUARE_NANOMETERS_PER_KILOMETER.isFinite() ->
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER && SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> {
           absSquareNanometers / SQUARE_NANOMETERS_PER_KILOMETER to AreaUnit.SQUARE_KILOMETER
-        absSquareNanometers >= SQUARE_NANOMETERS_PER_METER ->
+        }
+
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_METER -> {
           absSquareNanometers / SQUARE_NANOMETERS_PER_METER to AreaUnit.SQUARE_METER
-        absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER ->
+        }
+
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> {
           absSquareNanometers / SQUARE_NANOMETERS_PER_MILLIMETER to AreaUnit.SQUARE_MILLIMETER
-        absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER ->
+        }
+
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER -> {
           absSquareNanometers / SQUARE_NANOMETERS_PER_MICROMETER to AreaUnit.SQUARE_MICROMETER
-        else -> absSquareNanometers to AreaUnit.SQUARE_NANOMETER
+        }
+
+        else -> {
+          absSquareNanometers to AreaUnit.SQUARE_NANOMETER
+        }
       }
     val formatted = formatAreaValue(value)
     return if (isNegative) {
@@ -255,13 +265,13 @@ value class Area internal constructor(
     val ZERO: Area = Area(0L)
 
     /**
-    * Creates an [Area] from a [Long] value with the specified [unit].
-    *
-    * @param value The magnitude expressed in [unit].
-    * @param unit The [AreaUnit] describing the input value.
-    * @return The created [Area].
-    * @throws ArithmeticException If the conversion overflows [Long].
-    */
+     * Creates an [Area] from a [Long] value with the specified [unit].
+     *
+     * @param value The magnitude expressed in [unit].
+     * @param unit The [AreaUnit] describing the input value.
+     * @return The created [Area].
+     * @throws ArithmeticException If the conversion overflows [Long].
+     */
     fun from(
       value: Long,
       unit: AreaUnit = AreaUnit.SQUARE_NANOMETER,
@@ -359,7 +369,10 @@ operator fun Double.times(area: Area): Area = area * this
 
 private fun AreaUnit.toSquareNanometers(value: Long): Long =
   when (this) {
-    AreaUnit.SQUARE_NANOMETER -> value
+    AreaUnit.SQUARE_NANOMETER -> {
+      value
+    }
+
     else -> {
       val scaled = value.toDouble() * nanometersSquaredPerUnit
       ensureInLongRange(scaled, "Area $value $this cannot be represented as square nanometers.")
