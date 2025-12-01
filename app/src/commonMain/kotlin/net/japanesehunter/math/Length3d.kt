@@ -17,26 +17,26 @@ import kotlin.math.sqrt
 
 /**
  * Represents a distance or displacement in 3D space.
- * This struct may be mutable. If so, then `is MutableDistance3d == true`.
- * [dx], [dy], and [dz] are all represented as [Distance] values.
+ * This struct may be mutable. If so, then `is MutableLength3d == true`.
+ * [dx], [dy], and [dz] are all represented as [Length] values.
  *
  * @author Int16
  */
-sealed interface Distance3d {
+sealed interface Length3d {
   /**
-   * The delta along the x-axis as a [Distance].
+   * The delta along the x-axis as a [Length].
    */
-  val dx: Distance
+  val dx: Length
 
   /**
-   * The delta along the y-axis as a [Distance].
+   * The delta along the y-axis as a [Length].
    */
-  val dy: Distance
+  val dy: Length
 
   /**
-   * The delta along the z-axis as a [Distance].
+   * The delta along the z-axis as a [Length].
    */
-  val dz: Distance
+  val dz: Length
 
   /**
    * Component operator for destructuring declarations.
@@ -66,39 +66,39 @@ sealed interface Distance3d {
  * Represents an immutable distance in 3D space.
  * Because it is immutable, all operations produce a new instance.
  * To preserve immutability, users cannot implement this interface.
- * [dx], [dy], and [dz] are all represented as [Distance] values.
+ * [dx], [dy], and [dz] are all represented as [Length] values.
  */
-sealed interface ImmutableDistance3d : Distance3d
+sealed interface ImmutableLength3d : Length3d
 
 /**
  * Represents a mutable distance in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
- * [dx], [dy], and [dz] are all represented as [Distance] values.
+ * [dx], [dy], and [dz] are all represented as [Length] values.
  */
-interface MutableDistance3d :
-  Distance3d,
+interface MutableLength3d :
+  Length3d,
   Observable {
-  override var dx: Distance
-  override var dy: Distance
-  override var dz: Distance
+  override var dx: Length
+  override var dy: Length
+  override var dz: Length
 
   /**
    * A [StateFlow] that emits the current delta along the x-axis.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val dxFlow: StateFlow<Distance>
+  val dxFlow: StateFlow<Length>
 
   /**
    * A [StateFlow] that emits the current delta along the y-axis.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val dyFlow: StateFlow<Distance>
+  val dyFlow: StateFlow<Length>
 
   /**
    * A [StateFlow] that emits the current delta along the z-axis.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val dzFlow: StateFlow<Distance>
+  val dzFlow: StateFlow<Length>
 
   override fun observe(): ObserveTicket
 
@@ -112,60 +112,60 @@ interface MutableDistance3d :
 /**
  * The zero distance (0, 0, 0) in three-dimensional space.
  */
-val Distance3d.Companion.zero: ImmutableDistance3d get() = DISTANCE3D_ZERO
+val Length3d.Companion.zero: ImmutableLength3d get() = LENGTH3D_ZERO
 
 // endregion
 
 // region factory functions
 
 /**
- * Creates a [Distance3d] by specifying each component in three-dimensional space.
- * You can treat it as a [MutableDistance3d] only at the very beginning using
- * a [mutator], but after that, it is frozen as an [ImmutableDistance3d].
- * Even if you use `as MutableDistance3d` after freezing, the value cannot be
+ * Creates a [Length3d] by specifying each component in three-dimensional space.
+ * You can treat it as a [MutableLength3d] only at the very beginning using
+ * a [mutator], but after that, it is frozen as an [ImmutableLength3d].
+ * Even if you use `as MutableLength3d` after freezing, the value cannot be
  * changed and will result in an error.
  *
  * @param dx The delta along the x-axis.
  * @param dy The delta along the y-axis.
  * @param dz The delta along the z-axis.
- * @param mutator A scope for [MutableDistance3d] for initialization. If null, nothing is done.
- * @return The frozen, immutable [ImmutableDistance3d].
+ * @param mutator A scope for [MutableLength3d] for initialization. If null, nothing is done.
+ * @return The frozen, immutable [ImmutableLength3d].
  */
 @Suppress("FunctionName")
-fun Distance3d(
-  dx: Distance = Distance.ZERO,
-  dy: Distance = Distance.ZERO,
-  dz: Distance = Distance.ZERO,
-  mutator: (MutableDistance3d.() -> Unit)? = null,
-): ImmutableDistance3d {
+fun Length3d(
+  dx: Length = Length.ZERO,
+  dy: Length = Length.ZERO,
+  dz: Length = Length.ZERO,
+  mutator: (MutableLength3d.() -> Unit)? = null,
+): ImmutableLength3d {
   if (dx.isZero && dy.isZero && dz.isZero && mutator == null) {
-    return Distance3d.zero
+    return Length3d.zero
   }
-  val impl = ImmutableDistance3dImpl(dx, dy, dz)
+  val impl = ImmutableLength3dImpl(dx, dy, dz)
   if (mutator != null) {
-    val mutableWrapper = Distance3dMutableWrapper(impl)
+    val mutableWrapper = Length3dMutableWrapper(impl)
     mutator(mutableWrapper)
   }
   return impl
 }
 
 /**
- * Creates an [ImmutableDistance3d] by copying an existing one.
- * If the original instance is an [ImmutableDistance3d] and [mutator] is null,
+ * Creates an [ImmutableLength3d] by copying an existing one.
+ * If the original instance is an [ImmutableLength3d] and [mutator] is null,
  * the same instance is returned without creating anything new.
  *
  * @param copyFrom The instance to copy from. This will be reused if possible.
- * @param mutator A [MutableDistance3d] scope to adjust the values immediately after copying.
- * @return The frozen, immutable [ImmutableDistance3d].
+ * @param mutator A [MutableLength3d] scope to adjust the values immediately after copying.
+ * @return The frozen, immutable [ImmutableLength3d].
  */
-inline fun Distance3d.Companion.copyOf(
-  copyFrom: Distance3d,
-  noinline mutator: (MutableDistance3d.() -> Unit)? = null,
-): ImmutableDistance3d =
-  if (copyFrom is ImmutableDistance3d && mutator == null) {
+inline fun Length3d.Companion.copyOf(
+  copyFrom: Length3d,
+  noinline mutator: (MutableLength3d.() -> Unit)? = null,
+): ImmutableLength3d =
+  if (copyFrom is ImmutableLength3d && mutator == null) {
     copyFrom
   } else {
-    Distance3d(
+    Length3d(
       dx = copyFrom.dx,
       dy = copyFrom.dy,
       dz = copyFrom.dz,
@@ -174,28 +174,28 @@ inline fun Distance3d.Companion.copyOf(
   }
 
 /**
- * Creates a [MutableDistance3d] by specifying each component in three-dimensional space.
+ * Creates a [MutableLength3d] by specifying each component in three-dimensional space.
  *
  * @param dx The delta along the x-axis.
  * @param dy The delta along the y-axis.
  * @param dz The delta along the z-axis.
- * @return The created [MutableDistance3d].
+ * @return The created [MutableLength3d].
  */
-fun MutableDistance3d(
-  dx: Distance = Distance.ZERO,
-  dy: Distance = Distance.ZERO,
-  dz: Distance = Distance.ZERO,
-): MutableDistance3d {
-  return MutableDistance3dImpl(dx, dy, dz)
+fun MutableLength3d(
+  dx: Length = Length.ZERO,
+  dy: Length = Length.ZERO,
+  dz: Length = Length.ZERO,
+): MutableLength3d {
+  return MutableLength3dImpl(dx, dy, dz)
 }
 
 /**
- * Creates a [MutableDistance3d] by copying an existing [Distance3d].
+ * Creates a [MutableLength3d] by copying an existing [Length3d].
  *
  * @param copyFrom The instance to copy from.
- * @return The created [MutableDistance3d].
+ * @return The created [MutableLength3d].
  */
-fun MutableDistance3d.Companion.copyOf(copyFrom: Distance3d): MutableDistance3d = MutableDistance3d(copyFrom.dx, copyFrom.dy, copyFrom.dz)
+fun MutableLength3d.Companion.copyOf(copyFrom: Length3d): MutableLength3d = MutableLength3d(copyFrom.dx, copyFrom.dy, copyFrom.dz)
 
 // endregion
 
@@ -204,23 +204,23 @@ fun MutableDistance3d.Companion.copyOf(copyFrom: Distance3d): MutableDistance3d 
 /**
  * Returns `true` if this distance is exactly (0, 0, 0).
  */
-inline val Distance3d.isZero: Boolean
+inline val Length3d.isZero: Boolean
   get() = dx.isZero && dy.isZero && dz.isZero
 
 /**
- * Returns the Euclidean magnitude of this distance as a [Distance].
+ * Returns the Euclidean magnitude of this distance as a [Length].
  * Uses a numerically stable algorithm to avoid overflow/underflow by working
  * in nanometers.
  *
  * @return The magnitude of this distance.
  */
-inline val Distance3d.magnitude: Distance
+inline val Length3d.magnitude: Length
   get() {
-    val dxNm = dx.toDouble(DistanceUnit.NANOMETER)
-    val dyNm = dy.toDouble(DistanceUnit.NANOMETER)
-    val dzNm = dz.toDouble(DistanceUnit.NANOMETER)
+    val dxNm = dx.toDouble(LengthUnit.NANOMETER)
+    val dyNm = dy.toDouble(LengthUnit.NANOMETER)
+    val dzNm = dz.toDouble(LengthUnit.NANOMETER)
     val max = maxOf(abs(dxNm), abs(dyNm), abs(dzNm))
-    if (max == 0.0) return Distance.ZERO
+    if (max == 0.0) return Length.ZERO
     val minThreshold = 1e-154
     val maxThreshold = 1e154
     val magnitudeNm =
@@ -229,33 +229,45 @@ inline val Distance3d.magnitude: Distance
       } else {
         hypot(hypot(dxNm, dyNm), dzNm)
       }
-    return Distance.from(magnitudeNm, DistanceUnit.NANOMETER)
+    return Length.from(magnitudeNm, LengthUnit.NANOMETER)
   }
 
 /**
- * Returns the dot product of this distance with [other] in nanometer².
+ * Normalizes this mutable vector to unit length (1 [unit]).
  *
- * @param other The distance to take the dot product with.
- * @return The scalar dot product in nm².
+ * @param unit The unit to measure the magnitude in (default: meters).
+ * @throws IllegalArgumentException if the vector has zero length.
  */
-inline infix fun Distance3d.dot(other: Distance3d): Double = dot(other, DistanceUnit.NANOMETER)
+inline fun MutableLength3d.normalize(unit: LengthUnit = LengthUnit.METER) {
+  val mag = magnitude.toDouble(unit)
+  require(mag != 0.0) { "Cannot normalize a zero-length vector." }
+  val inv = 1.0 / mag
+  map("Normalization") { _, value -> value * inv }
+}
 
 /**
- * Returns the dot product of this distance with [other], reported in the
- * squared [unit].
+ * Returns a normalized copy of this vector with length 1 [unit].
+ *
+ * @param unit The unit to measure the magnitude in (default: meters).
+ * @throws IllegalArgumentException if the vector has zero length.
+ */
+inline fun Length3d.normalized(unit: LengthUnit = LengthUnit.METER): ImmutableLength3d =
+  Length3d.copyOf(this) {
+    normalize(unit)
+  }
+
+/**
+ * Returns the dot product of this distance with [other] as an [Area] (nanometer²).
  *
  * @param other The distance to take the dot product with.
- * @param unit The unit the result is expressed in (squared).
- * @return The scalar dot product in [unit]².
+ * @return The dot product in nm².
  */
-fun Distance3d.dot(
-  other: Distance3d,
-  unit: DistanceUnit,
-): Double {
-  val dx = this.dx.toDouble(unit)
-  val dy = this.dy.toDouble(unit)
-  val dz = this.dz.toDouble(unit)
-  return dx * other.dx.toDouble(unit) + dy * other.dy.toDouble(unit) + dz * other.dz.toDouble(unit)
+inline infix fun Length3d.dot(other: Length3d): Area {
+  val dx = this.dx.toDouble(LengthUnit.NANOMETER)
+  val dy = this.dy.toDouble(LengthUnit.NANOMETER)
+  val dz = this.dz.toDouble(LengthUnit.NANOMETER)
+  val dot = dx * other.dx.toDouble(LengthUnit.NANOMETER) + dy * other.dy.toDouble(LengthUnit.NANOMETER) + dz * other.dz.toDouble(LengthUnit.NANOMETER)
+  return Area.from(dot, AreaUnit.SQUARE_NANOMETER)
 }
 
 /**
@@ -264,7 +276,7 @@ fun Distance3d.dot(
  * @param other The distance to take the cross product with.
  * @return A new [Area3d] representing the cross product in nm².
  */
-inline infix fun Distance3d.cross(other: Distance3d): Area3d = cross(other, DistanceUnit.NANOMETER)
+inline infix fun Length3d.cross(other: Length3d): Area3d = cross(other, LengthUnit.NANOMETER)
 
 /**
  * Returns the cross product of this distance with [other] as an [Area3d].
@@ -273,9 +285,9 @@ inline infix fun Distance3d.cross(other: Distance3d): Area3d = cross(other, Dist
  * @param unit The unit the result is expressed in (squared).
  * @return A new [Area3d] representing the cross product in [unit]².
  */
-fun Distance3d.cross(
-  other: Distance3d,
-  unit: DistanceUnit,
+fun Length3d.cross(
+  other: Length3d,
+  unit: LengthUnit,
 ): Area3d {
   val dx = this.dx.toDouble(unit)
   val dy = this.dy.toDouble(unit)
@@ -295,7 +307,7 @@ fun Distance3d.cross(
  * @param other The distance to take the left-handed cross product with.
  * @return A new [Area3d] representing the left-handed cross product in nm².
  */
-inline infix fun Distance3d.crossLH(other: Distance3d): Area3d = crossLH(other, DistanceUnit.NANOMETER)
+inline infix fun Length3d.crossLH(other: Length3d): Area3d = crossLH(other, LengthUnit.NANOMETER)
 
 /**
  * Returns the left-handed cross product of this distance with [other] as an [Area3d].
@@ -305,9 +317,9 @@ inline infix fun Distance3d.crossLH(other: Distance3d): Area3d = crossLH(other, 
  * @param unit The unit the result is expressed in (squared).
  * @return A new [Area3d] representing the left-handed cross product in [unit]².
  */
-fun Distance3d.crossLH(
-  other: Distance3d,
-  unit: DistanceUnit,
+fun Length3d.crossLH(
+  other: Length3d,
+  unit: LengthUnit,
 ): Area3d {
   val dx = this.dx.toDouble(unit)
   val dy = this.dy.toDouble(unit)
@@ -325,16 +337,16 @@ fun Distance3d.crossLH(
  * After this operation, dx, dy, and dz become -dx, -dy, and -dz respectively.
  * This operation mutates the original distance.
  */
-inline fun MutableDistance3d.negate() = map("Negation") { _, value -> -value }
+inline fun MutableLength3d.negate() = map("Negation") { _, value -> -value }
 
 /**
- * Returns a new [ImmutableDistance3d] with all components negated.
+ * Returns a new [ImmutableLength3d] with all components negated.
  * The original distance remains unchanged.
  *
  * @return A new distance with negated components.
  */
-inline operator fun Distance3d.unaryMinus(): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.unaryMinus(): ImmutableLength3d =
+  Length3d.copyOf(this) {
     negate()
   }
 
@@ -344,7 +356,7 @@ inline operator fun Distance3d.unaryMinus(): ImmutableDistance3d =
  *
  * @param other The distance to add.
  */
-inline operator fun MutableDistance3d.plusAssign(other: Distance3d) =
+inline operator fun MutableLength3d.plusAssign(other: Length3d) =
   map("Addition of $other") { index, value ->
     when (index) {
       0 -> value + other.dx
@@ -354,13 +366,13 @@ inline operator fun MutableDistance3d.plusAssign(other: Distance3d) =
   }
 
 /**
- * Returns a new [ImmutableDistance3d] representing the sum of this distance and [other].
+ * Returns a new [ImmutableLength3d] representing the sum of this distance and [other].
  *
  * @param other The distance to add.
  * @return A new immutable distance containing the component-wise sum.
  */
-inline operator fun Distance3d.plus(other: Distance3d): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.plus(other: Length3d): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this += other
   }
 
@@ -370,7 +382,7 @@ inline operator fun Distance3d.plus(other: Distance3d): ImmutableDistance3d =
  *
  * @param other The distance to subtract.
  */
-inline operator fun MutableDistance3d.minusAssign(other: Distance3d) =
+inline operator fun MutableLength3d.minusAssign(other: Length3d) =
   map("Subtraction of $other") { index, value ->
     when (index) {
       0 -> value - other.dx
@@ -380,13 +392,13 @@ inline operator fun MutableDistance3d.minusAssign(other: Distance3d) =
   }
 
 /**
- * Returns a new [ImmutableDistance3d] representing the difference of this distance and [other].
+ * Returns a new [ImmutableLength3d] representing the difference of this distance and [other].
  *
  * @param other The distance to subtract.
  * @return A new immutable distance containing the component-wise difference.
  */
-inline operator fun Distance3d.minus(other: Distance3d): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.minus(other: Length3d): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this -= other
   }
 
@@ -396,20 +408,20 @@ inline operator fun Distance3d.minus(other: Distance3d): ImmutableDistance3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutableDistance3d.timesAssign(scalar: Int) =
+inline operator fun MutableLength3d.timesAssign(scalar: Int) =
   map("Multiplication by $scalar") { _, value ->
     value * scalar.toLong()
   }
 
 /**
- * Returns a new [ImmutableDistance3d] with all components multiplied by the given scalar.
+ * Returns a new [ImmutableLength3d] with all components multiplied by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new distance with multiplied components.
  */
-inline operator fun Distance3d.times(scalar: Int): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.times(scalar: Int): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this *= scalar
   }
 
@@ -419,17 +431,17 @@ inline operator fun Distance3d.times(scalar: Int): ImmutableDistance3d =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutableDistance3d.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutableLength3d.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
 
 /**
- * Returns a new [ImmutableDistance3d] with all components multiplied by the given scalar.
+ * Returns a new [ImmutableLength3d] with all components multiplied by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to multiply by.
  * @return A new distance with multiplied components.
  */
-inline operator fun Distance3d.times(scalar: Double): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.times(scalar: Double): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this *= scalar
   }
 
@@ -440,21 +452,21 @@ inline operator fun Distance3d.times(scalar: Double): ImmutableDistance3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableDistance3d.divAssign(scalar: Int) {
-  require(scalar != 0) { "Cannot divide a Distance3d by 0" }
+inline operator fun MutableLength3d.divAssign(scalar: Int) {
+  require(scalar != 0) { "Cannot divide a Length3d by 0" }
   map("Division by $scalar") { _, value -> value / scalar.toLong() }
 }
 
 /**
- * Returns a new [ImmutableDistance3d] with all components divided by the given scalar.
+ * Returns a new [ImmutableLength3d] with all components divided by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new distance with divided components.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Distance3d.div(scalar: Int): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.div(scalar: Int): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this /= scalar
   }
 
@@ -465,21 +477,21 @@ inline operator fun Distance3d.div(scalar: Int): ImmutableDistance3d =
  * @param scalar The scalar to divide by.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableDistance3d.divAssign(scalar: Double) {
-  require(scalar != 0.0) { "Cannot divide a Distance3d by 0.0" }
+inline operator fun MutableLength3d.divAssign(scalar: Double) {
+  require(scalar != 0.0) { "Cannot divide a Length3d by 0.0" }
   map("Division by $scalar") { _, value -> value / scalar }
 }
 
 /**
- * Returns a new [ImmutableDistance3d] with all components divided by the given scalar.
+ * Returns a new [ImmutableLength3d] with all components divided by the given scalar.
  * The original distance remains unchanged.
  *
  * @param scalar The scalar to divide by.
  * @return A new distance with divided components.
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Distance3d.div(scalar: Double): ImmutableDistance3d =
-  Distance3d.copyOf(this) {
+inline operator fun Length3d.div(scalar: Double): ImmutableLength3d =
+  Length3d.copyOf(this) {
     this /= scalar
   }
 
@@ -495,9 +507,9 @@ inline operator fun Distance3d.div(scalar: Double): ImmutableDistance3d =
  * 0: dx, 1: dy, 2: dz.
  */
 @Suppress("UNUSED_PARAMETER")
-inline fun MutableDistance3d.map(
+inline fun MutableLength3d.map(
   actionName: String? = null,
-  action: (index: Int, value: Distance) -> Distance,
+  action: (index: Int, value: Length) -> Length,
 ) {
   val newDx = action(0, dx)
   val newDy = action(1, dy)
@@ -511,68 +523,68 @@ inline fun MutableDistance3d.map(
 
 // region implementations
 
-private val DISTANCE3D_ZERO: ImmutableDistance3d = ImmutableDistance3dImpl(Distance.ZERO, Distance.ZERO, Distance.ZERO)
+private val LENGTH3D_ZERO: ImmutableLength3d = ImmutableLength3dImpl(Length.ZERO, Length.ZERO, Length.ZERO)
 
-private data class ImmutableDistance3dImpl(
-  override var dx: Distance,
-  override var dy: Distance,
-  override var dz: Distance,
-) : ImmutableDistance3d {
-  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+private data class ImmutableLength3dImpl(
+  override var dx: Length,
+  override var dy: Length,
+  override var dz: Length,
+) : ImmutableLength3d {
+  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Distance3d -> false
+      other !is Length3d -> false
       else -> componentsEqual(this, other)
     }
 
   override fun hashCode(): Int = componentsHash(dx, dy, dz)
 }
 
-private value class Distance3dMutableWrapper(
-  private val impl: ImmutableDistance3dImpl,
-) : MutableDistance3d {
-  override var dx: Distance
+private value class Length3dMutableWrapper(
+  private val impl: ImmutableLength3dImpl,
+) : MutableLength3d {
+  override var dx: Length
     get() = impl.dx
     set(value) {
       impl.dx = value
     }
-  override var dy: Distance
+  override var dy: Length
     get() = impl.dy
     set(value) {
       impl.dy = value
     }
-  override var dz: Distance
+  override var dz: Length
     get() = impl.dz
     set(value) {
       impl.dz = value
     }
 
-  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
 
-  override val dxFlow: StateFlow<Distance>
+  override val dxFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
-  override val dyFlow: StateFlow<Distance>
+  override val dyFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
-  override val dzFlow: StateFlow<Distance>
+  override val dzFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
 
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
-private class MutableDistance3dImpl(
-  dx: Distance,
-  dy: Distance,
-  dz: Distance,
-) : MutableDistance3d {
+private class MutableLength3dImpl(
+  dx: Length,
+  dy: Length,
+  dz: Length,
+) : MutableLength3d {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _dxFlow: MutableStateFlow<Distance> = MutableStateFlow(dx)
-  private val _dyFlow: MutableStateFlow<Distance> = MutableStateFlow(dy)
-  private val _dzFlow: MutableStateFlow<Distance> = MutableStateFlow(dz)
+  private val _dxFlow: MutableStateFlow<Length> = MutableStateFlow(dx)
+  private val _dyFlow: MutableStateFlow<Length> = MutableStateFlow(dy)
+  private val _dzFlow: MutableStateFlow<Length> = MutableStateFlow(dz)
 
-  override var dx: Distance
+  override var dx: Length
     get() = lock.withLock { _dxFlow.value }
     set(value) {
       lock.withLock {
@@ -580,7 +592,7 @@ private class MutableDistance3dImpl(
         _dxFlow.value = value
       }
     }
-  override var dy: Distance
+  override var dy: Length
     get() = lock.withLock { _dyFlow.value }
     set(value) {
       lock.withLock {
@@ -588,7 +600,7 @@ private class MutableDistance3dImpl(
         _dyFlow.value = value
       }
     }
-  override var dz: Distance
+  override var dz: Length
     get() = lock.withLock { _dzFlow.value }
     set(value) {
       lock.withLock {
@@ -597,16 +609,16 @@ private class MutableDistance3dImpl(
       }
     }
 
-  override val dxFlow: StateFlow<Distance> get() = _dxFlow.asStateFlow()
-  override val dyFlow: StateFlow<Distance> get() = _dyFlow.asStateFlow()
-  override val dzFlow: StateFlow<Distance> get() = _dzFlow.asStateFlow()
+  override val dxFlow: StateFlow<Length> get() = _dxFlow.asStateFlow()
+  override val dyFlow: StateFlow<Length> get() = _dyFlow.asStateFlow()
+  override val dzFlow: StateFlow<Length> get() = _dzFlow.asStateFlow()
 
-  override fun toString(): String = "Distance3d(dx=$dx, dy=$dy, dz=$dz)"
+  override fun toString(): String = "Length3d(dx=$dx, dy=$dy, dz=$dz)"
 
   override fun equals(other: Any?): Boolean =
     when {
       this === other -> true
-      other !is Distance3d -> false
+      other !is Length3d -> false
       else -> componentsEqual(this, other)
     }
 
@@ -615,7 +627,7 @@ private class MutableDistance3dImpl(
   override fun observe(): ObserveTicket = Ticket(this)
 
   private class Ticket(
-    original: MutableDistance3dImpl,
+    original: MutableLength3dImpl,
   ) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
     private val knownGeneration: Int = original.lock.withLock { original.generation }
@@ -649,17 +661,17 @@ private class MutableDistance3dImpl(
 }
 
 private fun componentsEqual(
-  a: Distance3d,
-  b: Distance3d,
+  a: Length3d,
+  b: Length3d,
 ): Boolean =
   a.dx == b.dx &&
     a.dy == b.dy &&
     a.dz == b.dz
 
 private fun componentsHash(
-  dx: Distance,
-  dy: Distance,
-  dz: Distance,
+  dx: Length,
+  dy: Length,
+  dz: Length,
 ): Int {
   var result = 17
   result = 31 * result + dx.inWholeNanometers.hashCode()

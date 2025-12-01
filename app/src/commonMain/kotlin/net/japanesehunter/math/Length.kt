@@ -1,6 +1,6 @@
 package net.japanesehunter.math
 
-import net.japanesehunter.math.Distance.Companion.from
+import net.japanesehunter.math.Length.Companion.from
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
@@ -10,13 +10,13 @@ private const val NANOMETERS_PER_METER: Long = 1_000_000_000L
 private const val NANOMETERS_PER_KILOMETER: Long = 1_000_000_000_000L
 
 /**
- * Represents the units supported by [Distance].
+ * Represents the units supported by [Length].
  * Each unit defines how many nanometers it contains.
  *
  * @property nanometersPerUnit The number of nanometers in a single unit.
- * @property symbol The short unit suffix used by [Distance.toString].
+ * @property symbol The short unit suffix used by [Length.toString].
  */
-enum class DistanceUnit(
+enum class LengthUnit(
   internal val nanometersPerUnit: Long,
   internal val symbol: String,
 ) {
@@ -50,15 +50,15 @@ enum class DistanceUnit(
  * Immutable distance value backed by a signed nanometer count in a [Long].
  * Precision is fixed to nanometers; [from] with [Double] rounds to the
  * nearest nanometer and rejects non-finite values.
- * Use [DistanceUnit] to view or construct values in nanometers, micrometers,
+ * Use [LengthUnit] to view or construct values in nanometers, micrometers,
  * millimeters, meters, or kilometers.
  * Arithmetic methods signal overflow with [ArithmeticException].
  *
  * @author Int16
  */
-value class Distance internal constructor(
+value class Length internal constructor(
   private val nanometers: Long,
-) : Comparable<Distance> {
+) : Comparable<Length> {
   /**
    * Returns this distance as a whole number of nanometers.
    */
@@ -94,36 +94,36 @@ value class Distance internal constructor(
     get() = nanometers / NANOMETERS_PER_KILOMETER
 
   /**
-   * Converts this [Distance] to a [Long] value using the specified [unit].
+   * Converts this [Length] to a [Long] value using the specified [unit].
    * The result is truncated toward zero.
    *
-   * @param unit The [DistanceUnit] to convert to.
+   * @param unit The [LengthUnit] to convert to.
    * @return The truncated [Long] representation in [unit].
    */
-  fun toLong(unit: DistanceUnit): Long =
+  fun toLong(unit: LengthUnit): Long =
     when (unit) {
-      DistanceUnit.NANOMETER -> inWholeNanometers
-      DistanceUnit.MICROMETER -> inWholeMicrometers
-      DistanceUnit.MILLIMETER -> inWholeMillimeters
-      DistanceUnit.METER -> inWholeMeters
-      DistanceUnit.KILOMETER -> inWholeKilometers
+      LengthUnit.NANOMETER -> inWholeNanometers
+      LengthUnit.MICROMETER -> inWholeMicrometers
+      LengthUnit.MILLIMETER -> inWholeMillimeters
+      LengthUnit.METER -> inWholeMeters
+      LengthUnit.KILOMETER -> inWholeKilometers
     }
 
   /**
-   * Converts this [Distance] to a [Double] value using the specified [unit].
+   * Converts this [Length] to a [Double] value using the specified [unit].
    *
-   * @param unit The [DistanceUnit] to convert to.
+   * @param unit The [LengthUnit] to convert to.
    * @return The [Double] representation in [unit].
    */
-  fun toDouble(unit: DistanceUnit): Double = nanometers.toDouble() / unit.nanometersPerUnit.toDouble()
+  fun toDouble(unit: LengthUnit): Double = nanometers.toDouble() / unit.nanometersPerUnit.toDouble()
 
   /**
    * Returns the absolute value of this distance.
    */
-  val absoluteValue: Distance
+  val absoluteValue: Length
     get() =
       if (nanometers < 0) {
-        Distance(safeNegate(nanometers))
+        Length(safeNegate(nanometers))
       } else {
         this
       }
@@ -151,55 +151,55 @@ value class Distance internal constructor(
    *
    * @throws ArithmeticException If negation overflows [Long].
    */
-  operator fun unaryMinus(): Distance = Distance(safeNegate(nanometers))
+  operator fun unaryMinus(): Length = Length(safeNegate(nanometers))
 
   /**
-   * Adds another [Distance].
+   * Adds another [Length].
    *
    * @param other The distance to add.
    * @return The sum of the distances.
    * @throws ArithmeticException If the sum overflows [Long].
    */
-  operator fun plus(other: Distance): Distance = Distance(safeAdd(nanometers, other.nanometers))
+  operator fun plus(other: Length): Length = Length(safeAdd(nanometers, other.nanometers))
 
   /**
-   * Subtracts another [Distance].
+   * Subtracts another [Length].
    *
    * @param other The distance to subtract.
    * @return The difference of the distances.
    * @throws ArithmeticException If the subtraction overflows [Long].
    */
-  operator fun minus(other: Distance): Distance = Distance(safeAdd(nanometers, safeNegate(other.nanometers)))
+  operator fun minus(other: Length): Length = Length(safeAdd(nanometers, safeNegate(other.nanometers)))
 
   /**
    * Multiplies this distance by a [Long] factor.
    *
    * @param factor The scaling factor.
-   * @return The scaled [Distance].
+   * @return The scaled [Length].
    * @throws ArithmeticException If the multiplication overflows [Long].
    */
-  operator fun times(factor: Long): Distance = Distance(safeMultiply(nanometers, factor))
+  operator fun times(factor: Long): Length = Length(safeMultiply(nanometers, factor))
 
   /**
    * Multiplies this distance by a [Double] factor.
    * The result is rounded to the nearest nanometer.
    *
    * @param factor The scaling factor. Must be finite.
-   * @return The scaled [Distance].
+   * @return The scaled [Length].
    * @throws IllegalArgumentException If [factor] is not finite.
    */
-  operator fun times(factor: Double): Distance = Distance(scaleDouble(nanometers, factor))
+  operator fun times(factor: Double): Length = Length(scaleDouble(nanometers, factor))
 
   /**
    * Divides this distance by a [Long] divisor.
    *
    * @param divisor The divisor. Must not be zero.
-   * @return The scaled [Distance].
+   * @return The scaled [Length].
    * @throws IllegalArgumentException If [divisor] is zero.
    */
-  operator fun div(divisor: Long): Distance {
+  operator fun div(divisor: Long): Length {
     require(divisor != 0L) { "Cannot divide a distance by zero." }
-    return Distance(nanometers / divisor)
+    return Length(nanometers / divisor)
   }
 
   /**
@@ -207,29 +207,29 @@ value class Distance internal constructor(
    * The result is rounded to the nearest nanometer.
    *
    * @param divisor The divisor. Must be finite and non-zero.
-   * @return The scaled [Distance].
+   * @return The scaled [Length].
    * @throws IllegalArgumentException If [divisor] is not finite or zero.
    */
-  operator fun div(divisor: Double): Distance {
+  operator fun div(divisor: Double): Length {
     require(divisor.isFinite() && divisor != 0.0) {
       "Divisor must be finite and non-zero: $divisor"
     }
-    return Distance(scaleDouble(nanometers, 1.0 / divisor))
+    return Length(scaleDouble(nanometers, 1.0 / divisor))
   }
 
   /**
-   * Divides this distance by another [Distance], returning the ratio.
+   * Divides this distance by another [Length], returning the ratio.
    *
    * @param other The divisor. Must not be zero.
    * @return The ratio as a [Double].
    * @throws IllegalArgumentException If [other] is zero.
    */
-  operator fun div(other: Distance): Double {
+  operator fun div(other: Length): Double {
     require(other.nanometers != 0L) { "Cannot divide by a zero distance." }
     return nanometers.toDouble() / other.nanometers.toDouble()
   }
 
-  override fun compareTo(other: Distance): Int = nanometers.compareTo(other.nanometers)
+  override fun compareTo(other: Length): Int = nanometers.compareTo(other.nanometers)
 
   override fun toString(): String {
     val isNegative = nanometers < 0
@@ -237,26 +237,26 @@ value class Distance internal constructor(
     val (value, unit) =
       when {
         absNanometers >= NANOMETERS_PER_KILOMETER -> {
-          absNanometers.toDouble() / NANOMETERS_PER_KILOMETER to DistanceUnit.KILOMETER
+          absNanometers.toDouble() / NANOMETERS_PER_KILOMETER to LengthUnit.KILOMETER
         }
 
         absNanometers >= NANOMETERS_PER_METER -> {
-          absNanometers.toDouble() / NANOMETERS_PER_METER to DistanceUnit.METER
+          absNanometers.toDouble() / NANOMETERS_PER_METER to LengthUnit.METER
         }
 
         absNanometers >= NANOMETERS_PER_MILLIMETER -> {
-          absNanometers.toDouble() / NANOMETERS_PER_MILLIMETER to DistanceUnit.MILLIMETER
+          absNanometers.toDouble() / NANOMETERS_PER_MILLIMETER to LengthUnit.MILLIMETER
         }
 
         absNanometers >= NANOMETERS_PER_MICROMETER -> {
-          absNanometers.toDouble() / NANOMETERS_PER_MICROMETER to DistanceUnit.MICROMETER
+          absNanometers.toDouble() / NANOMETERS_PER_MICROMETER to LengthUnit.MICROMETER
         }
 
         else -> {
-          absNanometers.toDouble() to DistanceUnit.NANOMETER
+          absNanometers.toDouble() to LengthUnit.NANOMETER
         }
       }
-    val formatted = formatDistanceValue(value)
+    val formatted = formatLengthValue(value)
     return if (isNegative) {
       "-$formatted${unit.symbol}"
     } else {
@@ -268,126 +268,126 @@ value class Distance internal constructor(
     /**
      * A distance of zero nanometers.
      */
-    val ZERO: Distance = Distance(0L)
+    val ZERO: Length = Length(0L)
 
     /**
-     * Creates a [Distance] from a [Long] value with the specified [unit].
+     * Creates a [Length] from a [Long] value with the specified [unit].
      *
      * @param value The magnitude expressed in [unit].
-     * @param unit The [DistanceUnit] describing the input value.
-     * @return The created [Distance].
+     * @param unit The [LengthUnit] describing the input value.
+     * @return The created [Length].
      * @throws ArithmeticException If the conversion overflows [Long].
      */
     fun from(
       value: Long,
-      unit: DistanceUnit = DistanceUnit.NANOMETER,
-    ): Distance = Distance(unit.toNanometers(value))
+      unit: LengthUnit = LengthUnit.NANOMETER,
+    ): Length = Length(unit.toNanometers(value))
 
     /**
-     * Creates a [Distance] from a [Double] value with the specified [unit].
+     * Creates a [Length] from a [Double] value with the specified [unit].
      * The value is rounded to the nearest nanometer.
      *
      * @param value The magnitude expressed in [unit]. Must be finite.
-     * @param unit The [DistanceUnit] describing the input value.
-     * @return The created [Distance].
+     * @param unit The [LengthUnit] describing the input value.
+     * @return The created [Length].
      * @throws IllegalArgumentException If [value] is not finite.
      */
     fun from(
       value: Double,
-      unit: DistanceUnit = DistanceUnit.NANOMETER,
-    ): Distance = Distance(unit.toNanometers(value))
+      unit: LengthUnit = LengthUnit.NANOMETER,
+    ): Length = Length(unit.toNanometers(value))
   }
 }
 
 /**
- * Creates a [Distance] from this [Long] value expressed in nanometers.
+ * Creates a [Length] from this [Long] value expressed in nanometers.
  */
-val Long.nanometers: Distance
-  get() = Distance.from(this, DistanceUnit.NANOMETER)
+val Long.nanometers: Length
+  get() = Length.from(this, LengthUnit.NANOMETER)
 
 /**
- * Creates a [Distance] from this [Long] value expressed in micrometers.
+ * Creates a [Length] from this [Long] value expressed in micrometers.
  */
-val Long.micrometers: Distance
-  get() = Distance.from(this, DistanceUnit.MICROMETER)
+val Long.micrometers: Length
+  get() = Length.from(this, LengthUnit.MICROMETER)
 
 /**
- * Creates a [Distance] from this [Long] value expressed in millimeters.
+ * Creates a [Length] from this [Long] value expressed in millimeters.
  */
-val Long.millimeters: Distance
-  get() = Distance.from(this, DistanceUnit.MILLIMETER)
+val Long.millimeters: Length
+  get() = Length.from(this, LengthUnit.MILLIMETER)
 
 /**
- * Creates a [Distance] from this [Long] value expressed in meters.
+ * Creates a [Length] from this [Long] value expressed in meters.
  */
-val Long.meters: Distance
-  get() = Distance.from(this, DistanceUnit.METER)
+val Long.meters: Length
+  get() = Length.from(this, LengthUnit.METER)
 
 /**
- * Creates a [Distance] from this [Long] value expressed in kilometers.
+ * Creates a [Length] from this [Long] value expressed in kilometers.
  */
-val Long.kilometers: Distance
-  get() = Distance.from(this, DistanceUnit.KILOMETER)
+val Long.kilometers: Length
+  get() = Length.from(this, LengthUnit.KILOMETER)
 
 /**
- * Creates a [Distance] from this [Double] value expressed in nanometers.
+ * Creates a [Length] from this [Double] value expressed in nanometers.
  * The value is rounded to the nearest nanometer.
  */
-val Double.nanometers: Distance
-  get() = Distance.from(this, DistanceUnit.NANOMETER)
+val Double.nanometers: Length
+  get() = Length.from(this, LengthUnit.NANOMETER)
 
 /**
- * Creates a [Distance] from this [Double] value expressed in micrometers.
+ * Creates a [Length] from this [Double] value expressed in micrometers.
  * The value is rounded to the nearest nanometer.
  */
-val Double.micrometers: Distance
-  get() = Distance.from(this, DistanceUnit.MICROMETER)
+val Double.micrometers: Length
+  get() = Length.from(this, LengthUnit.MICROMETER)
 
 /**
- * Creates a [Distance] from this [Double] value expressed in millimeters.
+ * Creates a [Length] from this [Double] value expressed in millimeters.
  * The value is rounded to the nearest nanometer.
  */
-val Double.millimeters: Distance
-  get() = Distance.from(this, DistanceUnit.MILLIMETER)
+val Double.millimeters: Length
+  get() = Length.from(this, LengthUnit.MILLIMETER)
 
 /**
- * Creates a [Distance] from this [Double] value expressed in meters.
+ * Creates a [Length] from this [Double] value expressed in meters.
  * The value is rounded to the nearest nanometer.
  */
-val Double.meters: Distance
-  get() = Distance.from(this, DistanceUnit.METER)
+val Double.meters: Length
+  get() = Length.from(this, LengthUnit.METER)
 
 /**
- * Creates a [Distance] from this [Double] value expressed in kilometers.
+ * Creates a [Length] from this [Double] value expressed in kilometers.
  * The value is rounded to the nearest nanometer.
  */
-val Double.kilometers: Distance
-  get() = Distance.from(this, DistanceUnit.KILOMETER)
+val Double.kilometers: Length
+  get() = Length.from(this, LengthUnit.KILOMETER)
 
 /**
- * Multiplies a [Double] by a [Distance].
+ * Multiplies a [Double] by a [Length].
  *
  * @receiver The scaling factor. Must be finite.
  * @param distance The distance to scale.
- * @return The scaled [Distance].
+ * @return The scaled [Length].
  */
-operator fun Double.times(distance: Distance): Distance = distance * this
+operator fun Double.times(distance: Length): Length = distance * this
 
-private fun DistanceUnit.toNanometers(value: Long): Long =
+private fun LengthUnit.toNanometers(value: Long): Long =
   when (this) {
-    DistanceUnit.NANOMETER -> value
-    DistanceUnit.MICROMETER -> safeMultiply(value, NANOMETERS_PER_MICROMETER)
-    DistanceUnit.MILLIMETER -> safeMultiply(value, NANOMETERS_PER_MILLIMETER)
-    DistanceUnit.METER -> safeMultiply(value, NANOMETERS_PER_METER)
-    DistanceUnit.KILOMETER -> safeMultiply(value, NANOMETERS_PER_KILOMETER)
+    LengthUnit.NANOMETER -> value
+    LengthUnit.MICROMETER -> safeMultiply(value, NANOMETERS_PER_MICROMETER)
+    LengthUnit.MILLIMETER -> safeMultiply(value, NANOMETERS_PER_MILLIMETER)
+    LengthUnit.METER -> safeMultiply(value, NANOMETERS_PER_METER)
+    LengthUnit.KILOMETER -> safeMultiply(value, NANOMETERS_PER_KILOMETER)
   }
 
-private fun DistanceUnit.toNanometers(value: Double): Long {
-  require(value.isFinite()) { "Distance must be finite: $value $this" }
+private fun LengthUnit.toNanometers(value: Double): Long {
+  require(value.isFinite()) { "Length must be finite: $value $this" }
   val scaled = value * nanometersPerUnit.toDouble()
   require(scaled.isFinite()) { "Converted distance is not finite: $scaled" }
   require(scaled <= Long.MAX_VALUE && scaled >= Long.MIN_VALUE) {
-    "Distance $value $this cannot be represented as nanometers."
+    "Length $value $this cannot be represented as nanometers."
   }
   return scaled.roundToLong()
 }
@@ -442,7 +442,7 @@ private fun absoluteNanometers(value: Long): Long =
     abs(value)
   }
 
-private fun formatDistanceValue(value: Double): String {
+private fun formatLengthValue(value: Double): String {
   val rounded = value.roundToLong()
   return if (rounded.toDouble() == value) {
     rounded.toString()

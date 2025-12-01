@@ -15,25 +15,25 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 /**
  * Represents a read-only point in 3D space.
  * This struct may be mutable. If so, then `is MutablePoint3d == true`.
- * [x], [y], and [z] are all represented as [Distance] values.
+ * [x], [y], and [z] are all represented as [Length] values.
  *
  * @author Int16
  */
 sealed interface Point3d {
   /**
-   * The x-coordinate of the point as a [Distance].
+   * The x-coordinate of the point as a [Length].
    */
-  val x: Distance
+  val x: Length
 
   /**
-   * The y-coordinate of the point as a [Distance].
+   * The y-coordinate of the point as a [Length].
    */
-  val y: Distance
+  val y: Length
 
   /**
-   * The z-coordinate of the point as a [Distance].
+   * The z-coordinate of the point as a [Length].
    */
-  val z: Distance
+  val z: Length
 
   /**
    * Component operator for destructuring declarations.
@@ -63,39 +63,39 @@ sealed interface Point3d {
  * Represents an immutable point in 3D space.
  * Because it is immutable, all operations produce a new instance.
  * To preserve immutability, users cannot implement this interface.
- * [x], [y], and [z] are all represented as [Distance] values.
+ * [x], [y], and [z] are all represented as [Length] values.
  */
 sealed interface ImmutablePoint3d : Point3d
 
 /**
  * Represents a mutable point in 3D space.
  * Changes in value can be monitored via [StateFlow] and [Observable.observe].
- * [x], [y], and [z] are all represented as [Distance] values.
+ * [x], [y], and [z] are all represented as [Length] values.
  */
 interface MutablePoint3d :
   Point3d,
   Observable {
-  override var x: Distance
-  override var y: Distance
-  override var z: Distance
+  override var x: Length
+  override var y: Length
+  override var z: Length
 
   /**
    * A [StateFlow] that emits the current x-coordinate of the point.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val xFlow: StateFlow<Distance>
+  val xFlow: StateFlow<Length>
 
   /**
    * A [StateFlow] that emits the current y-coordinate of the point.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val yFlow: StateFlow<Distance>
+  val yFlow: StateFlow<Length>
 
   /**
    * A [StateFlow] that emits the current z-coordinate of the point.
-   * Always emits [Distance] values.
+   * Always emits [Length] values.
    */
-  val zFlow: StateFlow<Distance>
+  val zFlow: StateFlow<Length>
 
   override fun observe(): ObserveTicket
 
@@ -224,9 +224,9 @@ val Point3d.Companion.zero: ImmutablePoint3d get() = POINT3D_ZERO
  */
 @Suppress("FunctionName")
 fun Point3d(
-  x: Distance = Distance.ZERO,
-  y: Distance = Distance.ZERO,
-  z: Distance = Distance.ZERO,
+  x: Length = Length.ZERO,
+  y: Length = Length.ZERO,
+  z: Length = Length.ZERO,
   mutator: (MutablePoint3d.() -> Unit)? = null,
 ): ImmutablePoint3d {
   if (x.isZero && y.isZero && z.isZero && mutator == null) {
@@ -273,9 +273,9 @@ inline fun Point3d.Companion.copyOf(
  * @return The created [MutablePoint3d].
  */
 fun MutablePoint3d(
-  x: Distance = Distance.ZERO,
-  y: Distance = Distance.ZERO,
-  z: Distance = Distance.ZERO,
+  x: Length = Length.ZERO,
+  y: Length = Length.ZERO,
+  z: Length = Length.ZERO,
 ): MutablePoint3d {
   return MutablePoint3dImpl(x, y, z)
 }
@@ -351,7 +351,7 @@ inline operator fun Point3d.unaryMinus(): ImmutablePoint3d =
  *
  * @param distance The displacement to apply to this point.
  */
-inline operator fun MutablePoint3d.plusAssign(distance: Distance3d) =
+inline operator fun MutablePoint3d.plusAssign(distance: Length3d) =
   map("Addition of $distance") { index, value ->
     when (index) {
       0 -> value + distance.dx
@@ -366,7 +366,7 @@ inline operator fun MutablePoint3d.plusAssign(distance: Distance3d) =
  * @param distance The displacement to add.
  * @return A new point after applying the displacement.
  */
-inline operator fun Point3d.plus(distance: Distance3d): ImmutablePoint3d =
+inline operator fun Point3d.plus(distance: Length3d): ImmutablePoint3d =
   Point3d.copyOf(this) {
     this += distance
   }
@@ -376,7 +376,7 @@ inline operator fun Point3d.plus(distance: Distance3d): ImmutablePoint3d =
  *
  * @param distance The displacement to subtract.
  */
-inline operator fun MutablePoint3d.minusAssign(distance: Distance3d) =
+inline operator fun MutablePoint3d.minusAssign(distance: Length3d) =
   map("Subtraction of $distance") { index, value ->
     when (index) {
       0 -> value - distance.dx
@@ -391,19 +391,19 @@ inline operator fun MutablePoint3d.minusAssign(distance: Distance3d) =
  * @param distance The displacement to subtract.
  * @return A new point after applying the negative displacement.
  */
-inline operator fun Point3d.minus(distance: Distance3d): ImmutablePoint3d =
+inline operator fun Point3d.minus(distance: Length3d): ImmutablePoint3d =
   Point3d.copyOf(this) {
     this -= distance
   }
 
 /**
- * Returns the component-wise displacement from [other] to this point as a [Distance3d].
+ * Returns the component-wise displacement from [other] to this point as a [Length3d].
  *
  * @param other The origin point of the displacement.
- * @return The [Distance3d] representing this - [other].
+ * @return The [Length3d] representing this - [other].
  */
-inline operator fun Point3d.minus(other: Point3d): Distance3d =
-  Distance3d(
+inline operator fun Point3d.minus(other: Point3d): Length3d =
+  Length3d(
     dx = x - other.x,
     dy = y - other.y,
     dz = z - other.z,
@@ -509,14 +509,14 @@ inline operator fun Point3d.div(scalar: Double): ImmutablePoint3d =
  * @param other The other point to measure the distance to.
  * @return The distance between this point and [other].
  */
-inline infix fun Point3d.distanceTo(other: Point3d): Distance = (this - other).magnitude
+inline infix fun Point3d.distanceTo(other: Point3d): Length = (this - other).magnitude
 
 /**
  * Returns the distance from this point to the origin (0, 0, 0).
  *
  * @return The distance from this point to the origin.
  */
-inline val Point3d.distanceFromZero: Distance get() = this distanceTo Point3d.zero
+inline val Point3d.distanceFromZero: Length get() = this distanceTo Point3d.zero
 
 /**
  * Maps each coordinate of this mutable point using the given [action],
@@ -531,7 +531,7 @@ inline val Point3d.distanceFromZero: Distance get() = this distanceTo Point3d.ze
 @Suppress("UNUSED_PARAMETER")
 inline fun MutablePoint3d.map(
   actionName: String? = null,
-  action: (index: Int, value: Distance) -> Distance,
+  action: (index: Int, value: Length) -> Length,
 ) {
   val newX = action(0, x)
   val newY = action(1, y)
@@ -545,12 +545,12 @@ inline fun MutablePoint3d.map(
 
 // region implementations
 
-private val POINT3D_ZERO: ImmutablePoint3d = ImmutablePoint3dImpl(Distance.ZERO, Distance.ZERO, Distance.ZERO)
+private val POINT3D_ZERO: ImmutablePoint3d = ImmutablePoint3dImpl(Length.ZERO, Length.ZERO, Length.ZERO)
 
 private data class ImmutablePoint3dImpl(
-  override var x: Distance,
-  override var y: Distance,
-  override var z: Distance,
+  override var x: Length,
+  override var y: Length,
+  override var z: Length,
 ) : ImmutablePoint3d {
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
@@ -567,17 +567,17 @@ private data class ImmutablePoint3dImpl(
 private value class Point3dMutableWrapper(
   private val impl: ImmutablePoint3dImpl,
 ) : MutablePoint3d {
-  override var x: Distance
+  override var x: Length
     get() = impl.x
     set(value) {
       impl.x = value
     }
-  override var y: Distance
+  override var y: Length
     get() = impl.y
     set(value) {
       impl.y = value
     }
-  override var z: Distance
+  override var z: Length
     get() = impl.z
     set(value) {
       impl.z = value
@@ -585,28 +585,28 @@ private value class Point3dMutableWrapper(
 
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
-  override val xFlow: StateFlow<Distance>
+  override val xFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
-  override val yFlow: StateFlow<Distance>
+  override val yFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
-  override val zFlow: StateFlow<Distance>
+  override val zFlow: StateFlow<Length>
     get() = throw UnsupportedOperationException()
 
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
 private class MutablePoint3dImpl(
-  x: Distance,
-  y: Distance,
-  z: Distance,
+  x: Length,
+  y: Length,
+  z: Length,
 ) : MutablePoint3d {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _xFlow: MutableStateFlow<Distance> = MutableStateFlow(x)
-  private val _yFlow: MutableStateFlow<Distance> = MutableStateFlow(y)
-  private val _zFlow: MutableStateFlow<Distance> = MutableStateFlow(z)
+  private val _xFlow: MutableStateFlow<Length> = MutableStateFlow(x)
+  private val _yFlow: MutableStateFlow<Length> = MutableStateFlow(y)
+  private val _zFlow: MutableStateFlow<Length> = MutableStateFlow(z)
 
-  override var x: Distance
+  override var x: Length
     get() = lock.withLock { _xFlow.value }
     set(value) {
       lock.withLock {
@@ -614,7 +614,7 @@ private class MutablePoint3dImpl(
         _xFlow.value = value
       }
     }
-  override var y: Distance
+  override var y: Length
     get() = lock.withLock { _yFlow.value }
     set(value) {
       lock.withLock {
@@ -622,7 +622,7 @@ private class MutablePoint3dImpl(
         _yFlow.value = value
       }
     }
-  override var z: Distance
+  override var z: Length
     get() = lock.withLock { _zFlow.value }
     set(value) {
       lock.withLock {
@@ -631,9 +631,9 @@ private class MutablePoint3dImpl(
       }
     }
 
-  override val xFlow: StateFlow<Distance> get() = _xFlow.asStateFlow()
-  override val yFlow: StateFlow<Distance> get() = _yFlow.asStateFlow()
-  override val zFlow: StateFlow<Distance> get() = _zFlow.asStateFlow()
+  override val xFlow: StateFlow<Length> get() = _xFlow.asStateFlow()
+  override val yFlow: StateFlow<Length> get() = _yFlow.asStateFlow()
+  override val zFlow: StateFlow<Length> get() = _zFlow.asStateFlow()
 
   override fun toString(): String = "Point3d(x=$x, y=$y, z=$z)"
 
@@ -691,9 +691,9 @@ private fun componentsEqual(
     a.z == b.z
 
 private fun componentsHash(
-  x: Distance,
-  y: Distance,
-  z: Distance,
+  x: Length,
+  y: Length,
+  z: Length,
 ): Int {
   var result = 17
   result = 31 * result + x.inWholeNanometers.hashCode()

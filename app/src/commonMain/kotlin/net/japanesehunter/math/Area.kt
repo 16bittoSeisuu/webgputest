@@ -34,15 +34,15 @@ enum class AreaUnit(
 
   companion object {
     /**
-     * Returns the [AreaUnit] corresponding to the given [DistanceUnit] squared.
+     * Returns the [AreaUnit] corresponding to the given [LengthUnit] squared.
      */
-    fun from(distanceUnit: DistanceUnit): AreaUnit =
+    fun from(distanceUnit: LengthUnit): AreaUnit =
       when (distanceUnit) {
-        DistanceUnit.NANOMETER -> SQUARE_NANOMETER
-        DistanceUnit.MICROMETER -> SQUARE_MICROMETER
-        DistanceUnit.MILLIMETER -> SQUARE_MILLIMETER
-        DistanceUnit.METER -> SQUARE_METER
-        DistanceUnit.KILOMETER -> SQUARE_KILOMETER
+        LengthUnit.NANOMETER -> SQUARE_NANOMETER
+        LengthUnit.MICROMETER -> SQUARE_MICROMETER
+        LengthUnit.MILLIMETER -> SQUARE_MILLIMETER
+        LengthUnit.METER -> SQUARE_METER
+        LengthUnit.KILOMETER -> SQUARE_KILOMETER
       }
   }
 }
@@ -437,4 +437,3 @@ private fun formatAreaValue(value: Double): String {
     value.toString()
   }
 }
-
