@@ -524,12 +524,12 @@ inline val Point3d.distanceFromZero: Double get() = this distanceTo Point3d.zero
  * and the current value of the coordinate, and should return
  * the new value for that coordinate.
  * After applying the [action], it is verified that all new values
- * are finite; if not, an [IllegalArgumentException] is thrown.
+ * are finite; if not, an [ArithmeticException] is thrown.
  *
  * @param actionName An optional name for the action, used in error messages.
  * @param action The mapping function to apply to each coordinate.
  * 0: x-coordinate, 1: y-coordinate, 2: z-coordinate.
- * @throws IllegalArgumentException if any resulting coordinate is not finite.
+ * @throws ArithmeticException if any resulting coordinate is not finite.
  */
 inline fun MutablePoint3d.map(
   actionName: String? = null,
@@ -539,11 +539,13 @@ inline fun MutablePoint3d.map(
   val newY = action(1, y)
   val newZ = action(2, z)
   require(newX.isFinite() && newY.isFinite() && newZ.isFinite()) {
-    if (actionName == null) {
-      "Mutation resulted in non-finite values: ($x, $y, $z)"
-    } else {
-      "$actionName resulted in non-finite values: ($x, $y, $z)"
-    }
+    val message =
+      if (actionName == null) {
+        "Mutation resulted in non-finite values: ($x, $y, $z)"
+      } else {
+        "$actionName resulted in non-finite values: ($x, $y, $z)"
+      }
+    throw ArithmeticException(message)
   }
   x = newX
   y = newY

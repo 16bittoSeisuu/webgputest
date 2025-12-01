@@ -1,10 +1,13 @@
 package net.japanesehunter.math
 
+import net.japanesehunter.math.Distance.Companion.from
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
+private const val NANOMETERS_PER_MICROMETER: Long = 1_000L
 private const val NANOMETERS_PER_MILLIMETER: Long = 1_000_000L
 private const val NANOMETERS_PER_METER: Long = 1_000_000_000L
+private const val NANOMETERS_PER_KILOMETER: Long = 1_000_000_000_000L
 
 /**
  * Represents the units supported by [Distance].
@@ -23,6 +26,11 @@ enum class DistanceUnit(
   NANOMETER(1L, "nm"),
 
   /**
+   * The micrometer unit (1e-6 meters).
+   */
+  MICROMETER(NANOMETERS_PER_MICROMETER, "um"),
+
+  /**
    * The millimeter unit (1e-3 meters).
    */
   MILLIMETER(NANOMETERS_PER_MILLIMETER, "mm"),
@@ -31,12 +39,20 @@ enum class DistanceUnit(
    * The meter unit.
    */
   METER(NANOMETERS_PER_METER, "m"),
+
+  /**
+   * The kilometer unit.
+   */
+  KILOMETER(NANOMETERS_PER_KILOMETER, "km"),
 }
 
 /**
- * Represents a scalar distance value with selectable precision.
- * All distances are stored as integer nanometers in a [Long].
- * Use [DistanceUnit] to convert to nanometer, millimeter, or meter precision.
+ * Immutable distance value backed by a signed nanometer count in a [Long].
+ * Precision is fixed to nanometers; [from] with [Double] rounds to the
+ * nearest nanometer and rejects non-finite values.
+ * Use [DistanceUnit] to view or construct values in nanometers, micrometers,
+ * millimeters, meters, or kilometers.
+ * Arithmetic methods signal overflow with [ArithmeticException].
  *
  * @author Int16
  */
@@ -48,6 +64,13 @@ value class Distance internal constructor(
    */
   val inWholeNanometers: Long
     get() = nanometers
+
+  /**
+   * Returns this distance as a whole number of micrometers,
+   * truncated toward zero.
+   */
+  val inWholeMicrometers: Long
+    get() = nanometers / NANOMETERS_PER_MICROMETER
 
   /**
    * Returns this distance as a whole number of millimeters,
@@ -64,6 +87,13 @@ value class Distance internal constructor(
     get() = nanometers / NANOMETERS_PER_METER
 
   /**
+   * Returns this distance as a whole number of kilometers,
+   * truncated toward zero.
+   */
+  val inWholeKilometers: Long
+    get() = nanometers / NANOMETERS_PER_KILOMETER
+
+  /**
    * Converts this [Distance] to a [Long] value using the specified [unit].
    * The result is truncated toward zero.
    *
@@ -73,8 +103,10 @@ value class Distance internal constructor(
   fun toLong(unit: DistanceUnit): Long =
     when (unit) {
       DistanceUnit.NANOMETER -> inWholeNanometers
+      DistanceUnit.MICROMETER -> inWholeMicrometers
       DistanceUnit.MILLIMETER -> inWholeMillimeters
       DistanceUnit.METER -> inWholeMeters
+      DistanceUnit.KILOMETER -> inWholeKilometers
     }
 
   /**
@@ -204,9 +236,25 @@ value class Distance internal constructor(
     val absNanometers = absoluteNanometers(nanometers)
     val (value, unit) =
       when {
-        absNanometers >= NANOMETERS_PER_METER -> absNanometers.toDouble() / NANOMETERS_PER_METER to DistanceUnit.METER
-        absNanometers >= NANOMETERS_PER_MILLIMETER -> absNanometers.toDouble() / NANOMETERS_PER_MILLIMETER to DistanceUnit.MILLIMETER
-        else -> absNanometers.toDouble() to DistanceUnit.NANOMETER
+        absNanometers >= NANOMETERS_PER_KILOMETER -> {
+          absNanometers.toDouble() / NANOMETERS_PER_KILOMETER to DistanceUnit.KILOMETER
+        }
+
+        absNanometers >= NANOMETERS_PER_METER -> {
+          absNanometers.toDouble() / NANOMETERS_PER_METER to DistanceUnit.METER
+        }
+
+        absNanometers >= NANOMETERS_PER_MILLIMETER -> {
+          absNanometers.toDouble() / NANOMETERS_PER_MILLIMETER to DistanceUnit.MILLIMETER
+        }
+
+        absNanometers >= NANOMETERS_PER_MICROMETER -> {
+          absNanometers.toDouble() / NANOMETERS_PER_MICROMETER to DistanceUnit.MICROMETER
+        }
+
+        else -> {
+          absNanometers.toDouble() to DistanceUnit.NANOMETER
+        }
       }
     val formatted = formatDistanceValue(value)
     return if (isNegative) {
@@ -258,6 +306,12 @@ val Long.nanometers: Distance
   get() = Distance.from(this, DistanceUnit.NANOMETER)
 
 /**
+ * Creates a [Distance] from this [Long] value expressed in micrometers.
+ */
+val Long.micrometers: Distance
+  get() = Distance.from(this, DistanceUnit.MICROMETER)
+
+/**
  * Creates a [Distance] from this [Long] value expressed in millimeters.
  */
 val Long.millimeters: Distance
@@ -270,11 +324,24 @@ val Long.meters: Distance
   get() = Distance.from(this, DistanceUnit.METER)
 
 /**
+ * Creates a [Distance] from this [Long] value expressed in kilometers.
+ */
+val Long.kilometers: Distance
+  get() = Distance.from(this, DistanceUnit.KILOMETER)
+
+/**
  * Creates a [Distance] from this [Double] value expressed in nanometers.
  * The value is rounded to the nearest nanometer.
  */
 val Double.nanometers: Distance
   get() = Distance.from(this, DistanceUnit.NANOMETER)
+
+/**
+ * Creates a [Distance] from this [Double] value expressed in micrometers.
+ * The value is rounded to the nearest nanometer.
+ */
+val Double.micrometers: Distance
+  get() = Distance.from(this, DistanceUnit.MICROMETER)
 
 /**
  * Creates a [Distance] from this [Double] value expressed in millimeters.
@@ -291,6 +358,13 @@ val Double.meters: Distance
   get() = Distance.from(this, DistanceUnit.METER)
 
 /**
+ * Creates a [Distance] from this [Double] value expressed in kilometers.
+ * The value is rounded to the nearest nanometer.
+ */
+val Double.kilometers: Distance
+  get() = Distance.from(this, DistanceUnit.KILOMETER)
+
+/**
  * Multiplies a [Double] by a [Distance].
  *
  * @receiver The scaling factor. Must be finite.
@@ -302,8 +376,10 @@ operator fun Double.times(distance: Distance): Distance = distance * this
 private fun DistanceUnit.toNanometers(value: Long): Long =
   when (this) {
     DistanceUnit.NANOMETER -> value
+    DistanceUnit.MICROMETER -> safeMultiply(value, NANOMETERS_PER_MICROMETER)
     DistanceUnit.MILLIMETER -> safeMultiply(value, NANOMETERS_PER_MILLIMETER)
     DistanceUnit.METER -> safeMultiply(value, NANOMETERS_PER_METER)
+    DistanceUnit.KILOMETER -> safeMultiply(value, NANOMETERS_PER_KILOMETER)
   }
 
 private fun DistanceUnit.toNanometers(value: Double): Long {

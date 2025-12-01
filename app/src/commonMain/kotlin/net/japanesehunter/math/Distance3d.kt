@@ -443,12 +443,12 @@ inline operator fun Distance3d.div(scalar: Double): ImmutableDistance3d =
  * and the current value of the component, and should return
  * the new value for that component.
  * After applying the [action], it is verified that all new values
- * are finite; if not, an [IllegalArgumentException] is thrown.
+ * are finite; if not, an [ArithmeticException] is thrown.
  *
  * @param actionName An optional name for the action, used in error messages.
  * @param action The mapping function to apply to each component.
  * 0: dx, 1: dy, 2: dz.
- * @throws IllegalArgumentException if any resulting component is not finite.
+ * @throws ArithmeticException if any resulting component is not finite.
  */
 inline fun MutableDistance3d.map(
   actionName: String? = null,
@@ -458,11 +458,13 @@ inline fun MutableDistance3d.map(
   val newDy = action(1, dy)
   val newDz = action(2, dz)
   require(newDx.isFinite() && newDy.isFinite() && newDz.isFinite()) {
-    if (actionName == null) {
-      "Mutation resulted in non-finite values: ($dx, $dy, $dz)"
-    } else {
-      "$actionName resulted in non-finite values: ($dx, $dy, $dz)"
-    }
+    val message =
+      if (actionName == null) {
+        "Mutation resulted in non-finite values: ($dx, $dy, $dz)"
+      } else {
+        "$actionName resulted in non-finite values: ($dx, $dy, $dz)"
+      }
+    throw ArithmeticException(message)
   }
   dx = newDx
   dy = newDy
