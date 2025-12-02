@@ -1,233 +1,88 @@
-
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.github.oshai.kotlinlogging.Level
-import io.ygdrasil.webgpu.BufferDescriptor
-import io.ygdrasil.webgpu.Color
-import io.ygdrasil.webgpu.ColorTargetState
-import io.ygdrasil.webgpu.FragmentState
-import io.ygdrasil.webgpu.GPUBufferUsage
-import io.ygdrasil.webgpu.GPUCullMode
-import io.ygdrasil.webgpu.GPUIndexFormat
-import io.ygdrasil.webgpu.GPULoadOp
-import io.ygdrasil.webgpu.GPUPrimitiveTopology
-import io.ygdrasil.webgpu.GPUStoreOp
-import io.ygdrasil.webgpu.GPUVertexFormat
-import io.ygdrasil.webgpu.HTMLCanvasElement
-import io.ygdrasil.webgpu.PrimitiveState
-import io.ygdrasil.webgpu.RenderPassColorAttachment
-import io.ygdrasil.webgpu.RenderPassDescriptor
-import io.ygdrasil.webgpu.RenderPipelineDescriptor
-import io.ygdrasil.webgpu.ShaderModuleDescriptor
-import io.ygdrasil.webgpu.SurfaceConfiguration
-import io.ygdrasil.webgpu.VertexAttribute
-import io.ygdrasil.webgpu.VertexBufferLayout
-import io.ygdrasil.webgpu.VertexState
-import io.ygdrasil.webgpu.asJsNumber
-import io.ygdrasil.webgpu.beginRenderPass
-import io.ygdrasil.webgpu.canvasContextRenderer
-import io.ygdrasil.webgpu.writeInto
 import kotlinx.browser.document
 import kotlinx.browser.window
-
-external fun setInterval(
-  callback: () -> Unit,
-  ms: Int,
-): Int
+import kotlinx.coroutines.await
+import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
+import net.japanesehunter.webgpu.interop.GPUCanvasContext
+import net.japanesehunter.webgpu.interop.GPUColor
+import net.japanesehunter.webgpu.interop.GPUColorTargetState
+import net.japanesehunter.webgpu.interop.GPUFragmentState
+import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
+import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
+import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
+import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
+import net.japanesehunter.webgpu.interop.GPUVertexState
+import net.japanesehunter.webgpu.interop.navigator
+import org.w3c.dom.HTMLCanvasElement
 
 fun main() =
-  application(loggerLevel = Level.DEBUG) {
+  application {
     val canvas =
-      canvas() ?: run {
+      canvas()?.apply {
+        fit()
+      } ?: run {
         logger.error { "Canvas element not found" }
         return@application
       }
     window.onresize = { canvas.fit() }
 
-    val ctx =
-      canvasContextRenderer(
-        canvas,
-        width = window.innerWidth,
-        height = window.innerHeight,
-      )
-    val device = ctx.wgpuContext.device
-    ctx.wgpuContext.surface.configure(
-      SurfaceConfiguration(
+    val gpu =
+      navigator.gpu ?: run {
+        logger.error { "WebGPU is not supported in this browser." }
+        return@application
+      }
+    val adapter = gpu.requestAdapter().await()
+    val device = adapter.requestDevice().await()
+    val preferredFormat = gpu.getPreferredCanvasFormat()
+    val context = canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
+    context.configure(
+      GPUCanvasConfiguration(
         device = device,
-        format = ctx.wgpuContext.renderingContext.textureFormat,
+        format = preferredFormat,
       ),
     )
-    val shader =
+    val pipeline =
       run {
         val module =
-          device.createShaderModule(
-            ShaderModuleDescriptor(
-              label = "Hello triangle shader",
-              code = code,
-            ),
-          )
-        val vertexState =
-          VertexState(
-            module = module,
-            entryPoint = "vs_main",
-            buffers =
-              listOf(
-                VertexBufferLayout(
-                  arrayStride = (Float.SIZE_BYTES * 3).toULong(),
-                  attributes =
-                    listOf(
-                      VertexAttribute(
-                        format = GPUVertexFormat.Float32x3,
-                        offset = 0u,
-                        shaderLocation = 0u,
-                      ),
-                    ),
-                ),
-                VertexBufferLayout(
-                  arrayStride = (Float.SIZE_BYTES * 4).toULong(),
-                  attributes =
-                    listOf(
-                      VertexAttribute(
-                        format = GPUVertexFormat.Float32x4,
-                        offset = 0u,
-                        shaderLocation = 1u,
-                      ),
-                    ),
-                ),
-              ),
-          )
+          device.createShaderModule(GPUShaderModuleDescriptor(code = code))
+        val vertexState = GPUVertexState(module = module)
         val fragmentState =
-          FragmentState(
+          GPUFragmentState(
             module = module,
-            entryPoint = "fs_main",
             targets =
-              listOf(
-                ColorTargetState(
-                  format = ctx.wgpuContext.renderingContext.textureFormat,
-                ),
-              ),
+              arrayOf(GPUColorTargetState(format = preferredFormat)),
           )
-        device.createRenderPipeline(
-          RenderPipelineDescriptor(
-            label = "Hello triangle pipeline",
-            vertex = vertexState,
-            fragment = fragmentState,
-            primitive =
-              PrimitiveState(
-                topology = GPUPrimitiveTopology.TriangleList,
-                cullMode = GPUCullMode.Back,
-              ),
-          ),
-        )
+        device
+          .createRenderPipelineAsync(
+            GPURenderPipelineDescriptor(
+              vertex = vertexState,
+              fragment = fragmentState,
+            ),
+          ).await()
       }
-    val vertexBuffer0 =
-      device
-        .createBuffer(
-          BufferDescriptor(
-            label = "Vertex pos buffer",
-            size = (Float.SIZE_BYTES * 3 * 4).toULong(),
-            usage = setOf(GPUBufferUsage.Vertex),
-            mappedAtCreation = true,
-          ),
-        ).apply {
-          floatArrayOf(
-            -0.5f,
-            -0.5f,
-            0.0f, // Vertex 1 position
-            0.5f,
-            -0.5f,
-            0.0f, // Vertex 2 position
-            -0.5f,
-            0.5f,
-            0.0f, // Vertex 3 positions
-            0.5f,
-            0.5f,
-            0.0f, // Vertex 3 positions
-          ).writeInto(getMappedRange())
-          unmap()
-        }
-    val vertexBuffer1 =
-      device
-        .createBuffer(
-          BufferDescriptor(
-            label = "Vertex color buffer",
-            size = (Float.SIZE_BYTES * 4 * 4).toULong(),
-            usage = setOf(GPUBufferUsage.Vertex),
-            mappedAtCreation = true,
-          ),
-        ).apply {
-          floatArrayOf(
-            1.0f,
-            1.0f,
-            0.0f,
-            1.0f, // Vertex 1 color
-            0.0f,
-            1.0f,
-            1.0f,
-            1.0f, // Vertex 2 color
-            1.0f,
-            0.0f,
-            1.0f,
-            1.0f, // Vertex 3 color
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f, // Vertex 4 color
-          ).writeInto(getMappedRange())
-          unmap()
-        }
-    val indexBuffer =
-      device
-        .createBuffer(
-          BufferDescriptor(
-            label = "Index buffer",
-            size = (UShort.SIZE_BYTES * 6).toULong(),
-            usage = setOf(GPUBufferUsage.Index),
-            mappedAtCreation = true,
-          ),
-        ).apply {
-          shortArrayOf(
-            0,
-            1,
-            2, // Triangle 1
-            1,
-            3,
-            2, // Triangle 2
-          ).writeInto(getMappedRange())
-          unmap()
-        }
-    setInterval({
-      ctx.wgpuContext.renderingContext
-        .getCurrentTexture()
-        .use { surface ->
-          device.createCommandEncoder().use { cmdEnc ->
-            cmdEnc.beginRenderPass(
-              RenderPassDescriptor(
-                label = "Hello triangle render pass",
-                colorAttachments =
-                  listOf(
-                    RenderPassColorAttachment(
-                      view = surface.createView(),
-                      loadOp = GPULoadOp.Clear,
-                      storeOp = GPUStoreOp.Store,
-                      clearValue = Color(0.8, 0.8, 0.8, 1.0),
-                    ),
-                  ),
+    val cmdEnc = device.createCommandEncoder()
+    val surfaceTexture = context.getCurrentTexture()
+    val textureView = context.getCurrentTexture().createView()
+    cmdEnc
+      .beginRenderPass(
+        GPURenderPassDescriptor(
+          colorAttachments =
+            arrayOf(
+              GPURenderPassColorAttachment(
+                view = textureView,
+                clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
+                loadOp = "clear",
+                storeOp = "store",
               ),
-            ) {
-              setPipeline(shader)
-              setVertexBuffer(0u, vertexBuffer0)
-              setVertexBuffer(1u, vertexBuffer1)
-              setIndexBuffer(indexBuffer, indexFormat = GPUIndexFormat.Uint16)
-              drawIndexed(indexCount = 6u)
-              end()
-            }
-            cmdEnc.finish().use {
-              device.queue.submit(listOf(it))
-            }
-          }
-          ctx.wgpuContext.surface.present()
-        }
-    }, 16)
+            ),
+        ),
+      ).apply {
+        setPipeline(pipeline)
+        draw(3)
+        end()
+      }
+    device.queue.submit(arrayOf(cmdEnc.finish()))
+    surfaceTexture.destroy()
   }
 
 private val logger = KotlinLogging.logger("Main")
@@ -235,25 +90,36 @@ private val logger = KotlinLogging.logger("Main")
 private val code =
   """
   struct VsOut {
-    @builtin(position) position : vec4<f32>,
-    @location(0) color : vec4<f32>,
+    @builtin(position) position : vec4f,
+    @location(0) color : vec4f,
   }
   
   @vertex
   fn vs_main(
-    @location(0) pos: vec3f,
-    @location(1) color: vec4f,
+    @builtin(vertex_index) vertexIndex : u32
   ) -> VsOut {
+    var positions = array<vec2f, 3>(
+      vec2f(0.0, 0.5),
+      vec2f(-0.5, -0.5),
+      vec2f(0.5, -0.5)
+    );
+    var colors = array<vec4f, 3>(
+      vec4f(1.0, 1.0, 0.0, 1.0),
+      vec4f(0.0, 1.0, 1.0, 1.0),
+      vec4f(1.0, 0.0, 1.0, 1.0)
+    );
+    let pos = positions[vertexIndex];
+    let color = colors[vertexIndex];
     var out: VsOut;
-    out.position = vec4f(pos, 1.0);
+    out.position = vec4f(pos, 0.0, 1.0);
     out.color = color;
     return out;
   }
 
   @fragment
   fn fs_main(
-    @location(0) color: vec4<f32>,
-  ) -> @location(0) vec4<f32> {
+    @location(0) color: vec4f,
+  ) -> @location(0) vec4f {
     return color;
   }
   """.trimIndent()
@@ -264,6 +130,6 @@ private fun canvas(): HTMLCanvasElement? =
     .unsafeCast<HTMLCanvasElement?>()
 
 private fun HTMLCanvasElement.fit() {
-  width = window.innerWidth.asJsNumber()
-  height = window.innerHeight.asJsNumber()
+  width = window.innerWidth
+  height = window.innerHeight
 }

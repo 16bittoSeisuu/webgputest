@@ -5,20 +5,17 @@
 kotlin = "2.3.0-RC"
 kotlin-logging = "7.0.13"
 kotest = "6.0.5"
-wgpu4k = "0.1.1"
 coroutines = "1.10.2"
 arrow = "2.2.0"
 
 [libraries]
-kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlin-logging" }
 kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
 kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
-wgpu4k-toolkit = { module = "io.ygdrasil:wgpu4k-toolkit", version.ref = "wgpu4k" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 arrow-fx-coroutines = { module = "io.arrow-kt:arrow-fx-coroutines", version.ref = "arrow" }
 arrow-resilience = { module = "io.arrow-kt:arrow-resilience", version.ref = "arrow" }
-arrow-suspendapp = { module = "io.arrow-kt:suspendapp", version.ref = "arrow" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

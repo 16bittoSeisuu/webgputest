@@ -24,11 +24,11 @@ kotlin {
   sourceSets {
     commonMain {
       dependencies {
+        api(libs.kotlin.logging)
         api(libs.kotlinx.coroutines.core)
         api(libs.arrow.core)
         api(libs.arrow.fx.coroutines)
         api(libs.arrow.resilience)
-        implementation(libs.wgpu4k.toolkit)
       }
     }
     commonTest {
