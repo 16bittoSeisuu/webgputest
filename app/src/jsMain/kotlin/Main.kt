@@ -6,6 +6,7 @@ import io.ygdrasil.webgpu.ColorTargetState
 import io.ygdrasil.webgpu.FragmentState
 import io.ygdrasil.webgpu.GPUBufferUsage
 import io.ygdrasil.webgpu.GPUCullMode
+import io.ygdrasil.webgpu.GPUIndexFormat
 import io.ygdrasil.webgpu.GPULoadOp
 import io.ygdrasil.webgpu.GPUPrimitiveTopology
 import io.ygdrasil.webgpu.GPUStoreOp
@@ -117,20 +118,23 @@ fun main() =
         .createBuffer(
           BufferDescriptor(
             label = "Vertex pos buffer",
-            size = (Float.SIZE_BYTES * 3 * 3).toULong(),
+            size = (Float.SIZE_BYTES * 3 * 4).toULong(),
             usage = setOf(GPUBufferUsage.Vertex),
             mappedAtCreation = true,
           ),
         ).apply {
           floatArrayOf(
-            0.0f,
-            0.5f,
-            0.0f, // Vertex 1 position
             -0.5f,
+            -0.5f,
+            0.0f, // Vertex 1 position
+            0.5f,
             -0.5f,
             0.0f, // Vertex 2 position
-            0.5f,
             -0.5f,
+            0.5f,
+            0.0f, // Vertex 3 positions
+            0.5f,
+            0.5f,
             0.0f, // Vertex 3 positions
           ).writeInto(getMappedRange())
           unmap()
@@ -140,7 +144,7 @@ fun main() =
         .createBuffer(
           BufferDescriptor(
             label = "Vertex color buffer",
-            size = (Float.SIZE_BYTES * 4 * 3).toULong(),
+            size = (Float.SIZE_BYTES * 4 * 4).toULong(),
             usage = setOf(GPUBufferUsage.Vertex),
             mappedAtCreation = true,
           ),
@@ -158,6 +162,30 @@ fun main() =
             0.0f,
             1.0f,
             1.0f, // Vertex 3 color
+            1.0f,
+            1.0f,
+            1.0f,
+            1.0f, // Vertex 4 color
+          ).writeInto(getMappedRange())
+          unmap()
+        }
+    val indexBuffer =
+      device
+        .createBuffer(
+          BufferDescriptor(
+            label = "Index buffer",
+            size = (UShort.SIZE_BYTES * 6).toULong(),
+            usage = setOf(GPUBufferUsage.Index),
+            mappedAtCreation = true,
+          ),
+        ).apply {
+          shortArrayOf(
+            0,
+            1,
+            2, // Triangle 1
+            1,
+            3,
+            2, // Triangle 2
           ).writeInto(getMappedRange())
           unmap()
         }
@@ -183,7 +211,8 @@ fun main() =
               setPipeline(shader)
               setVertexBuffer(0u, vertexBuffer0)
               setVertexBuffer(1u, vertexBuffer1)
-              draw(vertexCount = 3u)
+              setIndexBuffer(indexBuffer, indexFormat = GPUIndexFormat.Uint16)
+              drawIndexed(indexCount = 6u)
               end()
             }
             cmdEnc.finish().use {
