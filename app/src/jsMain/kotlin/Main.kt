@@ -1,3 +1,4 @@
+
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.Level
 import io.ygdrasil.webgpu.BufferDescriptor
@@ -36,13 +37,18 @@ external fun setInterval(
 fun main() =
   application(loggerLevel = Level.DEBUG) {
     val canvas =
-      canvas()?.apply { fit() } ?: run {
+      canvas() ?: run {
         logger.error { "Canvas element not found" }
         return@application
       }
     window.onresize = { canvas.fit() }
 
-    val ctx = canvasContextRenderer(canvas)
+    val ctx =
+      canvasContextRenderer(
+        canvas,
+        width = window.innerWidth,
+        height = window.innerHeight,
+      )
     val device = ctx.wgpuContext.device
     ctx.wgpuContext.surface.configure(
       SurfaceConfiguration(
