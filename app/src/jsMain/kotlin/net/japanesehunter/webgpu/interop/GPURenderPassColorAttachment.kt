@@ -2,8 +2,8 @@ package net.japanesehunter.webgpu.interop
 
 fun GPURenderPassColorAttachment(
   view: GPUTextureView,
-  loadOp: String,
-  storeOp: String,
+  loadOp: GPULoadOp,
+  storeOp: GPUStoreOp,
   depthSlice: Int? = null,
   resolveTarget: GPUTextureView? = null,
   clearValue: GPUColor? = null,
@@ -19,8 +19,8 @@ fun GPURenderPassColorAttachment(
 
 external interface GPURenderPassColorAttachment {
   var view: GPUTextureView
-  var loadOp: String
-  var storeOp: String
+  var loadOp: GPULoadOp
+  var storeOp: GPUStoreOp
   var depthSlice: Int?
   var resolveTarget: GPUTextureView?
   var clearValue: GPUColor?

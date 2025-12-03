@@ -7,10 +7,12 @@ import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUFragmentState
+import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
+import net.japanesehunter.webgpu.interop.GPUStoreOp
 import net.japanesehunter.webgpu.interop.GPUVertexState
 import net.japanesehunter.webgpu.interop.navigator
 import org.w3c.dom.HTMLCanvasElement
@@ -71,8 +73,8 @@ fun main() =
               GPURenderPassColorAttachment(
                 view = textureView,
                 clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
-                loadOp = "clear",
-                storeOp = "store",
+                loadOp = GPULoadOp.Clear,
+                storeOp = GPUStoreOp.Store,
               ),
             ),
         ),
