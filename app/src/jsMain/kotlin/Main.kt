@@ -1,8 +1,9 @@
-
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
+import net.japanesehunter.webgpu.interop.GPU
+import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
@@ -13,12 +14,12 @@ import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
+import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUStoreOp
-import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.GPUVertexState
-import net.japanesehunter.webgpu.interop.navigator
+import net.japanesehunter.webgpu.interop.navigator.gpu
 import org.w3c.dom.HTMLCanvasElement
 
 fun main() =
@@ -32,53 +33,58 @@ fun main() =
       }
     window.onresize = { canvas.fit() }
 
-    val gpu =
-      navigator.gpu ?: run {
-        logger.error { "WebGPU is not supported in this browser." }
-        return@application
-      }
-    val adapter = gpu.requestAdapter().await()
-    val device = adapter.requestDevice().await()
-    val preferredFormat = gpu.getPreferredCanvasFormat()
-    val context = canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
-    context.configure(
-      GPUCanvasConfiguration(
-        device = device,
-        format = preferredFormat,
-      ),
-    )
-    val pipeline =
-      run {
-        val module =
-          device.createShaderModule(GPUShaderModuleDescriptor(code = code))
-        val vertexState = GPUVertexState(module = module)
-        val fragmentState =
-          GPUFragmentState(
-            module = module,
-            targets =
-              arrayOf(GPUColorTargetState(format = preferredFormat)),
-          )
-        device
-          .createRenderPipelineAsync(
-            GPURenderPipelineDescriptor(
-              vertex = vertexState,
-              fragment = fragmentState,
-            ),
-          ).await()
-      }
-    val surfaceTexture = context.getCurrentTexture()
-    val surfaceView = surfaceTexture.createView()
-    context(device, surfaceView) {
+    webgpuContext(canvas) {
+      val pipeline = createPipeline()
       frame {
         setPipeline(pipeline)
         draw(3)
       }
     }
-    surfaceTexture.destroy()
   }
 
-context(device: GPUDevice, surface: GPUTextureView)
+private suspend inline fun <R> webgpuContext(
+  canvas: HTMLCanvasElement,
+  action: context(GPU, GPUAdapter, GPUDevice, GPUCanvasContext) () -> R,
+): R {
+  val gpu = gpu ?: throw UnsupportedBrowserException()
+  val adapter = gpu.requestAdapter().await()
+  val device = adapter.requestDevice().await()
+  val surfaceContext =
+    canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
+  surfaceContext.configure(
+    GPUCanvasConfiguration(
+      device = device,
+      format = gpu.getPreferredCanvasFormat(),
+    ),
+  )
+  return context(gpu, adapter, device, surfaceContext) {
+    action()
+  }
+}
+
+context(device: GPUDevice, gpu: GPU)
+private suspend fun createPipeline(): GPURenderPipeline {
+  val module =
+    device.createShaderModule(GPUShaderModuleDescriptor(code = code))
+  val vertexState = GPUVertexState(module = module)
+  val fragmentState =
+    GPUFragmentState(
+      module = module,
+      targets =
+        arrayOf(GPUColorTargetState(format = gpu.getPreferredCanvasFormat())),
+    )
+  return device
+    .createRenderPipelineAsync(
+      GPURenderPipelineDescriptor(
+        vertex = vertexState,
+        fragment = fragmentState,
+      ),
+    ).await()
+}
+
+context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
+  val surfaceTexture = surface.getCurrentTexture()
   val commandEncoder = device.createCommandEncoder()
   val renderPassEncoder =
     commandEncoder.beginRenderPass(
@@ -86,7 +92,7 @@ private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
         colorAttachments =
           arrayOf(
             GPURenderPassColorAttachment(
-              view = surface,
+              view = surfaceTexture.createView(),
               clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
               loadOp = GPULoadOp.Clear,
               storeOp = GPUStoreOp.Store,
@@ -97,7 +103,13 @@ private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
   renderPassEncoder.action()
   renderPassEncoder.end()
   device.queue.submit(arrayOf(commandEncoder.finish()))
+  surfaceTexture.destroy()
 }
+
+private class UnsupportedBrowserException :
+  Exception(
+    message = "WebGPU is not supported on this browser",
+  )
 
 private val logger = KotlinLogging.logger("Main")
 
