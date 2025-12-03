@@ -1,3 +1,4 @@
+
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.browser.document
 import kotlinx.browser.window
@@ -6,13 +7,16 @@ import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
+import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
 import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
+import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUStoreOp
+import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.GPUVertexState
 import net.japanesehunter.webgpu.interop.navigator
 import org.w3c.dom.HTMLCanvasElement
@@ -62,30 +66,38 @@ fun main() =
             ),
           ).await()
       }
-    val cmdEnc = device.createCommandEncoder()
     val surfaceTexture = context.getCurrentTexture()
-    val textureView = context.getCurrentTexture().createView()
-    cmdEnc
-      .beginRenderPass(
-        GPURenderPassDescriptor(
-          colorAttachments =
-            arrayOf(
-              GPURenderPassColorAttachment(
-                view = textureView,
-                clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
-                loadOp = GPULoadOp.Clear,
-                storeOp = GPUStoreOp.Store,
-              ),
-            ),
-        ),
-      ).apply {
+    val surfaceView = surfaceTexture.createView()
+    context(device, surfaceView) {
+      frame {
         setPipeline(pipeline)
         draw(3)
-        end()
       }
-    device.queue.submit(arrayOf(cmdEnc.finish()))
+    }
     surfaceTexture.destroy()
   }
+
+context(device: GPUDevice, surface: GPUTextureView)
+private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
+  val commandEncoder = device.createCommandEncoder()
+  val renderPassEncoder =
+    commandEncoder.beginRenderPass(
+      GPURenderPassDescriptor(
+        colorAttachments =
+          arrayOf(
+            GPURenderPassColorAttachment(
+              view = surface,
+              clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
+              loadOp = GPULoadOp.Clear,
+              storeOp = GPUStoreOp.Store,
+            ),
+          ),
+      ),
+    )
+  renderPassEncoder.action()
+  renderPassEncoder.end()
+  device.queue.submit(arrayOf(commandEncoder.finish()))
+}
 
 private val logger = KotlinLogging.logger("Main")
 

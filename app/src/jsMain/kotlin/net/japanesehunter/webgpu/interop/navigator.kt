@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:class-naming", "ClassName")
+@file:Suppress("ClassName", "ktlint:standard:class-naming", "ktlint:standard:filename")
 
 package net.japanesehunter.webgpu.interop
 
