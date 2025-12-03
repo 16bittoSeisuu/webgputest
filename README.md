@@ -6,6 +6,7 @@ WebGPU(JSライブラリ)をKotlin/JSから直接叩いて描画してみよう�
 
 ## 実行方法
 
+Java 21+を用意してください
 ```bash
 git clone https://github.com/16bittoSeisuu/webgputest.git
 cd webgputest
