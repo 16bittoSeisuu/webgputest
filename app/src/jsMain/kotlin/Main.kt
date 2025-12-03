@@ -3,6 +3,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
+import kotlinx.coroutines.yield
 import net.japanesehunter.webgpu.ShaderCompiler
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.interop.GPU
@@ -33,9 +34,12 @@ fun main() =
 
     webgpuContext(canvas) {
       val pipeline = compileTriangleShader()
-      frame {
-        setPipeline(pipeline)
-        draw(3)
+      while (true) {
+        frame {
+          setPipeline(pipeline)
+          draw(3)
+        }
+        yield()
       }
     }
   }
@@ -47,8 +51,10 @@ private suspend inline fun <R> webgpuContext(
   ) () -> R,
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
-  val adapter = gpu.requestAdapter().await()
-  val device = adapter.requestDevice().await()
+  val adapter =
+    gpu.requestAdapter().await() ?: throw UnsupportedGPUDriverException()
+  val device =
+    adapter.requestDevice().await() ?: throw UnsupportedGPUDriverException()
   val surfaceContext =
     canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
   val preferredFormat = gpu.getPreferredCanvasFormat()
@@ -93,12 +99,16 @@ private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
   renderPassEncoder.action()
   renderPassEncoder.end()
   device.queue.submit(arrayOf(commandEncoder.finish()))
-  surfaceTexture.destroy()
 }
 
 private class UnsupportedBrowserException :
   Exception(
     message = "WebGPU is not supported on this browser",
+  )
+
+private class UnsupportedGPUDriverException :
+  Exception(
+    message = "WebGPU Adapter or Device could not be obtained",
   )
 
 private val logger = KotlinLogging.logger("Main")

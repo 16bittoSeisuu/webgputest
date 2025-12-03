@@ -1,3 +1,5 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPURenderPassColorAttachment(
