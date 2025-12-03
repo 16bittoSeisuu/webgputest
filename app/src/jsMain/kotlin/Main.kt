@@ -1,24 +1,22 @@
+
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
+import net.japanesehunter.webgpu.ShaderCompiler
+import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
-import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUDevice
-import net.japanesehunter.webgpu.interop.GPUFragmentState
 import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
-import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
-import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUStoreOp
-import net.japanesehunter.webgpu.interop.GPUVertexState
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import org.w3c.dom.HTMLCanvasElement
 
@@ -34,7 +32,7 @@ fun main() =
     window.onresize = { canvas.fit() }
 
     webgpuContext(canvas) {
-      val pipeline = createPipeline()
+      val pipeline = compileTriangleShader()
       frame {
         setPipeline(pipeline)
         draw(3)
@@ -44,43 +42,35 @@ fun main() =
 
 private suspend inline fun <R> webgpuContext(
   canvas: HTMLCanvasElement,
-  action: context(GPU, GPUAdapter, GPUDevice, GPUCanvasContext) () -> R,
+  action: context(
+    GPU, GPUAdapter, GPUDevice, ShaderCompiler, GPUCanvasContext
+  ) () -> R,
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
   val adapter = gpu.requestAdapter().await()
   val device = adapter.requestDevice().await()
   val surfaceContext =
     canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
+  val preferredFormat = gpu.getPreferredCanvasFormat()
   surfaceContext.configure(
     GPUCanvasConfiguration(
       device = device,
-      format = gpu.getPreferredCanvasFormat(),
+      format = preferredFormat,
     ),
   )
-  return context(gpu, adapter, device, surfaceContext) {
+  val compiler = device.createShaderCompiler(preferredFormat)
+  return context(gpu, adapter, device, compiler, surfaceContext) {
     action()
   }
 }
 
-context(device: GPUDevice, gpu: GPU)
-private suspend fun createPipeline(): GPURenderPipeline {
-  val module =
-    device.createShaderModule(GPUShaderModuleDescriptor(code = code))
-  val vertexState = GPUVertexState(module = module)
-  val fragmentState =
-    GPUFragmentState(
-      module = module,
-      targets =
-        arrayOf(GPUColorTargetState(format = gpu.getPreferredCanvasFormat())),
-    )
-  return device
-    .createRenderPipelineAsync(
-      GPURenderPipelineDescriptor(
-        vertex = vertexState,
-        fragment = fragmentState,
-      ),
-    ).await()
-}
+context(compiler: ShaderCompiler)
+private suspend fun compileTriangleShader(): GPURenderPipeline =
+  compiler.compile(
+    vertexCode = code,
+    fragmentCode = code,
+    label = "Triangle Pipeline",
+  )
 
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
