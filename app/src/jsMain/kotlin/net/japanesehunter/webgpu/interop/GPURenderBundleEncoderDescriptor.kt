@@ -1,0 +1,3 @@
+package net.japanesehunter.webgpu.interop
+
+interface GPURenderBundleEncoderDescriptor
