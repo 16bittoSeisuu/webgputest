@@ -12,7 +12,7 @@ external interface GPUBuffer : GPUObjectBase {
   val mapState: GPUBufferMapState
 
   fun mapAsync(
-    mode: Int,
+    mode: GPUMapMode,
     offset: Int = definedExternally,
     size: Int = definedExternally,
   ): Promise<Unit>
