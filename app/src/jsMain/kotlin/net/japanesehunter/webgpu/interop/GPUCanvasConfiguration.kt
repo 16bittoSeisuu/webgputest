@@ -11,7 +11,7 @@ fun GPUCanvasConfiguration(
   viewFormats: Array<GPUTextureFormat>? = null,
   toneMapping: GPUCanvasToneMapping? = null,
 ): GPUCanvasConfiguration {
-  val obj = {}.unsafeCast<GPUCanvasConfiguration>()
+  val obj = js("{}").unsafeCast<GPUCanvasConfiguration>()
   obj.device = device
   obj.format = format
   if (usage != null) obj.usage = usage

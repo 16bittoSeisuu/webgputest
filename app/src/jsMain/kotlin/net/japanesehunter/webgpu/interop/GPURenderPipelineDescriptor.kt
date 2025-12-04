@@ -9,7 +9,7 @@ fun GPURenderPipelineDescriptor(
   multisample: GPUMultisampleState? = null,
   label: String? = null,
 ): GPURenderPipelineDescriptor =
-  {}.unsafeCast<GPURenderPipelineDescriptor>().apply {
+  js("{}").unsafeCast<GPURenderPipelineDescriptor>().apply {
     this.layout = layout
     this.vertex = vertex
     if (fragment != null) this.fragment = fragment

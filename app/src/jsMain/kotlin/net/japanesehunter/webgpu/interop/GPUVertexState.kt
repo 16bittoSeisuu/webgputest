@@ -6,7 +6,7 @@ fun GPUVertexState(
   entryPoint: String? = null,
   constants: Map<String, Any>? = null,
 ): GPUVertexState =
-  {}.unsafeCast<GPUVertexState>().apply {
+  js("{}").unsafeCast<GPUVertexState>().apply {
     this.module = module
     if (buffers != null) this.buffers = buffers
     if (entryPoint != null) this.entryPoint = entryPoint

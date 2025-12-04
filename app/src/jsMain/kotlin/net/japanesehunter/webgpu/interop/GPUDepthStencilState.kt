@@ -14,7 +14,7 @@ fun GPUDepthStencilState(
   depthBiasSlopeScale: Double? = null,
   depthBiasClamp: Double? = null,
 ): GPUDepthStencilState =
-  {}.unsafeCast<GPUDepthStencilState>().apply {
+  js("{}").unsafeCast<GPUDepthStencilState>().apply {
     this.format = format
     if (depthWriteEnabled != null) this.depthWriteEnabled = depthWriteEnabled
     if (depthCompare != null) this.depthCompare = depthCompare

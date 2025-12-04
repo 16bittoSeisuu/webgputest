@@ -13,7 +13,7 @@ fun GPURenderPassDepthStencilAttachment(
   stencilReadOnly: Boolean? = null,
   stencilClearValue: Double? = null,
 ): GPURenderPassDepthStencilAttachment =
-  {}.unsafeCast<GPURenderPassDepthStencilAttachment>().apply {
+  js("{}").unsafeCast<GPURenderPassDepthStencilAttachment>().apply {
     this.view = view
     this.depthLoadOp = depthLoadOp
     this.depthStoreOp = depthStoreOp

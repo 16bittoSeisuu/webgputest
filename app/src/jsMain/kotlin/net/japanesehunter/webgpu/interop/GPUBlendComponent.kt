@@ -7,7 +7,7 @@ fun GPUBlendComponent(
   srcFactor: GPUBlendFactor? = null,
   dstFactor: GPUBlendFactor? = null,
 ): GPUBlendComponent =
-  {}.unsafeCast<GPUBlendComponent>().apply {
+  js("{}").unsafeCast<GPUBlendComponent>().apply {
     if (operation != null) this.operation = operation
     if (srcFactor != null) this.srcFactor = srcFactor
     if (dstFactor != null) this.dstFactor = dstFactor

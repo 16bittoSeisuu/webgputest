@@ -8,7 +8,7 @@ fun GPUBufferDescriptor(
   mappedAtCreation: Boolean? = null,
   label: String? = null,
 ): GPUBufferDescriptor =
-  {}.unsafeCast<GPUBufferDescriptor>().apply {
+  js("{}").unsafeCast<GPUBufferDescriptor>().apply {
     this.size = size
     this.usage = usage
     if (mappedAtCreation != null) this.mappedAtCreation = mappedAtCreation

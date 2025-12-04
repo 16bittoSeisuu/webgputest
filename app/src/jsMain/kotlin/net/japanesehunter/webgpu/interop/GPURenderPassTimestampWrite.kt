@@ -5,7 +5,7 @@ fun GPURenderPassTimestampWrite(
   beginningOfPassWriteIndex: Int,
   endOfPassWriteIndex: Int,
 ): GPURenderPassTimestampWrite =
-  {}.unsafeCast<GPURenderPassTimestampWrite>().apply {
+  js("{}").unsafeCast<GPURenderPassTimestampWrite>().apply {
     this.querySet = querySet
     this.beginningOfPassWriteIndex = beginningOfPassWriteIndex
     this.endOfPassWriteIndex = endOfPassWriteIndex

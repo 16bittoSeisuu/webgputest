@@ -8,7 +8,7 @@ fun GPURenderPassDescriptor(
   occlusionQuerySet: GPUQuerySet? = null,
   timestampWrite: Array<GPURenderPassTimestampWrite>? = null,
 ): GPURenderPassDescriptor =
-  {}.unsafeCast<GPURenderPassDescriptor>().apply {
+  js("{}").unsafeCast<GPURenderPassDescriptor>().apply {
     this.colorAttachments = colorAttachments
     if (label != null) this.label = label
     if (depthStencilAttachment != null) this.depthStencilAttachment = depthStencilAttachment

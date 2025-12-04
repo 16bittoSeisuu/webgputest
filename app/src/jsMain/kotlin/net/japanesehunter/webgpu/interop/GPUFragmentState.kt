@@ -6,7 +6,7 @@ fun GPUFragmentState(
   entryPoint: String? = null,
   constants: Map<String, Any>? = null,
 ): GPUFragmentState =
-  {}.unsafeCast<GPUFragmentState>().apply {
+  js("{}").unsafeCast<GPUFragmentState>().apply {
     this.module = module
     this.targets = targets
     if (entryPoint != null) this.entryPoint = entryPoint

@@ -7,7 +7,7 @@ fun GPUVertexBufferLayout(
   stepMode: GPUVertexStepMode? = null,
   attributes: Array<GPUVertexAttribute>,
 ): GPUVertexBufferLayout =
-  {}.unsafeCast<GPUVertexBufferLayout>().apply {
+  js("{}").unsafeCast<GPUVertexBufferLayout>().apply {
     this.arrayStride = arrayStride
     if (stepMode != null) this.stepMode = stepMode
     this.attributes = attributes

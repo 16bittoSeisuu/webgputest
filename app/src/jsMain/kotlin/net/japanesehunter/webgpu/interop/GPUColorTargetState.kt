@@ -7,7 +7,7 @@ fun GPUColorTargetState(
   blend: GPUBlendState? = null,
   writeMask: Int? = null,
 ): GPUColorTargetState =
-  {}.unsafeCast<GPUColorTargetState>().apply {
+  js("{}").unsafeCast<GPUColorTargetState>().apply {
     this.format = format
     if (blend != null) this.blend = blend
     if (writeMask != null) this.writeMask = writeMask

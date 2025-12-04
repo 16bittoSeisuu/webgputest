@@ -5,7 +5,7 @@ fun GPUMultisampleState(
   mask: Int? = null,
   alphaToCoverageEnabled: Boolean? = null,
 ): GPUMultisampleState =
-  {}.unsafeCast<GPUMultisampleState>().apply {
+  js("{}").unsafeCast<GPUMultisampleState>().apply {
     if (count != null) this.count = count
     if (mask != null) this.mask = mask
     if (alphaToCoverageEnabled != null) this.alphaToCoverageEnabled = alphaToCoverageEnabled

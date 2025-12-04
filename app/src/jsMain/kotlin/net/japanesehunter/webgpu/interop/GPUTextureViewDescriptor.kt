@@ -12,7 +12,7 @@ fun GPUTextureViewDescriptor(
   arrayLayerCount: Int? = null,
   label: String? = null,
 ): GPUTextureViewDescriptor =
-  {}.unsafeCast<GPUTextureViewDescriptor>().apply {
+  js("{}").unsafeCast<GPUTextureViewDescriptor>().apply {
     if (format != null) this.format = format
     if (dimension != null) this.dimension = dimension
     if (aspect != null) this.aspect = aspect

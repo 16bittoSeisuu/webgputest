@@ -6,7 +6,7 @@ fun GPUCanvasToneMapping(
   mode: GPUCanvasToneMappingMode? = null,
   exposure: Double? = null,
 ): GPUCanvasToneMapping =
-  {}.unsafeCast<GPUCanvasToneMapping>().apply {
+  js("{}").unsafeCast<GPUCanvasToneMapping>().apply {
     if (mode != null) this.mode = mode
     if (exposure != null) this.exposure = exposure
   }

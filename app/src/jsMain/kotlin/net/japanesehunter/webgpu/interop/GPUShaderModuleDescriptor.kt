@@ -4,7 +4,7 @@ fun GPUShaderModuleDescriptor(
   code: String,
   label: String? = null,
 ): GPUShaderModuleDescriptor {
-  val obj = {}.unsafeCast<GPUShaderModuleDescriptor>()
+  val obj = js("{}").unsafeCast<GPUShaderModuleDescriptor>()
   obj.code = code
   if (label != null) obj.label = label
   return obj

@@ -4,10 +4,10 @@ package net.japanesehunter.webgpu.interop
 
 fun GPUVertexAttribute(
   format: GPUVertexFormat,
-  offset: Int,
+  offset: Long,
   shaderLocation: Int,
 ): GPUVertexAttribute =
-  {}.unsafeCast<GPUVertexAttribute>().apply {
+  js("{}").unsafeCast<GPUVertexAttribute>().apply {
     this.format = format
     this.offset = offset
     this.shaderLocation = shaderLocation
@@ -15,6 +15,6 @@ fun GPUVertexAttribute(
 
 external interface GPUVertexAttribute {
   var format: GPUVertexFormat
-  var offset: Int
+  var offset: Long
   var shaderLocation: Int
 }

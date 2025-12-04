@@ -6,7 +6,7 @@ fun GPUColor(
   b: Double,
   a: Double,
 ): GPUColor =
-  {}.unsafeCast<GPUColor>().apply {
+  js("{}").unsafeCast<GPUColor>().apply {
     this.r = r
     this.g = g
     this.b = b

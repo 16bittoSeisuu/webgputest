@@ -11,7 +11,7 @@ fun GPUPrimitiveState(
   polygonMode: GPUPolygonMode? = null,
   conservative: Boolean? = null,
 ): GPUPrimitiveState =
-  {}.unsafeCast<GPUPrimitiveState>().apply {
+  js("{}").unsafeCast<GPUPrimitiveState>().apply {
     if (topology != null) this.topology = topology
     if (stripIndexFormat != null) this.stripIndexFormat = stripIndexFormat
     if (frontFace != null) this.frontFace = frontFace

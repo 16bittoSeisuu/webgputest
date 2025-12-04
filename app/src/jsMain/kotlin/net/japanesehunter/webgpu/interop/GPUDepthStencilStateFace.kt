@@ -8,7 +8,7 @@ fun GPUDepthStencilStateFace(
   depthFailOp: GPUStencilOperation,
   passOp: GPUStencilOperation,
 ): GPUDepthStencilStateFace =
-  {}.unsafeCast<GPUDepthStencilStateFace>().apply {
+  js("{}").unsafeCast<GPUDepthStencilStateFace>().apply {
     this.compare = compare
     this.failOp = failOp
     this.depthFailOp = depthFailOp

@@ -4,7 +4,7 @@ fun GPUBlendState(
   color: GPUBlendComponent,
   alpha: GPUBlendComponent,
 ): GPUBlendState =
-  {}.unsafeCast<GPUBlendState>().apply {
+  js("{}").unsafeCast<GPUBlendState>().apply {
     this.color = color
     this.alpha = alpha
   }

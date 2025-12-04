@@ -10,7 +10,7 @@ fun GPURenderPassColorAttachment(
   resolveTarget: GPUTextureView? = null,
   clearValue: GPUColor? = null,
 ): GPURenderPassColorAttachment =
-  {}.unsafeCast<GPURenderPassColorAttachment>().apply {
+  js("{}").unsafeCast<GPURenderPassColorAttachment>().apply {
     this.view = view
     this.loadOp = loadOp
     this.storeOp = storeOp
