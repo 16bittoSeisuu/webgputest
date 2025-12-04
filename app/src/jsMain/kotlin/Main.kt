@@ -76,9 +76,9 @@ private suspend inline fun <R> webgpuContext(
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
   val adapter =
-    gpu.requestAdapter().await() ?: throw UnsupportedGPUDriverException()
+    gpu.requestAdapter().await() ?: throw UnsupportedAdapterException()
   val device =
-    adapter.requestDevice().await() ?: throw UnsupportedGPUDriverException()
+    adapter.requestDevice().await()
   val surfaceContext =
     canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
   val preferredFormat = gpu.getPreferredCanvasFormat()
@@ -257,9 +257,9 @@ private class UnsupportedBrowserException :
     message = "WebGPU is not supported on this browser",
   )
 
-private class UnsupportedGPUDriverException :
+private class UnsupportedAdapterException :
   Exception(
-    message = "WebGPU Adapter or Device could not be obtained",
+    message = "WebGPU Adapter could not be obtained",
   )
 
 private val logger = KotlinLogging.logger("Main")
