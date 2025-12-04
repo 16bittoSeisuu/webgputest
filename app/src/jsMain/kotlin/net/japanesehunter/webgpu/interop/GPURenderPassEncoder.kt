@@ -42,5 +42,11 @@ external interface GPURenderPassEncoder : GPUObjectBase {
     firstInstance: Int = definedExternally,
   )
 
+  fun drawIndirect(indirectBuffer: GPUBuffer, indirectOffset: Int)
+
+  fun drawIndexedIndirect(indirectBuffer: GPUBuffer, indirectOffset: Int)
+
+  fun executeBundles(bundles: Array<GPURenderBundle>)
+
   fun end()
 }

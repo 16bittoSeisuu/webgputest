@@ -17,6 +17,10 @@ import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
 import net.japanesehunter.webgpu.interop.GPULoadOp
+import net.japanesehunter.webgpu.interop.GPURenderBundle
+import net.japanesehunter.webgpu.interop.GPURenderBundleDescriptor
+import net.japanesehunter.webgpu.interop.GPURenderBundleEncoder
+import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
@@ -47,13 +51,17 @@ fun main() =
       val vertexPosBuffer = createVertexPosBuffer()
       val vertexColorBuffer = createVertexColorBuffer()
       val indexBuffer = createIndexBuffer()
-      while (true) {
-        frame {
+      val renderBundle =
+        recordRenderBundle {
           setPipeline(pipeline)
           setVertexBuffer(0, vertexPosBuffer)
           setVertexBuffer(1, vertexColorBuffer)
           setIndexBuffer(indexBuffer, GPUIndexFormat.Uint16)
           drawIndexed(3)
+        }
+      while (true) {
+        frame {
+          executeBundles(arrayOf(renderBundle))
         }
         yield()
       }
@@ -205,6 +213,21 @@ private suspend fun compileTriangleShader(): GPURenderPipeline {
     label = "Triangle Pipeline",
   )
 }
+
+context(gpu: GPU, device: GPUDevice)
+private inline fun recordRenderBundle(
+  label: String? = null,
+  action: GPURenderBundleEncoder.() -> Unit,
+): GPURenderBundle =
+  device
+    .createRenderBundleEncoder(
+      GPURenderBundleEncoderDescriptor(
+        colorFormats = arrayOf(gpu.getPreferredCanvasFormat()),
+      ),
+    ).run {
+      action()
+      finish(GPURenderBundleDescriptor(label))
+    }
 
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {

@@ -12,6 +12,8 @@ external interface GPUDevice : GPUObjectBase {
 
   fun createRenderPipelineAsync(descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline>
 
+  fun createRenderBundleEncoder(descriptor: GPURenderBundleEncoderDescriptor): GPURenderBundleEncoder
+
   fun createShaderModule(descriptor: GPUShaderModuleDescriptor): GPUShaderModule
 
   fun destroy()
