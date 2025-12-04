@@ -8,6 +8,7 @@ import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
+import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexState
 
 fun GPUDevice.createShaderCompiler(surfaceFormat: GPUTextureFormat): ShaderCompiler =
@@ -19,6 +20,7 @@ fun GPUDevice.createShaderCompiler(surfaceFormat: GPUTextureFormat): ShaderCompi
 interface ShaderCompiler {
   suspend fun compile(
     vertexCode: String,
+    vertexAttributes: Array<GPUVertexBufferLayout>? = null,
     fragmentCode: String? = null,
     label: String? = null,
   ): GPURenderPipeline
@@ -30,6 +32,7 @@ private class ShaderCompilerImpl(
 ) : ShaderCompiler {
   override suspend fun compile(
     vertexCode: String,
+    vertexAttributes: Array<GPUVertexBufferLayout>?,
     fragmentCode: String?,
     label: String?,
   ): GPURenderPipeline {
@@ -37,7 +40,7 @@ private class ShaderCompilerImpl(
       device.createShaderModule(
         GPUShaderModuleDescriptor(
           code = vertexCode,
-          label = label?.let { "$it-vertex-shader" },
+          label = label?.let { "$label-vertex-shader" },
         ),
       )
     val fragmentModule =
@@ -45,11 +48,11 @@ private class ShaderCompilerImpl(
         device.createShaderModule(
           GPUShaderModuleDescriptor(
             code = it,
-            label = label?.let { "$it-fragment-shader" },
+            label = label?.let { "$label-fragment-shader" },
           ),
         )
       } ?: vertexModule
-    val vertexState = GPUVertexState(vertexModule)
+    val vertexState = GPUVertexState(vertexModule, vertexAttributes)
     val fragmentState =
       GPUFragmentState(
         module = fragmentModule,

@@ -8,6 +8,9 @@ import net.japanesehunter.webgpu.ShaderCompiler
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
+import net.japanesehunter.webgpu.interop.GPUBuffer
+import net.japanesehunter.webgpu.interop.GPUBufferDescriptor
+import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
@@ -18,7 +21,12 @@ import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPUStoreOp
+import net.japanesehunter.webgpu.interop.GPUVertexAttribute
+import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
+import net.japanesehunter.webgpu.interop.GPUVertexFormat
 import net.japanesehunter.webgpu.interop.navigator.gpu
+import org.khronos.webgl.Float32Array
+import org.khronos.webgl.set
 import org.w3c.dom.HTMLCanvasElement
 
 fun main() =
@@ -34,9 +42,13 @@ fun main() =
 
     webgpuContext(canvas) {
       val pipeline = compileTriangleShader()
+      val vertexPosBuffer = createVertexPosBuffer()
+      val vertexColorBuffer = createVertexColorBuffer()
       while (true) {
         frame {
           setPipeline(pipeline)
+          setVertexBuffer(0, vertexPosBuffer)
+          setVertexBuffer(1, vertexColorBuffer)
           draw(3)
         }
         yield()
@@ -70,13 +82,104 @@ private suspend inline fun <R> webgpuContext(
   }
 }
 
+context(device: GPUDevice)
+private fun createVertexPosBuffer(): GPUBuffer {
+  val vertices =
+    floatArrayOf(
+      0f,
+      0.5f,
+      0f, // vertex 0
+      -0.5f,
+      -0.5f,
+      0f, // vertex 1
+      0.5f,
+      -0.5f,
+      0f, // vertex 2
+    )
+  return device
+    .createBuffer(
+      GPUBufferDescriptor(
+        size = vertices.size * Float.SIZE_BYTES,
+        usage = GPUBufferUsage.Vertex,
+        mappedAtCreation = true,
+        label = "Vertex Buffer",
+      ),
+    ).apply {
+      val floatArray = Float32Array(getMappedRange())
+      for (i in vertices.indices) {
+        floatArray[i] = vertices[i]
+      }
+      unmap()
+    }
+}
+
+context(device: GPUDevice)
+private fun createVertexColorBuffer(): GPUBuffer {
+  val colors =
+    floatArrayOf(
+      1f,
+      1f,
+      0f,
+      1f, // vertex 0
+      0f,
+      1f,
+      1f,
+      1f, // vertex 1
+      1f,
+      0f,
+      1f,
+      1f, // vertex 2
+    )
+  return device
+    .createBuffer(
+      GPUBufferDescriptor(
+        size = colors.size * Float.SIZE_BYTES,
+        usage = GPUBufferUsage.Vertex,
+        mappedAtCreation = true,
+        label = "Color Buffer",
+      ),
+    ).apply {
+      val floatArray = Float32Array(getMappedRange())
+      for (i in colors.indices) {
+        floatArray[i] = colors[i]
+      }
+      unmap()
+    }
+}
+
 context(compiler: ShaderCompiler)
-private suspend fun compileTriangleShader(): GPURenderPipeline =
-  compiler.compile(
+private suspend fun compileTriangleShader(): GPURenderPipeline {
+  val layout0 =
+    GPUVertexBufferLayout(
+      arrayStride = 3 * Float.SIZE_BYTES,
+      attributes =
+        arrayOf(
+          GPUVertexAttribute(
+            shaderLocation = 0,
+            offset = 0,
+            format = GPUVertexFormat.Float32x3,
+          ),
+        ),
+    )
+  val layout1 =
+    GPUVertexBufferLayout(
+      arrayStride = 4 * Float.SIZE_BYTES,
+      attributes =
+        arrayOf(
+          GPUVertexAttribute(
+            shaderLocation = 1,
+            offset = 0,
+            format = GPUVertexFormat.Float32x4,
+          ),
+        ),
+    )
+  return compiler.compile(
     vertexCode = code,
     fragmentCode = code,
+    vertexAttributes = arrayOf(layout0, layout1),
     label = "Triangle Pipeline",
   )
+}
 
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
@@ -122,22 +225,11 @@ private val code =
   
   @vertex
   fn vs_main(
-    @builtin(vertex_index) vertexIndex : u32
+    @location(0) pos: vec3f,
+    @location(1) color: vec4f,
   ) -> VsOut {
-    var positions = array<vec2f, 3>(
-      vec2f(0.0, 0.5),
-      vec2f(-0.5, -0.5),
-      vec2f(0.5, -0.5)
-    );
-    var colors = array<vec4f, 3>(
-      vec4f(1.0, 1.0, 0.0, 1.0),
-      vec4f(0.0, 1.0, 1.0, 1.0),
-      vec4f(1.0, 0.0, 1.0, 1.0)
-    );
-    let pos = positions[vertexIndex];
-    let color = colors[vertexIndex];
     var out: VsOut;
-    out.position = vec4f(pos, 0.0, 1.0);
+    out.position = vec4f(pos, 1.0);
     out.color = color;
     return out;
   }
