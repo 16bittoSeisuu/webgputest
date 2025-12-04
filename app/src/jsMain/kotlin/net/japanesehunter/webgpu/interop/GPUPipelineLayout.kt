@@ -1,6 +1,11 @@
 package net.japanesehunter.webgpu.interop
 
-external interface GPUPipelineLayout : GPUObjectBase
+external interface GPUPipelineLayout : GPUObjectBase {
+  companion object
+}
 
-val autoPipelineLayout: GPUPipelineLayout
-  get() = "auto".unsafeCast<GPUPipelineLayout>()
+val GPUPipelineLayout.Companion.auto: GPUPipelineLayout
+  get() = gpuPipelineLayoutAuto
+
+private val gpuPipelineLayoutAuto: GPUPipelineLayout =
+  "auto".unsafeCast<GPUPipelineLayout>()

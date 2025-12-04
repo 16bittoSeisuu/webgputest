@@ -7,9 +7,10 @@ import net.japanesehunter.webgpu.interop.GPUFragmentState
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
+import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.GPUVertexState
 
-fun GPUDevice.createShaderCompiler(surfaceFormat: String): ShaderCompiler =
+fun GPUDevice.createShaderCompiler(surfaceFormat: GPUTextureFormat): ShaderCompiler =
   ShaderCompilerImpl(
     device = this,
     surfaceFormat = surfaceFormat,
@@ -25,7 +26,7 @@ interface ShaderCompiler {
 
 private class ShaderCompilerImpl(
   private val device: GPUDevice,
-  private val surfaceFormat: String,
+  private val surfaceFormat: GPUTextureFormat,
 ) : ShaderCompiler {
   override suspend fun compile(
     vertexCode: String,

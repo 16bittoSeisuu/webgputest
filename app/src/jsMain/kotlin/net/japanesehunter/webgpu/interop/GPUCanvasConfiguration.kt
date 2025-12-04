@@ -1,13 +1,15 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPUCanvasConfiguration(
   device: GPUDevice,
-  format: String,
+  format: GPUTextureFormat,
   usage: Int? = null,
-  colorSpace: String? = null,
-  alphaMode: String? = null,
-  viewFormats: Array<String>? = null,
-  toneMapping: GPUCanvasToneMappingMode? = null,
+  colorSpace: PredefinedColorSpace? = null,
+  alphaMode: GPUCanvasAlphaMode? = null,
+  viewFormats: Array<GPUTextureFormat>? = null,
+  toneMapping: GPUCanvasToneMapping? = null,
 ): GPUCanvasConfiguration {
   val obj = {}.unsafeCast<GPUCanvasConfiguration>()
   obj.device = device
@@ -23,10 +25,10 @@ fun GPUCanvasConfiguration(
 
 external interface GPUCanvasConfiguration {
   var device: GPUDevice
-  var format: String
+  var format: GPUTextureFormat
   var usage: Int?
-  var colorSpace: String?
-  var alphaMode: String?
-  var viewFormats: Array<String>?
-  var toneMapping: GPUCanvasToneMappingMode?
+  var colorSpace: PredefinedColorSpace?
+  var alphaMode: GPUCanvasAlphaMode?
+  var viewFormats: Array<GPUTextureFormat>?
+  var toneMapping: GPUCanvasToneMapping?
 }

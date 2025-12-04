@@ -6,6 +6,8 @@ external interface GPUDevice : GPUObjectBase {
   val adapterInfo: GPUAdapterInfo
   val queue: GPUQueue
 
+  fun createBuffer(descriptor: GPUBufferDescriptor): GPUBuffer
+
   fun createCommandEncoder(descriptor: GPUCommandEncoderDescriptor = definedExternally): GPUCommandEncoder
 
   fun createRenderPipelineAsync(descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline>

@@ -1,7 +1,9 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPUColorTargetState(
-  format: String,
+  format: GPUTextureFormat,
   blend: GPUBlendState? = null,
   writeMask: Int? = null,
 ): GPUColorTargetState =
@@ -12,7 +14,7 @@ fun GPUColorTargetState(
   }
 
 external interface GPUColorTargetState {
-  var format: String
+  var format: GPUTextureFormat
   var blend: GPUBlendState?
   var writeMask: Int?
 }

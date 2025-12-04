@@ -1,9 +1,11 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPUTextureViewDescriptor(
-  format: String? = null,
-  dimension: String? = null,
-  aspect: String? = null,
+  format: GPUTextureFormat? = null,
+  dimension: GPUTextureViewDimension? = null,
+  aspect: GPUTextureAspect? = null,
   baseMipLevel: Int? = null,
   mipLevelCount: Int? = null,
   baseArrayLayer: Int? = null,
@@ -22,9 +24,9 @@ fun GPUTextureViewDescriptor(
   }
 
 external interface GPUTextureViewDescriptor {
-  var format: String?
-  var dimension: String?
-  var aspect: String?
+  var format: GPUTextureFormat?
+  var dimension: GPUTextureViewDimension?
+  var aspect: GPUTextureAspect?
   var baseMipLevel: Int?
   var mipLevelCount: Int?
   var baseArrayLayer: Int?

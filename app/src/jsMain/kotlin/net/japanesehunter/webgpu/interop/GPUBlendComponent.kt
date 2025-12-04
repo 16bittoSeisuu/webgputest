@@ -1,9 +1,11 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPUBlendComponent(
-  operation: String? = null,
-  srcFactor: String? = null,
-  dstFactor: String? = null,
+  operation: GPUBlendOperation? = null,
+  srcFactor: GPUBlendFactor? = null,
+  dstFactor: GPUBlendFactor? = null,
 ): GPUBlendComponent =
   {}.unsafeCast<GPUBlendComponent>().apply {
     if (operation != null) this.operation = operation
@@ -12,7 +14,7 @@ fun GPUBlendComponent(
   }
 
 external interface GPUBlendComponent {
-  var operation: String?
-  var srcFactor: String?
-  var dstFactor: String?
+  var operation: GPUBlendOperation?
+  var srcFactor: GPUBlendFactor?
+  var dstFactor: GPUBlendFactor?
 }

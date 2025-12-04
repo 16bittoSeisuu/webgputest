@@ -1,7 +1,7 @@
 package net.japanesehunter.webgpu.interop
 
 fun GPURenderPipelineDescriptor(
-  layout: GPUPipelineLayout = autoPipelineLayout,
+  layout: GPUPipelineLayout = GPUPipelineLayout.auto,
   vertex: GPUVertexState,
   fragment: GPUFragmentState? = null,
   primitive: GPUPrimitiveState? = null,

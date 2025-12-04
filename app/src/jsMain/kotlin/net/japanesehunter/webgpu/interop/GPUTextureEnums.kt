@@ -1,0 +1,131 @@
+package net.japanesehunter.webgpu.interop
+
+value class GPUTextureFormat private constructor(
+  val value: String,
+) {
+  override fun toString(): String = value
+
+  companion object {
+    val R8Unorm = GPUTextureFormat("r8unorm")
+    val R8Snorm = GPUTextureFormat("r8snorm")
+    val R8Uint = GPUTextureFormat("r8uint")
+    val R8Sint = GPUTextureFormat("r8sint")
+    val R16Uint = GPUTextureFormat("r16uint")
+    val R16Sint = GPUTextureFormat("r16sint")
+    val R16Float = GPUTextureFormat("r16float")
+    val Rg8Unorm = GPUTextureFormat("rg8unorm")
+    val Rg8Snorm = GPUTextureFormat("rg8snorm")
+    val Rg8Uint = GPUTextureFormat("rg8uint")
+    val Rg8Sint = GPUTextureFormat("rg8sint")
+    val R32Uint = GPUTextureFormat("r32uint")
+    val R32Sint = GPUTextureFormat("r32sint")
+    val R32Float = GPUTextureFormat("r32float")
+    val Rg16Uint = GPUTextureFormat("rg16uint")
+    val Rg16Sint = GPUTextureFormat("rg16sint")
+    val Rg16Float = GPUTextureFormat("rg16float")
+    val Rgba8Unorm = GPUTextureFormat("rgba8unorm")
+    val Rgba8UnormSrgb = GPUTextureFormat("rgba8unorm-srgb")
+    val Rgba8Snorm = GPUTextureFormat("rgba8snorm")
+    val Rgba8Uint = GPUTextureFormat("rgba8uint")
+    val Rgba8Sint = GPUTextureFormat("rgba8sint")
+    val Bgra8Unorm = GPUTextureFormat("bgra8unorm")
+    val Bgra8UnormSrgb = GPUTextureFormat("bgra8unorm-srgb")
+    val Rgb9e5Ufloat = GPUTextureFormat("rgb9e5ufloat")
+    val Rgb10a2Unorm = GPUTextureFormat("rgb10a2unorm")
+    val Rg11b10Ufloat = GPUTextureFormat("rg11b10ufloat")
+    val Rg32Uint = GPUTextureFormat("rg32uint")
+    val Rg32Sint = GPUTextureFormat("rg32sint")
+    val Rg32Float = GPUTextureFormat("rg32float")
+    val Rgba16Uint = GPUTextureFormat("rgba16uint")
+    val Rgba16Sint = GPUTextureFormat("rgba16sint")
+    val Rgba16Float = GPUTextureFormat("rgba16float")
+    val Rgba32Uint = GPUTextureFormat("rgba32uint")
+    val Rgba32Sint = GPUTextureFormat("rgba32sint")
+    val Rgba32Float = GPUTextureFormat("rgba32float")
+    val Stencil8 = GPUTextureFormat("stencil8")
+    val Depth16Unorm = GPUTextureFormat("depth16unorm")
+    val Depth24Plus = GPUTextureFormat("depth24plus")
+    val Depth24PlusStencil8 = GPUTextureFormat("depth24plus-stencil8")
+    val Depth32Float = GPUTextureFormat("depth32float")
+    val Depth32FloatStencil8 = GPUTextureFormat("depth32float-stencil8")
+    val Bc1RgbaUnorm = GPUTextureFormat("bc1-rgba-unorm")
+    val Bc1RgbaUnormSrgb = GPUTextureFormat("bc1-rgba-unorm-srgb")
+    val Bc2RgbaUnorm = GPUTextureFormat("bc2-rgba-unorm")
+    val Bc2RgbaUnormSrgb = GPUTextureFormat("bc2-rgba-unorm-srgb")
+    val Bc3RgbaUnorm = GPUTextureFormat("bc3-rgba-unorm")
+    val Bc3RgbaUnormSrgb = GPUTextureFormat("bc3-rgba-unorm-srgb")
+    val Bc4RUnorm = GPUTextureFormat("bc4-r-unorm")
+    val Bc4RSnorm = GPUTextureFormat("bc4-r-snorm")
+    val Bc5RgUnorm = GPUTextureFormat("bc5-rg-unorm")
+    val Bc5RgSnorm = GPUTextureFormat("bc5-rg-snorm")
+    val Bc6hRgbUfloat = GPUTextureFormat("bc6h-rgb-ufloat")
+    val Bc6hRgbFloat = GPUTextureFormat("bc6h-rgb-float")
+    val Bc7RgbaUnorm = GPUTextureFormat("bc7-rgba-unorm")
+    val Bc7RgbaUnormSrgb = GPUTextureFormat("bc7-rgba-unorm-srgb")
+    val Etc2Rgb8Unorm = GPUTextureFormat("etc2-rgb8unorm")
+    val Etc2Rgb8UnormSrgb = GPUTextureFormat("etc2-rgb8unorm-srgb")
+    val Etc2Rgb8a1Unorm = GPUTextureFormat("etc2-rgb8a1unorm")
+    val Etc2Rgb8a1UnormSrgb = GPUTextureFormat("etc2-rgb8a1unorm-srgb")
+    val Etc2Rgba8Unorm = GPUTextureFormat("etc2-rgba8unorm")
+    val Etc2Rgba8UnormSrgb = GPUTextureFormat("etc2-rgba8unorm-srgb")
+    val EacR11Unorm = GPUTextureFormat("eac-r11unorm")
+    val EacR11Snorm = GPUTextureFormat("eac-r11snorm")
+    val EacRg11Unorm = GPUTextureFormat("eac-rg11unorm")
+    val EacRg11Snorm = GPUTextureFormat("eac-rg11snorm")
+    val Astc4x4Unorm = GPUTextureFormat("astc-4x4-unorm")
+    val Astc4x4UnormSrgb = GPUTextureFormat("astc-4x4-unorm-srgb")
+    val Astc5x4Unorm = GPUTextureFormat("astc-5x4-unorm")
+    val Astc5x4UnormSrgb = GPUTextureFormat("astc-5x4-unorm-srgb")
+    val Astc5x5Unorm = GPUTextureFormat("astc-5x5-unorm")
+    val Astc5x5UnormSrgb = GPUTextureFormat("astc-5x5-unorm-srgb")
+    val Astc6x5Unorm = GPUTextureFormat("astc-6x5-unorm")
+    val Astc6x5UnormSrgb = GPUTextureFormat("astc-6x5-unorm-srgb")
+    val Astc6x6Unorm = GPUTextureFormat("astc-6x6-unorm")
+    val Astc6x6UnormSrgb = GPUTextureFormat("astc-6x6-unorm-srgb")
+    val Astc8x5Unorm = GPUTextureFormat("astc-8x5-unorm")
+    val Astc8x5UnormSrgb = GPUTextureFormat("astc-8x5-unorm-srgb")
+    val Astc8x6Unorm = GPUTextureFormat("astc-8x6-unorm")
+    val Astc8x6UnormSrgb = GPUTextureFormat("astc-8x6-unorm-srgb")
+    val Astc8x8Unorm = GPUTextureFormat("astc-8x8-unorm")
+    val Astc8x8UnormSrgb = GPUTextureFormat("astc-8x8-unorm-srgb")
+    val Astc10x5Unorm = GPUTextureFormat("astc-10x5-unorm")
+    val Astc10x5UnormSrgb = GPUTextureFormat("astc-10x5-unorm-srgb")
+    val Astc10x6Unorm = GPUTextureFormat("astc-10x6-unorm")
+    val Astc10x6UnormSrgb = GPUTextureFormat("astc-10x6-unorm-srgb")
+    val Astc10x8Unorm = GPUTextureFormat("astc-10x8-unorm")
+    val Astc10x8UnormSrgb = GPUTextureFormat("astc-10x8-unorm-srgb")
+    val Astc10x10Unorm = GPUTextureFormat("astc-10x10-unorm")
+    val Astc10x10UnormSrgb = GPUTextureFormat("astc-10x10-unorm-srgb")
+    val Astc12x10Unorm = GPUTextureFormat("astc-12x10-unorm")
+    val Astc12x10UnormSrgb = GPUTextureFormat("astc-12x10-unorm-srgb")
+    val Astc12x12Unorm = GPUTextureFormat("astc-12x12-unorm")
+    val Astc12x12UnormSrgb = GPUTextureFormat("astc-12x12-unorm-srgb")
+  }
+}
+
+value class GPUTextureViewDimension private constructor(
+  val value: String,
+) {
+  override fun toString(): String = value
+
+  companion object {
+    val D1 = GPUTextureViewDimension("1d")
+    val D2 = GPUTextureViewDimension("2d")
+    val D2Array = GPUTextureViewDimension("2d-array")
+    val Cube = GPUTextureViewDimension("cube")
+    val CubeArray = GPUTextureViewDimension("cube-array")
+    val D3 = GPUTextureViewDimension("3d")
+  }
+}
+
+value class GPUTextureAspect private constructor(
+  val value: String,
+) {
+  override fun toString(): String = value
+
+  companion object {
+    val All = GPUTextureAspect("all")
+    val StencilOnly = GPUTextureAspect("stencil-only")
+    val DepthOnly = GPUTextureAspect("depth-only")
+  }
+}

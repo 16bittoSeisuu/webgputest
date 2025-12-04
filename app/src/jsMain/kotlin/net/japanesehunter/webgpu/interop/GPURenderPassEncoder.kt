@@ -1,3 +1,5 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 external interface GPURenderPassEncoder : GPUObjectBase {
@@ -14,7 +16,7 @@ external interface GPURenderPassEncoder : GPUObjectBase {
 
   fun setIndexBuffer(
     buffer: GPUBuffer,
-    indexFormat: String, // "uint16" | "uint32"
+    indexFormat: GPUIndexFormat, // "uint16" | "uint32"
     offset: Int = definedExternally,
     size: Int = definedExternally,
   )
