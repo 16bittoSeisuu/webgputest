@@ -1,7 +1,18 @@
 package net.japanesehunter.webgpu.interop
 
-external class GPURenderPassTimestampWrite(
-  val querySet: GPUQuerySet,
-  val beginningOfPassWriteIndex: Int,
-  val endOfPassWriteIndex: Int,
-)
+fun GPURenderPassTimestampWrite(
+  querySet: GPUQuerySet,
+  beginningOfPassWriteIndex: Int,
+  endOfPassWriteIndex: Int,
+): GPURenderPassTimestampWrite =
+  {}.unsafeCast<GPURenderPassTimestampWrite>().apply {
+    this.querySet = querySet
+    this.beginningOfPassWriteIndex = beginningOfPassWriteIndex
+    this.endOfPassWriteIndex = endOfPassWriteIndex
+  }
+
+external interface GPURenderPassTimestampWrite {
+  var querySet: GPUQuerySet
+  var beginningOfPassWriteIndex: Int
+  var endOfPassWriteIndex: Int
+}

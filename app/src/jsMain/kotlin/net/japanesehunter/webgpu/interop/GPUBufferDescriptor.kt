@@ -1,8 +1,10 @@
+@file:Suppress("INLINE_CLASS_IN_EXTERNAL_DECLARATION_WARNING")
+
 package net.japanesehunter.webgpu.interop
 
 fun GPUBufferDescriptor(
   size: Int,
-  usage: Int,
+  usage: GPUBufferUsage,
   mappedAtCreation: Boolean? = null,
   label: String? = null,
 ): GPUBufferDescriptor =
@@ -15,7 +17,7 @@ fun GPUBufferDescriptor(
 
 external interface GPUBufferDescriptor {
   var size: Int
-  var usage: Int
+  var usage: GPUBufferUsage
   var mappedAtCreation: Boolean?
   var label: String?
 }

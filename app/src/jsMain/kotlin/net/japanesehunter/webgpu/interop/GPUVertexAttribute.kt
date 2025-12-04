@@ -2,8 +2,19 @@
 
 package net.japanesehunter.webgpu.interop
 
-external class GPUVertexAttribute(
-  val format: GPUVertexFormat,
-  val offset: Int,
-  val shaderLocation: Int,
-)
+fun GPUVertexAttribute(
+  format: GPUVertexFormat,
+  offset: Int,
+  shaderLocation: Int,
+): GPUVertexAttribute =
+  {}.unsafeCast<GPUVertexAttribute>().apply {
+    this.format = format
+    this.offset = offset
+    this.shaderLocation = shaderLocation
+  }
+
+external interface GPUVertexAttribute {
+  var format: GPUVertexFormat
+  var offset: Int
+  var shaderLocation: Int
+}

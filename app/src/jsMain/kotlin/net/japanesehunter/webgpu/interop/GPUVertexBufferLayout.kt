@@ -2,8 +2,19 @@
 
 package net.japanesehunter.webgpu.interop
 
-external class GPUVertexBufferLayout(
-  val arrayStride: Int,
-  val stepMode: GPUVertexStepMode = definedExternally, // "vertex" | "instance"
-  val attributes: Array<GPUVertexAttribute>,
-)
+fun GPUVertexBufferLayout(
+  arrayStride: Int,
+  stepMode: GPUVertexStepMode? = null,
+  attributes: Array<GPUVertexAttribute>,
+): GPUVertexBufferLayout =
+  {}.unsafeCast<GPUVertexBufferLayout>().apply {
+    this.arrayStride = arrayStride
+    if (stepMode != null) this.stepMode = stepMode
+    this.attributes = attributes
+  }
+
+external interface GPUVertexBufferLayout {
+  var arrayStride: Int
+  var stepMode: GPUVertexStepMode
+  var attributes: Array<GPUVertexAttribute>
+}

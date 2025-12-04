@@ -2,9 +2,22 @@
 
 package net.japanesehunter.webgpu.interop
 
-external class GPUDepthStencilStateFace(
-  val compare: GPUCompareFunction,
-  val failOp: GPUStencilOperation,
-  val depthFailOp: GPUStencilOperation,
-  val passOp: GPUStencilOperation,
-)
+fun GPUDepthStencilStateFace(
+  compare: GPUCompareFunction,
+  failOp: GPUStencilOperation,
+  depthFailOp: GPUStencilOperation,
+  passOp: GPUStencilOperation,
+): GPUDepthStencilStateFace =
+  {}.unsafeCast<GPUDepthStencilStateFace>().apply {
+    this.compare = compare
+    this.failOp = failOp
+    this.depthFailOp = depthFailOp
+    this.passOp = passOp
+  }
+
+external interface GPUDepthStencilStateFace {
+  var compare: GPUCompareFunction
+  var failOp: GPUStencilOperation
+  var depthFailOp: GPUStencilOperation
+  var passOp: GPUStencilOperation
+}

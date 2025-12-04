@@ -5,7 +5,7 @@ package net.japanesehunter.webgpu.interop
 fun GPUCanvasConfiguration(
   device: GPUDevice,
   format: GPUTextureFormat,
-  usage: Int? = null,
+  usage: GPUTextureUsage? = null,
   colorSpace: PredefinedColorSpace? = null,
   alphaMode: GPUCanvasAlphaMode? = null,
   viewFormats: Array<GPUTextureFormat>? = null,
@@ -26,7 +26,7 @@ fun GPUCanvasConfiguration(
 external interface GPUCanvasConfiguration {
   var device: GPUDevice
   var format: GPUTextureFormat
-  var usage: Int?
+  var usage: GPUTextureUsage?
   var colorSpace: PredefinedColorSpace?
   var alphaMode: GPUCanvasAlphaMode?
   var viewFormats: Array<GPUTextureFormat>?

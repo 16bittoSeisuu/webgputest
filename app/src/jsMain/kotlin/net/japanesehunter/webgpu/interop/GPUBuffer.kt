@@ -8,7 +8,7 @@ import kotlin.js.Promise
 external interface GPUBuffer : GPUObjectBase {
   override var label: String
   val size: Int
-  val usage: Int
+  val usage: GPUBufferUsage
   val mapState: GPUBufferMapState
 
   fun mapAsync(

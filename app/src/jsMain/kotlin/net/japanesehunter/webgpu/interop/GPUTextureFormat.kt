@@ -102,30 +102,3 @@ value class GPUTextureFormat private constructor(
     val Astc12x12UnormSrgb = GPUTextureFormat("astc-12x12-unorm-srgb")
   }
 }
-
-value class GPUTextureViewDimension private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
-
-  companion object {
-    val D1 = GPUTextureViewDimension("1d")
-    val D2 = GPUTextureViewDimension("2d")
-    val D2Array = GPUTextureViewDimension("2d-array")
-    val Cube = GPUTextureViewDimension("cube")
-    val CubeArray = GPUTextureViewDimension("cube-array")
-    val D3 = GPUTextureViewDimension("3d")
-  }
-}
-
-value class GPUTextureAspect private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
-
-  companion object {
-    val All = GPUTextureAspect("all")
-    val StencilOnly = GPUTextureAspect("stencil-only")
-    val DepthOnly = GPUTextureAspect("depth-only")
-  }
-}
