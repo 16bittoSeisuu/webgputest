@@ -15,6 +15,7 @@ import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUDevice
+import net.japanesehunter.webgpu.interop.GPUIndexFormat
 import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
@@ -26,6 +27,7 @@ import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexFormat
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import org.khronos.webgl.Float32Array
+import org.khronos.webgl.Uint16Array
 import org.khronos.webgl.set
 import org.w3c.dom.HTMLCanvasElement
 
@@ -44,12 +46,14 @@ fun main() =
       val pipeline = compileTriangleShader()
       val vertexPosBuffer = createVertexPosBuffer()
       val vertexColorBuffer = createVertexColorBuffer()
+      val indexBuffer = createIndexBuffer()
       while (true) {
         frame {
           setPipeline(pipeline)
           setVertexBuffer(0, vertexPosBuffer)
           setVertexBuffer(1, vertexColorBuffer)
-          draw(3)
+          setIndexBuffer(indexBuffer, GPUIndexFormat.Uint16)
+          drawIndexed(3)
         }
         yield()
       }
@@ -142,6 +146,27 @@ private fun createVertexColorBuffer(): GPUBuffer {
       val floatArray = Float32Array(getMappedRange())
       for (i in colors.indices) {
         floatArray[i] = colors[i]
+      }
+      unmap()
+    }
+}
+
+context(device: GPUDevice)
+private fun createIndexBuffer(): GPUBuffer {
+  val indices = shortArrayOf(0, 1, 2)
+  return device
+    .createBuffer(
+      GPUBufferDescriptor(
+        size = 8, // 3 indices * 2 bytes, rounded up to multiple of 4
+        usage = GPUBufferUsage.Index,
+        mappedAtCreation = true,
+        label = "Index Buffer",
+      ),
+    ).apply {
+      val array = getMappedRange()
+      val uint16Array = Uint16Array(array)
+      for (i in indices.indices) {
+        uint16Array[i] = indices[i]
       }
       unmap()
     }
