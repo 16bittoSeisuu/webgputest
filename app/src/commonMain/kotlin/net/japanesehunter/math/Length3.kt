@@ -8,12 +8,6 @@ import kotlinx.atomicfu.locks.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import net.japanesehunter.math.Area
-import net.japanesehunter.math.Area3
-import net.japanesehunter.math.AreaUnit
-import net.japanesehunter.math.Length
-import net.japanesehunter.math.LengthUnit
-import net.japanesehunter.math.ObserveTicket
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -116,9 +110,39 @@ interface MutableLength3 :
 // region constants
 
 /**
- * The zero distance (0, 0, 0) in three-dimensional space.
+ * The zero length (0, 0, 0) in three-dimensional space.
  */
 val Length3.Companion.zero: ImmutableLength3 get() = LENGTH3_ZERO
+
+/**
+ * A one-meter displacement upward (0, 1 m, 0).
+ */
+val Length3.Companion.up: ImmutableLength3 get() = LENGTH3_UP
+
+/**
+ * A one-meter displacement toward the negative z-axis (0, 0, -1m).
+ */
+val Length3.Companion.north: ImmutableLength3 get() = LENGTH3_NORTH
+
+/**
+ * A one-meter displacement toward the positive x-axis (1m, 0, 0).
+ */
+val Length3.Companion.east: ImmutableLength3 get() = LENGTH3_EAST
+
+/**
+ * A one-meter displacement toward the positive z-axis (0, 0, 1m).
+ */
+val Length3.Companion.south: ImmutableLength3 get() = LENGTH3_SOUTH
+
+/**
+ * A one-meter displacement toward the negative x-axis (-1m, 0, 0).
+ */
+val Length3.Companion.west: ImmutableLength3 get() = LENGTH3_WEST
+
+/**
+ * A one-meter displacement downward (0, -1m, 0).
+ */
+val Length3.Companion.down: ImmutableLength3 get() = LENGTH3_DOWN
 
 // endregion
 
@@ -144,8 +168,16 @@ fun Length3(
   dz: Length = Length.ZERO,
   mutator: (MutableLength3.() -> Unit)? = null,
 ): ImmutableLength3 {
-  if (dx.isZero && dy.isZero && dz.isZero && mutator == null) {
-    return Length3.zero
+  if (mutator == null) {
+    when {
+      dx.isZero && dy.isZero && dz.isZero -> return Length3.zero
+      dx == ONE_METER && dy.isZero && dz.isZero -> return Length3.east
+      dx == -ONE_METER && dy.isZero && dz.isZero -> return Length3.west
+      dx.isZero && dy == ONE_METER && dz.isZero -> return Length3.up
+      dx.isZero && dy == -ONE_METER && dz.isZero -> return Length3.down
+      dx.isZero && dy.isZero && dz == -ONE_METER -> return Length3.north
+      dx.isZero && dy.isZero && dz == ONE_METER -> return Length3.south
+    }
   }
   val impl = ImmutableLength3Impl(dx, dy, dz)
   if (mutator != null) {
@@ -529,7 +561,14 @@ inline fun MutableLength3.map(
 
 // region implementations
 
+private val ONE_METER: Length = 1L.meters
 private val LENGTH3_ZERO: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, Length.ZERO, Length.ZERO)
+private val LENGTH3_UP: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, ONE_METER, Length.ZERO)
+private val LENGTH3_NORTH: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, Length.ZERO, -ONE_METER)
+private val LENGTH3_EAST: ImmutableLength3 = ImmutableLength3Impl(ONE_METER, Length.ZERO, Length.ZERO)
+private val LENGTH3_SOUTH: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, Length.ZERO, ONE_METER)
+private val LENGTH3_WEST: ImmutableLength3 = ImmutableLength3Impl(-ONE_METER, Length.ZERO, Length.ZERO)
+private val LENGTH3_DOWN: ImmutableLength3 = ImmutableLength3Impl(Length.ZERO, -ONE_METER, Length.ZERO)
 
 private data class ImmutableLength3Impl(
   override var dx: Length,
