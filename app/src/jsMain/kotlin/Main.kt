@@ -4,7 +4,9 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.coroutines.yield
+import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.ShaderCompiler
+import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
@@ -68,10 +70,12 @@ fun main() =
     }
   }
 
+// region helper
+
 private suspend inline fun <R> webgpuContext(
   canvas: HTMLCanvasElement,
   action: context(
-    GPU, GPUAdapter, GPUDevice, ShaderCompiler, GPUCanvasContext
+    GPU, GPUAdapter, GPUDevice, ShaderCompiler, GPUCanvasContext, BufferAllocator
   ) () -> R,
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
@@ -89,7 +93,8 @@ private suspend inline fun <R> webgpuContext(
     ),
   )
   val compiler = device.createShaderCompiler(preferredFormat)
-  return context(gpu, adapter, device, compiler, surfaceContext) {
+  val allocator = device.createBufferAllocator()
+  return context(gpu, adapter, device, compiler, surfaceContext, allocator) {
     action()
   }
 }
@@ -299,3 +304,5 @@ private fun HTMLCanvasElement.fit() {
   width = window.innerWidth
   height = window.innerHeight
 }
+
+// endregion
