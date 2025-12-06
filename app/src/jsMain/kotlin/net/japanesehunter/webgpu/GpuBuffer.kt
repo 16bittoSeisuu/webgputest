@@ -11,7 +11,11 @@ import net.japanesehunter.webgpu.interop.GPUCommandEncoder
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUQueue
 import org.khronos.webgl.ArrayBuffer
+import org.khronos.webgl.Float32Array
+import org.khronos.webgl.Int16Array
+import org.khronos.webgl.Int32Array
 import org.khronos.webgl.Uint8Array
+import org.khronos.webgl.set
 
 // region interface
 
@@ -69,10 +73,16 @@ interface CopySrcGpuBuffer : GpuBuffer {
  */
 interface MutableGpuBuffer : GpuBuffer {
   /**
-   * Writes [data] into this buffer view using `GPUQueue.writeBuffer`.
+   * Writes array data into this buffer view using `GPUQueue.writeBuffer`.
    * May perform the work asynchronously.
    */
   fun write(data: ByteArray)
+
+  fun write(data: FloatArray)
+
+  fun write(data: ShortArray)
+
+  fun write(data: IntArray)
 }
 
 interface MutableCopySrcGpuBuffer :
@@ -106,6 +116,24 @@ interface BufferAllocator {
     label: String = "",
   ): Resource<GpuBuffer>
 
+  fun static(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<GpuBuffer>
+
+  fun static(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<GpuBuffer>
+
+  fun static(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<GpuBuffer>
+
   /**
    * Allocates a copy-source buffer view of [size] bytes.
    */
@@ -120,6 +148,24 @@ interface BufferAllocator {
    */
   fun staticCopySrc(
     data: ByteArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<CopySrcGpuBuffer>
+
+  fun staticCopySrc(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<CopySrcGpuBuffer>
+
+  fun staticCopySrc(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<CopySrcGpuBuffer>
+
+  fun staticCopySrc(
+    data: IntArray,
     usage: GPUBufferUsage,
     label: String = "",
   ): Resource<CopySrcGpuBuffer>
@@ -142,6 +188,24 @@ interface BufferAllocator {
     label: String = "",
   ): Resource<MutableGpuBuffer>
 
+  fun mutable(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableGpuBuffer>
+
+  fun mutable(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableGpuBuffer>
+
+  fun mutable(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableGpuBuffer>
+
   /**
    * Allocates a CPU-writable buffer that can also act as a copy source.
    */
@@ -156,6 +220,24 @@ interface BufferAllocator {
    */
   fun mutableCopySrc(
     data: ByteArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableCopySrcGpuBuffer>
+
+  fun mutableCopySrc(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableCopySrcGpuBuffer>
+
+  fun mutableCopySrc(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String = "",
+  ): Resource<MutableCopySrcGpuBuffer>
+
+  fun mutableCopySrc(
+    data: IntArray,
     usage: GPUBufferUsage,
     label: String = "",
   ): Resource<MutableCopySrcGpuBuffer>
@@ -205,6 +287,66 @@ private class BufferAllocatorImpl(
     }
   }
 
+  override fun static(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<GpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage = usage + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+      )
+    }
+  }
+
+  override fun static(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<GpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage = usage + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+      )
+    }
+  }
+
+  override fun static(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<GpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage = usage + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+      )
+    }
+  }
+
   override fun staticCopySrc(
     size: Int,
     usage: GPUBufferUsage,
@@ -238,6 +380,69 @@ private class BufferAllocatorImpl(
         raw = raw,
         offset = 0,
         size = data.size,
+      )
+    }
+  }
+
+  override fun staticCopySrc(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<CopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+      )
+    }
+  }
+
+  override fun staticCopySrc(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<CopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+      )
+    }
+  }
+
+  override fun staticCopySrc(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<CopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      StaticCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
       )
     }
   }
@@ -281,6 +486,72 @@ private class BufferAllocatorImpl(
     }
   }
 
+  override fun mutable(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+        queue = queue,
+      )
+    }
+  }
+
+  override fun mutable(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+        queue = queue,
+      )
+    }
+  }
+
+  override fun mutable(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+        queue = queue,
+      )
+    }
+  }
+
   override fun mutableCopySrc(
     size: Int,
     usage: GPUBufferUsage,
@@ -316,6 +587,72 @@ private class BufferAllocatorImpl(
         raw = raw,
         offset = 0,
         size = data.size,
+        queue = queue,
+      )
+    }
+  }
+
+  override fun mutableCopySrc(
+    data: FloatArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableCopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+        queue = queue,
+      )
+    }
+  }
+
+  override fun mutableCopySrc(
+    data: ShortArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableCopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
+        queue = queue,
+      )
+    }
+  }
+
+  override fun mutableCopySrc(
+    data: IntArray,
+    usage: GPUBufferUsage,
+    label: String,
+  ): Resource<MutableCopySrcGpuBuffer> {
+    val byteSize = data.byteSize
+    val effectiveUsage =
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    return resource {
+      val raw = res.bind()
+      data.writeTo(raw.getMappedRange())
+      raw.unmap()
+      MutableCopySrcBufferImpl(
+        raw = raw,
+        offset = 0,
+        size = byteSize,
         queue = queue,
       )
     }
@@ -396,7 +733,25 @@ private open class MutableBufferImpl(
   override fun write(data: ByteArray) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
-    queue.writeBuffer(raw, offset, buffer, 0, data.size)
+    queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
+  }
+
+  override fun write(data: FloatArray) {
+    data.requireFits(size)
+    val buffer = data.toArrayBuffer()
+    queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
+  }
+
+  override fun write(data: ShortArray) {
+    data.requireFits(size)
+    val buffer = data.toArrayBuffer()
+    queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
+  }
+
+  override fun write(data: IntArray) {
+    data.requireFits(size)
+    val buffer = data.toArrayBuffer()
+    queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
   }
 }
 
@@ -424,12 +779,62 @@ private fun ByteArray.toArrayBuffer(): ArrayBuffer {
   return array.buffer
 }
 
-private fun ByteArray.writeTo(buffer: ArrayBuffer) {
-  val array = Uint8Array(buffer)
+private fun FloatArray.toArrayBuffer(): ArrayBuffer {
+  val array = Float32Array(size)
   for (i in indices) {
     array.asDynamic()[i] = this[i]
   }
+  return array.buffer
 }
+
+private fun ShortArray.toArrayBuffer(): ArrayBuffer {
+  val array = Int16Array(size)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+  return array.buffer
+}
+
+private fun IntArray.toArrayBuffer(): ArrayBuffer {
+  val array = Int32Array(size)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+  return array.buffer
+}
+
+private fun ByteArray.writeTo(buffer: ArrayBuffer) {
+  val array = Uint8Array(buffer)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+}
+
+private fun FloatArray.writeTo(buffer: ArrayBuffer) {
+  val array = Float32Array(buffer)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+}
+
+private fun ShortArray.writeTo(buffer: ArrayBuffer) {
+  val array = Int16Array(buffer)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+}
+
+private fun IntArray.writeTo(buffer: ArrayBuffer) {
+  val array = Int32Array(buffer)
+  for (i in indices) {
+    array[i] = this[i]
+  }
+}
+
+private val ByteArray.byteSize: Int get() = size
+private val FloatArray.byteSize: Int get() = size * Float.SIZE_BYTES
+private val ShortArray.byteSize: Int get() = size * Short.SIZE_BYTES
+private val IntArray.byteSize: Int get() = size * Int.SIZE_BYTES
 
 private fun GpuBuffer.requireRange(
   offset: Int,
@@ -442,10 +847,21 @@ private fun GpuBuffer.requireRange(
   }
 }
 
-private fun ByteArray.requireFits(limit: Int) {
-  require(size <= limit) {
-    "data.size ($size) must be greater than or equal to " +
-      "buffer view size ($limit)"
+private fun ByteArray.requireFits(limit: Int) = requireFits(byteSize, limit, "ByteArray")
+
+private fun FloatArray.requireFits(limit: Int) = requireFits(byteSize, limit, "FloatArray")
+
+private fun ShortArray.requireFits(limit: Int) = requireFits(byteSize, limit, "ShortArray")
+
+private fun IntArray.requireFits(limit: Int) = requireFits(byteSize, limit, "IntArray")
+
+private fun requireFits(
+  dataSize: Int,
+  limit: Int,
+  typeName: String,
+) {
+  require(dataSize <= limit) {
+    "$typeName byteSize ($dataSize) must be <= buffer view size ($limit)"
   }
 }
 
