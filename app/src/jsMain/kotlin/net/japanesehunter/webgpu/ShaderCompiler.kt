@@ -1,5 +1,8 @@
 package net.japanesehunter.webgpu
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUDevice
@@ -10,6 +13,7 @@ import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexState
+import kotlin.js.Promise
 
 fun GPUDevice.createShaderCompiler(surfaceFormat: GPUTextureFormat): ShaderCompiler =
   ShaderCompilerImpl(
@@ -18,24 +22,26 @@ fun GPUDevice.createShaderCompiler(surfaceFormat: GPUTextureFormat): ShaderCompi
   )
 
 interface ShaderCompiler {
-  suspend fun compile(
+  context(coroutine: CoroutineScope)
+  fun compile(
     vertexCode: String,
     vertexAttributes: Array<GPUVertexBufferLayout>? = null,
     fragmentCode: String? = null,
     label: String? = null,
-  ): GPURenderPipeline
+  ): Deferred<GPURenderPipeline>
 }
 
 private class ShaderCompilerImpl(
   private val device: GPUDevice,
   private val surfaceFormat: GPUTextureFormat,
 ) : ShaderCompiler {
-  override suspend fun compile(
+  context(coroutine: CoroutineScope)
+  override fun compile(
     vertexCode: String,
     vertexAttributes: Array<GPUVertexBufferLayout>?,
     fragmentCode: String?,
     label: String?,
-  ): GPURenderPipeline {
+  ): Deferred<GPURenderPipeline> {
     val vertexModule =
       device.createShaderModule(
         GPUShaderModuleDescriptor(
@@ -64,6 +70,9 @@ private class ShaderCompilerImpl(
           vertex = vertexState,
           fragment = fragmentState,
         ),
-      ).await()
+      ).toDeferred()
   }
 }
+
+context(coroutine: CoroutineScope)
+private fun <T> Promise<T>.toDeferred(): Deferred<T> = coroutine.async { await() }

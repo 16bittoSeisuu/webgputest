@@ -8,7 +8,7 @@ import net.japanesehunter.webgpu.interop.GPURenderBundleEncoder
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
 
 context(device: GPUDevice, gpu: GPU)
-fun recordRenderBundle(
+inline fun recordRenderBundle(
   label: String? = null,
   action: GPURenderBundleEncoder.() -> Unit,
 ): GPURenderBundle =

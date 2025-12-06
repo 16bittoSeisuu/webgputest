@@ -1,7 +1,10 @@
 
+import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.await
 import kotlinx.coroutines.yield
 import net.japanesehunter.webgpu.BufferAllocator
@@ -52,7 +55,7 @@ fun main() =
       val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
       val renderBundle =
         recordRenderBundle {
-          setPipeline(pipeline)
+          setPipeline(pipeline.await())
           setVertexBuffer(listOf(vertexPosBuffer, vertexColorBuffer))
           drawIndexed(indexBuffer)
         }
@@ -67,6 +70,7 @@ fun main() =
 
 // region helper
 
+context(resource: ResourceScope)
 private suspend inline fun <R> webgpuContext(
   canvas: HTMLCanvasElement,
   action: context(
@@ -78,6 +82,9 @@ private suspend inline fun <R> webgpuContext(
     gpu.requestAdapter().await() ?: throw UnsupportedAdapterException()
   val device =
     adapter.requestDevice().await()
+  resource.onClose {
+    device.destroy()
+  }
   val surfaceContext =
     canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
   val preferredFormat = gpu.getPreferredCanvasFormat()
@@ -94,8 +101,8 @@ private suspend inline fun <R> webgpuContext(
   }
 }
 
-context(compiler: ShaderCompiler)
-private suspend fun compileTriangleShader(): GPURenderPipeline {
+context(compiler: ShaderCompiler, coroutine: CoroutineScope)
+private fun compileTriangleShader(): Deferred<GPURenderPipeline> {
   val layout0 =
     GPUVertexBufferLayout(
       arrayStride = 3 * Float.SIZE_BYTES,
