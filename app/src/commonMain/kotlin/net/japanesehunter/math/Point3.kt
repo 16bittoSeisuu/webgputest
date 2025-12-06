@@ -276,9 +276,7 @@ fun MutablePoint3(
   x: Length = Length.ZERO,
   y: Length = Length.ZERO,
   z: Length = Length.ZERO,
-): MutablePoint3 {
-  return MutablePoint3Impl(x, y, z)
-}
+): MutablePoint3 = MutablePoint3Impl(x, y, z)
 
 /**
  * Creates a [MutablePoint3] by copying an existing [Point3].

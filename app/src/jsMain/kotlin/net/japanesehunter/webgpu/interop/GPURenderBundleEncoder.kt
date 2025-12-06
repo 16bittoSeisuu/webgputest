@@ -76,12 +76,18 @@ external interface GPURenderBundleEncoder : GPUObjectBase {
   /**
    * Records an indirect draw whose arguments are sourced from [indirectBuffer].
    */
-  fun drawIndirect(indirectBuffer: GPUBuffer, indirectOffset: Int)
+  fun drawIndirect(
+    indirectBuffer: GPUBuffer,
+    indirectOffset: Int,
+  )
 
   /**
    * Records an indexed indirect draw whose arguments are sourced from [indirectBuffer].
    */
-  fun drawIndexedIndirect(indirectBuffer: GPUBuffer, indirectOffset: Int)
+  fun drawIndexedIndirect(
+    indirectBuffer: GPUBuffer,
+    indirectOffset: Int,
+  )
 
   /**
    * Finalizes encoding and produces an immutable [GPURenderBundle].
