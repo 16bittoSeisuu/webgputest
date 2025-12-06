@@ -65,7 +65,14 @@ value class Angle internal constructor(
   /**
    * Converts this [Angle] to a [Long] value using the specified [unit]. The result is truncated toward zero.
    */
-  fun toLong(unit: AngleUnit): Long = (nanoradians.toDouble() / unit.nanoradiansPerUnit).toLong()
+  fun toLong(unit: AngleUnit): Long =
+    when (unit) {
+      AngleUnit.NANORADIAN -> nanoradians
+      AngleUnit.MICRORADIAN -> nanoradians / NANORADIANS_PER_MICRORADIAN
+      AngleUnit.MILLIRADIAN -> nanoradians / NANORADIANS_PER_MILLIRADIAN
+      AngleUnit.RADIAN -> nanoradians / NANORADIANS_PER_RADIAN
+      AngleUnit.DEGREE -> (nanoradians.toDouble() / unit.nanoradiansPerUnit).toLong()
+    }
 
   /**
    * Converts this [Angle] to a [Double] value using the specified [unit].
@@ -186,9 +193,9 @@ value class Angle internal constructor(
     val absValue = abs(nanoradians)
     val (value, unit) =
       when {
-        absValue >= NANORADIANS_PER_RADIAN -> nanoradians.toDouble() / NANORADIANS_PER_RADIAN.toDouble() to AngleUnit.RADIAN
-        absValue >= NANORADIANS_PER_MILLIRADIAN -> nanoradians.toDouble() / NANORADIANS_PER_MILLIRADIAN.toDouble() to AngleUnit.MILLIRADIAN
-        absValue >= NANORADIANS_PER_MICRORADIAN -> nanoradians.toDouble() / NANORADIANS_PER_MICRORADIAN.toDouble() to AngleUnit.MICRORADIAN
+        absValue >= NANORADIANS_PER_RADIAN -> nanoradians.toDouble() / NANORADIANS_PER_RADIAN to AngleUnit.RADIAN
+        absValue >= NANORADIANS_PER_MILLIRADIAN -> nanoradians.toDouble() / NANORADIANS_PER_MILLIRADIAN to AngleUnit.MILLIRADIAN
+        absValue >= NANORADIANS_PER_MICRORADIAN -> nanoradians.toDouble() / NANORADIANS_PER_MICRORADIAN to AngleUnit.MICRORADIAN
         else -> nanoradians.toDouble() to AngleUnit.NANORADIAN
       }
     val formatted = formatAngleValue(value)
@@ -218,8 +225,6 @@ value class Angle internal constructor(
 
     /**
      * Creates an [Angle] from the given [value] expressed in [unit].
-     *
-     * @throws IllegalArgumentException If [value] is not finite.
      */
     fun from(
       value: Long,
