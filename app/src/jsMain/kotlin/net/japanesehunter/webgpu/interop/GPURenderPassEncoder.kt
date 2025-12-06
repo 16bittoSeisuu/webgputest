@@ -21,11 +21,13 @@ external interface GPURenderPassEncoder : GPUObjectBase {
     size: Int = definedExternally,
   )
 
-//  fun setBindGroup(
-//    index: Int,
-//    bindGroup: GPUBindGroup,
-//    dynamicOffsets: Array<Int> = definedExternally,
-//  )
+  fun setBindGroup(
+    index: Int,
+    bindGroup: GPUBindGroup,
+    dynamicOffsets: Array<Int> = definedExternally,
+    dynamicOffsetsDataStart: Int = definedExternally,
+    dynamicOffsetsDataLength: Int = definedExternally,
+  )
 
   fun draw(
     vertexCount: Int,

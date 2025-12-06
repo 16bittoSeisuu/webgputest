@@ -6,6 +6,7 @@ package net.japanesehunter.math
 import kotlinx.atomicfu.locks.ReentrantLock
 import kotlinx.atomicfu.locks.withLock
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.math.tan
 
 // region interfaces
 
@@ -341,6 +342,26 @@ fun MutableMatrix4x4.setProduct(
   }
 }
 
+/**
+ * Builds a right-handed view-projection matrix (`projection * view`) for [camera] with a `[0, 1]` depth range.
+ *
+ * @param camera The camera supplying transform, FOV, aspect ratio, and near/far planes.
+ * @param unit The length unit used to express translations; [NearFar] distances are assumed to use the same unit.
+ * @throws IllegalArgumentException If any scale component on [Camera.transform] is zero.
+ */
+fun Matrix4x4.Companion.viewProjRH(
+  camera: Camera,
+  unit: LengthUnit = LengthUnit.METER,
+): ImmutableMatrix4x4 {
+  val view = DoubleArray(16)
+  val proj = DoubleArray(16)
+  writeViewMatrix(view, camera.transform, unit)
+  writePerspectiveMatrix(proj, camera.fov, camera.aspect, camera.nearFar)
+  val out = DoubleArray(16)
+  multiplyInto(out, proj, view)
+  return Matrix4x4.fromColumnMajor(out)
+}
+
 // endregion
 
 // region implementations
@@ -589,6 +610,120 @@ private fun createMatrixImmutable(elements: DoubleArray): ImmutableMatrix4x4Impl
 
 @PublishedApi
 internal fun Matrix4x4.Companion.fromColumnMajor(elements: DoubleArray): ImmutableMatrix4x4 = createMatrixImmutable(elements)
+
+private fun writeViewMatrix(
+  target: DoubleArray,
+  transform: Transform,
+  unit: LengthUnit,
+) {
+  require(target.size == 16) { "View matrix target must have 16 elements." }
+  val invSx = 1.0 / transform.scale.sx
+  val invSy = 1.0 / transform.scale.sy
+  val invSz = 1.0 / transform.scale.sz
+  require(invSx.isFinite() && invSy.isFinite() && invSz.isFinite()) { "Cannot invert a camera transform with zero scale." }
+
+  val normalizedRotation = transform.rotation.normalized()
+  val rx = normalizedRotation.x
+  val ry = normalizedRotation.y
+  val rz = normalizedRotation.z
+  val rw = normalizedRotation.w
+
+  val xx = rx * rx
+  val yy = ry * ry
+  val zz = rz * rz
+  val xy = rx * ry
+  val xz = rx * rz
+  val yz = ry * rz
+  val wx = rw * rx
+  val wy = rw * ry
+  val wz = rw * rz
+
+  val r00 = 1.0 - 2.0 * (yy + zz)
+  val r01 = 2.0 * (xy + wz)
+  val r02 = 2.0 * (xz - wy)
+  val r10 = 2.0 * (xy - wz)
+  val r11 = 1.0 - 2.0 * (xx + zz)
+  val r12 = 2.0 * (yz + wx)
+  val r20 = 2.0 * (xz + wy)
+  val r21 = 2.0 * (yz - wx)
+  val r22 = 1.0 - 2.0 * (xx + yy)
+
+  target[0] = invSx * r00
+  target[1] = invSy * r01
+  target[2] = invSz * r02
+  target[3] = 0.0
+
+  target[4] = invSx * r10
+  target[5] = invSy * r11
+  target[6] = invSz * r12
+  target[7] = 0.0
+
+  target[8] = invSx * r20
+  target[9] = invSy * r21
+  target[10] = invSz * r22
+  target[11] = 0.0
+
+  val tx = transform.translation.dx.toDouble(unit)
+  val ty = transform.translation.dy.toDouble(unit)
+  val tz = transform.translation.dz.toDouble(unit)
+
+  val viewTx = -(r00 * tx + r10 * ty + r20 * tz) * invSx
+  val viewTy = -(r01 * tx + r11 * ty + r21 * tz) * invSy
+  val viewTz = -(r02 * tx + r12 * ty + r22 * tz) * invSz
+
+  target[12] = viewTx
+  target[13] = viewTy
+  target[14] = viewTz
+  target[15] = 1.0
+}
+
+private fun writePerspectiveMatrix(
+  target: DoubleArray,
+  fov: Fov,
+  aspect: Double,
+  nearFar: NearFar,
+) {
+  require(target.size == 16) { "Projection matrix target must have 16 elements." }
+  target.fill(0.0)
+
+  val f = 1.0 / tan(fov.angle.toDouble(AngleUnit.RADIAN) / 2.0)
+  val near = nearFar.near
+  val far = nearFar.far
+
+  target[0] = f / aspect
+  target[5] = f
+  target[11] = -1.0
+
+  if (far.isInfinite()) {
+    target[10] = -1.0
+    target[14] = -near
+  } else {
+    val invRange = 1.0 / (near - far)
+    target[10] = far * invRange
+    target[14] = near * far * invRange
+  }
+}
+
+private fun multiplyInto(
+  target: DoubleArray,
+  a: DoubleArray,
+  b: DoubleArray,
+) {
+  require(target.size == 16 && a.size == 16 && b.size == 16) { "All matrices must have 16 elements." }
+  for (col in 0 until 4) {
+    val b0 = b[col * 4 + 0]
+    val b1 = b[col * 4 + 1]
+    val b2 = b[col * 4 + 2]
+    val b3 = b[col * 4 + 3]
+    for (row in 0 until 4) {
+      val a0 = a[0 * 4 + row]
+      val a1 = a[1 * 4 + row]
+      val a2 = a[2 * 4 + row]
+      val a3 = a[3 * 4 + row]
+      target[col * 4 + row] = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3
+    }
+  }
+}
 
 private fun writeTransform(
   target: DoubleArray,

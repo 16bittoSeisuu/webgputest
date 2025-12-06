@@ -14,6 +14,8 @@ external interface GPUDevice : GPUObjectBase {
 
   fun createRenderBundleEncoder(descriptor: GPURenderBundleEncoderDescriptor): GPURenderBundleEncoder
 
+  fun createBindGroup(descriptor: GPUBindGroupDescriptor): GPUBindGroup
+
   fun createShaderModule(descriptor: GPUShaderModuleDescriptor): GPUShaderModule
 
   fun destroy()

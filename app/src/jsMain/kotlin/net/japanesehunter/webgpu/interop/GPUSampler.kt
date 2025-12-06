@@ -1,6 +1,6 @@
 package net.japanesehunter.webgpu.interop
 
-external interface GPUTextureView :
+external interface GPUSampler :
   GPUObjectBase,
   GPUBindingResource {
   override var label: String

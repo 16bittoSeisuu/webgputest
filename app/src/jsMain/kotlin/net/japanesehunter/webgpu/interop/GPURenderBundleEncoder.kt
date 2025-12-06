@@ -23,6 +23,25 @@ external interface GPURenderBundleEncoder : GPUObjectBase {
   fun setPipeline(pipeline: GPURenderPipeline)
 
   /**
+   * Binds a pre-created group of resources to a shader slot.
+   *
+   * Dynamic offsets allow overriding buffer binding offsets at execution time.
+   *
+   * @param index Bind group slot to target.
+   * @param bindGroup Collection of buffers, textures, and samplers to attach.
+   * @param dynamicOffsets Optional sequence of dynamic offsets applied to buffers.
+   * @param dynamicOffsetsDataStart Starting element when reading from a typed array.
+   * @param dynamicOffsetsDataLength Number of elements to read from a typed array.
+   */
+  fun setBindGroup(
+    index: Int,
+    bindGroup: GPUBindGroup,
+    dynamicOffsets: Array<Int> = definedExternally,
+    dynamicOffsetsDataStart: Int = definedExternally,
+    dynamicOffsetsDataLength: Int = definedExternally,
+  )
+
+  /**
    * Binds a vertex buffer slot for use by upcoming draw calls.
    *
    * @param slot Vertex buffer slot index in the current pipeline layout.
