@@ -17,6 +17,8 @@ import org.khronos.webgl.Int32Array
 import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.set
 
+fun GPUDevice.createBufferAllocator(): BufferAllocator = BufferAllocatorImpl(this)
+
 // region interface
 
 /**
@@ -88,8 +90,6 @@ interface MutableGpuBuffer : GpuBuffer {
 interface MutableCopySrcGpuBuffer :
   MutableGpuBuffer,
   CopySrcGpuBuffer
-
-fun GPUDevice.createBufferAllocator(): BufferAllocator = BufferAllocatorImpl(this)
 
 /**
  * Creates GPU buffers backed by [Resource] to ensure `destroy()` is called automatically.
@@ -273,8 +273,7 @@ private class BufferAllocatorImpl(
     usage: GPUBufferUsage,
     label: String,
   ): Resource<GpuBuffer> {
-    val effectiveUsage = usage + GPUBufferUsage.MapWrite
-    val res = allocate(data.size, effectiveUsage, label, map = true)
+    val res = allocate(data.size, usage, label, map = true)
     return resource {
       val raw = res.bind()
       data.writeTo(raw.getMappedRange())
@@ -293,8 +292,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<GpuBuffer> {
     val byteSize = data.byteSize
-    val effectiveUsage = usage + GPUBufferUsage.MapWrite
-    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    val res = allocate(byteSize, usage, label, map = true)
     return resource {
       val raw = res.bind()
       data.writeTo(raw.getMappedRange())
@@ -313,8 +311,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<GpuBuffer> {
     val byteSize = data.byteSize
-    val effectiveUsage = usage + GPUBufferUsage.MapWrite
-    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    val res = allocate(byteSize, usage, label, map = true)
     return resource {
       val raw = res.bind()
       data.writeTo(raw.getMappedRange())
@@ -333,8 +330,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<GpuBuffer> {
     val byteSize = data.byteSize
-    val effectiveUsage = usage + GPUBufferUsage.MapWrite
-    val res = allocate(byteSize, effectiveUsage, label, map = true)
+    val res = allocate(byteSize, usage, label, map = true)
     return resource {
       val raw = res.bind()
       data.writeTo(raw.getMappedRange())
@@ -370,7 +366,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<CopySrcGpuBuffer> {
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc
     val res = allocate(data.size, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -391,7 +387,7 @@ private class BufferAllocatorImpl(
   ): Resource<CopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -412,7 +408,7 @@ private class BufferAllocatorImpl(
   ): Resource<CopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -433,7 +429,7 @@ private class BufferAllocatorImpl(
   ): Resource<CopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -471,7 +467,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<MutableGpuBuffer> {
     val effectiveUsage =
-      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopyDst
     val res = allocate(data.size, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -493,7 +489,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -515,7 +511,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -537,7 +533,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -577,7 +573,7 @@ private class BufferAllocatorImpl(
     label: String,
   ): Resource<MutableCopySrcGpuBuffer> {
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst
     val res = allocate(data.size, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -599,7 +595,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableCopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -621,7 +617,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableCopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
@@ -643,7 +639,7 @@ private class BufferAllocatorImpl(
   ): Resource<MutableCopySrcGpuBuffer> {
     val byteSize = data.byteSize
     val effectiveUsage =
-      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst + GPUBufferUsage.MapWrite
+      usage + GPUBufferUsage.CopySrc + GPUBufferUsage.CopyDst
     val res = allocate(byteSize, effectiveUsage, label, map = true)
     return resource {
       val raw = res.bind()
