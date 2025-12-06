@@ -276,6 +276,48 @@ inline fun Point3.inverseTransformedBy(transform: Transform): ImmutablePoint3 = 
  */
 inline fun Length3.inverseTransformedBy(transform: Transform): ImmutableLength3 = transform.inverseTransform(this)
 
+inline fun MutableTransform.mutateTranslation(action: MutableLength3.() -> Unit) {
+  when (val t = translation) {
+    is MutableLength3 -> {
+      t.action()
+    }
+
+    else -> {
+      val mutable = MutableLength3.copyOf(t)
+      mutable.action()
+      translation = mutable
+    }
+  }
+}
+
+inline fun MutableTransform.mutateRotation(action: MutableQuaternion.() -> Unit) {
+  when (val r = rotation) {
+    is MutableQuaternion -> {
+      r.action()
+    }
+
+    else -> {
+      val mutable = MutableQuaternion.copyOf(r)
+      mutable.action()
+      rotation = mutable
+    }
+  }
+}
+
+inline fun MutableTransform.mutateScale(action: MutableScale3.() -> Unit) {
+  when (val s = scale) {
+    is MutableScale3 -> {
+      s.action()
+    }
+
+    else -> {
+      val mutable = MutableScale3.copyOf(s)
+      mutable.action()
+      scale = mutable
+    }
+  }
+}
+
 // endregion
 
 // region implementations
