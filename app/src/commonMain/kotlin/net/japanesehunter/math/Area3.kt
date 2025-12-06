@@ -97,6 +97,11 @@ interface MutableArea3 :
    */
   val azFlow: StateFlow<Area>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableArea3.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -355,14 +360,16 @@ inline operator fun Area3.div(scalar: Double): ImmutableArea3 =
 @Suppress("UNUSED_PARAMETER")
 inline fun MutableArea3.map(
   actionName: String? = null,
-  action: (index: Int, value: Area) -> Area,
+  crossinline action: (index: Int, value: Area) -> Area,
 ) {
-  val newAx = action(0, ax)
-  val newAy = action(1, ay)
-  val newAz = action(2, az)
-  ax = newAx
-  ay = newAy
-  az = newAz
+  mutate {
+    val newAx = action(0, ax)
+    val newAy = action(1, ay)
+    val newAz = action(2, az)
+    ax = newAx
+    ay = newAy
+    az = newAz
+  }
 }
 
 // endregion
@@ -458,6 +465,10 @@ private class MutableArea3Impl(
   override val axFlow: StateFlow<Area> get() = _axFlow.asStateFlow()
   override val ayFlow: StateFlow<Area> get() = _ayFlow.asStateFlow()
   override val azFlow: StateFlow<Area> get() = _azFlow.asStateFlow()
+
+  override fun mutate(action: MutableArea3.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
 

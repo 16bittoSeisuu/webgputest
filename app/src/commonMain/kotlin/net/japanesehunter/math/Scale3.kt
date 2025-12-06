@@ -90,6 +90,11 @@ interface MutableScale3 :
    */
   val szFlow: StateFlow<Double>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableScale3.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -317,14 +322,16 @@ inline fun Point3.scaledBy(scale: Scale3): ImmutablePoint3 = scale.scale(this)
  */
 inline fun MutableScale3.map(
   actionName: String? = null,
-  action: (index: Int, value: Double) -> Double,
+  crossinline action: (index: Int, value: Double) -> Double,
 ) {
-  val newSx = ensureFiniteScaleComponent(action(0, sx), "sx", actionName)
-  val newSy = ensureFiniteScaleComponent(action(1, sy), "sy", actionName)
-  val newSz = ensureFiniteScaleComponent(action(2, sz), "sz", actionName)
-  sx = newSx
-  sy = newSy
-  sz = newSz
+  mutate {
+    val newSx = ensureFiniteScaleComponent(action(0, sx), "sx", actionName)
+    val newSy = ensureFiniteScaleComponent(action(1, sy), "sy", actionName)
+    val newSz = ensureFiniteScaleComponent(action(2, sz), "sz", actionName)
+    sx = newSx
+    sy = newSy
+    sz = newSz
+  }
 }
 
 // endregion
@@ -428,6 +435,10 @@ private class MutableScale3Impl(
   override val sxFlow: StateFlow<Double> get() = _sxFlow.asStateFlow()
   override val syFlow: StateFlow<Double> get() = _syFlow.asStateFlow()
   override val szFlow: StateFlow<Double> get() = _szFlow.asStateFlow()
+
+  override fun mutate(action: MutableScale3.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun observe(): ObserveTicket = Ticket(this)
 

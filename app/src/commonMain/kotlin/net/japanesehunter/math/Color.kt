@@ -60,6 +60,11 @@ interface MutableColor :
   val bFlow: StateFlow<Proportion>
   val aFlow: StateFlow<Proportion>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableColor.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -340,6 +345,10 @@ private class MutableColorImpl(
   override val gFlow: StateFlow<Proportion> get() = _gFlow.asStateFlow()
   override val bFlow: StateFlow<Proportion> get() = _bFlow.asStateFlow()
   override val aFlow: StateFlow<Proportion> get() = _aFlow.asStateFlow()
+
+  override fun mutate(action: MutableColor.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun toString(): String = "Color(r=$r, g=$g, b=$b, a=$a)"
 

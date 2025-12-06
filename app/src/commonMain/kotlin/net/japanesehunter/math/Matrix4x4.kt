@@ -3,6 +3,8 @@
 
 package net.japanesehunter.math
 
+import kotlinx.atomicfu.locks.ReentrantLock
+import kotlinx.atomicfu.locks.withLock
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 // region interfaces
@@ -47,7 +49,7 @@ sealed interface Matrix4x4 {
 sealed interface ImmutableMatrix4x4 : Matrix4x4
 
 /**
- * Mutable 4x4 matrix. The default implementation is not thread-safe.
+ * Mutable 4x4 matrix. The default implementation guards access with a lock.
  */
 interface MutableMatrix4x4 : Matrix4x4 {
   /**
@@ -66,6 +68,11 @@ interface MutableMatrix4x4 : Matrix4x4 {
     index: Int,
     value: Double,
   )
+
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableMatrix4x4.() -> Unit) = action(this)
 
   companion object
 }
@@ -438,6 +445,7 @@ private value class Matrix4x4MutableWrapper(
 private class MutableMatrix4x4Impl(
   elements: DoubleArray,
 ) : MutableMatrix4x4 {
+  private val lock = ReentrantLock()
   val data: DoubleArray = validateElementsCopy(elements)
 
   override fun get(
@@ -445,15 +453,15 @@ private class MutableMatrix4x4Impl(
     col: Int,
   ): Double {
     require(row in 0..3 && col in 0..3) { "Indices out of bounds: row=$row col=$col" }
-    return data[col * 4 + row]
+    return lock.withLock { data[col * 4 + row] }
   }
 
   override fun get(index: Int): Double {
     require(index in 0..15) { "Index out of bounds: $index" }
-    return data[index]
+    return lock.withLock { data[index] }
   }
 
-  override fun toDoubleArray(): DoubleArray = data.copyOf()
+  override fun toDoubleArray(): DoubleArray = lock.withLock { data.copyOf() }
 
   override fun set(
     row: Int,
@@ -463,7 +471,9 @@ private class MutableMatrix4x4Impl(
     require(row in 0..3 && col in 0..3) { "Indices out of bounds: row=$row col=$col" }
     val idx = columnMajorIndex(row, col)
     val finite = ensureFiniteMatrixElement(value, "[$row,$col]")
-    data[idx] = finite
+    lock.withLock {
+      data[idx] = finite
+    }
   }
 
   override fun set(
@@ -472,7 +482,13 @@ private class MutableMatrix4x4Impl(
   ) {
     require(index in 0..15) { "Index out of bounds: $index" }
     val finite = ensureFiniteMatrixElement(value, "[$index]")
-    data[index] = finite
+    lock.withLock {
+      data[index] = finite
+    }
+  }
+
+  override fun mutate(action: MutableMatrix4x4.() -> Unit) {
+    lock.withLock { action(this) }
   }
 
   override fun equals(other: Any?): Boolean =
@@ -482,32 +498,33 @@ private class MutableMatrix4x4Impl(
       else -> elementsEqual(this, other)
     }
 
-  override fun hashCode(): Int = elementsHash(data)
+  override fun hashCode(): Int = lock.withLock { elementsHash(data) }
 
   override fun toString(): String = toDoubleArray().contentToString()
 }
 
-private inline fun MutableMatrix4x4.mutateElements(action: (DoubleArray) -> Unit) {
-  when (this) {
-    is MutableMatrix4x4Impl -> {
-      action(data)
-    }
+private inline fun MutableMatrix4x4.mutateElements(crossinline action: (DoubleArray) -> Unit) =
+  mutate {
+    when (this) {
+      is MutableMatrix4x4Impl -> {
+        action(data)
+      }
 
-    is Matrix4x4MutableWrapper -> {
-      action(impl.elements)
-    }
+      is Matrix4x4MutableWrapper -> {
+        action(impl.elements)
+      }
 
-    else -> {
-      val temp = toDoubleArray()
-      action(temp)
-      var i = 0
-      while (i < 16) {
-        this[i] = temp[i]
-        i++
+      else -> {
+        val temp = toDoubleArray()
+        action(temp)
+        var i = 0
+        while (i < 16) {
+          this[i] = temp[i]
+          i++
+        }
       }
     }
   }
-}
 
 private fun columnMajorIndex(
   row: Int,

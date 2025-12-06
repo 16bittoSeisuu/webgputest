@@ -90,6 +90,11 @@ interface MutableTransform :
    */
   val scaleFlow: StateFlow<Scale3>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableTransform.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -368,6 +373,10 @@ private class MutableTransformImpl(
   override val translationFlow: StateFlow<Length3> get() = _translationFlow.asStateFlow()
   override val rotationFlow: StateFlow<Quaternion> get() = _rotationFlow.asStateFlow()
   override val scaleFlow: StateFlow<Scale3> get() = _scaleFlow.asStateFlow()
+
+  override fun mutate(action: MutableTransform.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun observe(): ObserveTicket = Ticket(this)
 

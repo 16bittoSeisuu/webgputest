@@ -100,6 +100,11 @@ interface MutableLength3 :
    */
   val dzFlow: StateFlow<Length>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableLength3.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -275,10 +280,12 @@ inline val Length3.magnitude: Length
  * @throws IllegalArgumentException if the vector has zero length.
  */
 inline fun MutableLength3.normalize(unit: LengthUnit = LengthUnit.METER) {
-  val mag = magnitude.toDouble(unit)
-  require(mag != 0.0) { "Cannot normalize a zero-length vector." }
-  val inv = 1.0 / mag
-  map("Normalization") { _, value -> value * inv }
+  mutate {
+    val mag = magnitude.toDouble(unit)
+    require(mag != 0.0) { "Cannot normalize a zero-length vector." }
+    val inv = 1.0 / mag
+    map("Normalization") { _, value -> value * inv }
+  }
 }
 
 /**
@@ -547,14 +554,16 @@ inline operator fun Length3.div(scalar: Double): ImmutableLength3 =
 @Suppress("UNUSED_PARAMETER")
 inline fun MutableLength3.map(
   actionName: String? = null,
-  action: (index: Int, value: Length) -> Length,
+  crossinline action: (index: Int, value: Length) -> Length,
 ) {
-  val newDx = action(0, dx)
-  val newDy = action(1, dy)
-  val newDz = action(2, dz)
-  dx = newDx
-  dy = newDy
-  dz = newDz
+  mutate {
+    val newDx = action(0, dx)
+    val newDy = action(1, dy)
+    val newDz = action(2, dz)
+    dx = newDx
+    dy = newDy
+    dz = newDz
+  }
 }
 
 // endregion
@@ -657,6 +666,10 @@ private class MutableLength3Impl(
   override val dxFlow: StateFlow<Length> get() = _dxFlow.asStateFlow()
   override val dyFlow: StateFlow<Length> get() = _dyFlow.asStateFlow()
   override val dzFlow: StateFlow<Length> get() = _dzFlow.asStateFlow()
+
+  override fun mutate(action: MutableLength3.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun toString(): String = "Length3(dx=$dx, dy=$dy, dz=$dz)"
 

@@ -97,6 +97,11 @@ interface MutablePoint3 :
    */
   val zFlow: StateFlow<Length>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutablePoint3.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -529,14 +534,16 @@ inline val Point3.distanceFromZero: Length get() = this distanceTo Point3.zero
 @Suppress("UNUSED_PARAMETER")
 inline fun MutablePoint3.map(
   actionName: String? = null,
-  action: (index: Int, value: Length) -> Length,
+  crossinline action: (index: Int, value: Length) -> Length,
 ) {
-  val newX = action(0, x)
-  val newY = action(1, y)
-  val newZ = action(2, z)
-  x = newX
-  y = newY
-  z = newZ
+  mutate {
+    val newX = action(0, x)
+    val newY = action(1, y)
+    val newZ = action(2, z)
+    x = newX
+    y = newY
+    z = newZ
+  }
 }
 
 // endregion
@@ -632,6 +639,10 @@ private class MutablePoint3Impl(
   override val xFlow: StateFlow<Length> get() = _xFlow.asStateFlow()
   override val yFlow: StateFlow<Length> get() = _yFlow.asStateFlow()
   override val zFlow: StateFlow<Length> get() = _zFlow.asStateFlow()
+
+  override fun mutate(action: MutablePoint3.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun toString(): String = "Point3(x=$x, y=$y, z=$z)"
 

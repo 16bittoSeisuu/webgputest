@@ -97,6 +97,11 @@ interface MutableQuaternion :
    */
   val wFlow: StateFlow<Double>
 
+  /**
+   * Runs [action] while holding the internal lock when available so compound operations stay consistent.
+   */
+  fun mutate(action: MutableQuaternion.() -> Unit) = action(this)
+
   override fun observe(): ObserveTicket
 
   companion object
@@ -229,10 +234,19 @@ inline val Quaternion.magnitude: Double
  * degenerate inputs when coming from untrusted sources.
  */
 inline fun MutableQuaternion.normalize() {
-  val mag = magnitude
-  require(mag != 0.0 && mag.isFinite()) { "Cannot normalize a zero-length or non-finite quaternion." }
-  val inv = 1.0 / mag
-  map("Normalization") { _, value -> value * inv }
+  mutate {
+    val mag = magnitude
+    require(mag != 0.0 && mag.isFinite()) { "Cannot normalize a zero-length or non-finite quaternion." }
+    val inv = 1.0 / mag
+    val newX = ensureFiniteComponent(x * inv, "x", "Normalization")
+    val newY = ensureFiniteComponent(y * inv, "y", "Normalization")
+    val newZ = ensureFiniteComponent(z * inv, "z", "Normalization")
+    val newW = ensureFiniteComponent(w * inv, "w", "Normalization")
+    x = newX
+    y = newY
+    z = newZ
+    w = newW
+  }
 }
 
 /**
@@ -350,14 +364,16 @@ inline operator fun Quaternion.div(scalar: Double): ImmutableQuaternion =
  * differs from `other * this` because quaternion multiplication is not commutative.
  */
 inline operator fun MutableQuaternion.timesAssign(other: Quaternion) {
-  val newX = w * other.x + x * other.w + y * other.z - z * other.y
-  val newY = w * other.y - x * other.z + y * other.w + z * other.x
-  val newZ = w * other.z + x * other.y - y * other.x + z * other.w
-  val newW = w * other.w - x * other.x - y * other.y - z * other.z
-  x = ensureFiniteComponent(newX, "x")
-  y = ensureFiniteComponent(newY, "y")
-  z = ensureFiniteComponent(newZ, "z")
-  w = ensureFiniteComponent(newW, "w")
+  mutate {
+    val newX = w * other.x + x * other.w + y * other.z - z * other.y
+    val newY = w * other.y - x * other.z + y * other.w + z * other.x
+    val newZ = w * other.z + x * other.y - y * other.x + z * other.w
+    val newW = w * other.w - x * other.x - y * other.y - z * other.z
+    x = ensureFiniteComponent(newX, "x")
+    y = ensureFiniteComponent(newY, "y")
+    z = ensureFiniteComponent(newZ, "z")
+    w = ensureFiniteComponent(newW, "w")
+  }
 }
 
 /**
@@ -461,16 +477,18 @@ inline fun Area3.rotatedBy(quaternion: Quaternion): ImmutableArea3 = quaternion.
  */
 inline fun MutableQuaternion.map(
   actionName: String? = null,
-  action: (index: Int, value: Double) -> Double,
+  crossinline action: (index: Int, value: Double) -> Double,
 ) {
-  val newX = ensureFiniteComponent(action(0, x), "x", actionName)
-  val newY = ensureFiniteComponent(action(1, y), "y", actionName)
-  val newZ = ensureFiniteComponent(action(2, z), "z", actionName)
-  val newW = ensureFiniteComponent(action(3, w), "w", actionName)
-  x = newX
-  y = newY
-  z = newZ
-  w = newW
+  mutate {
+    val newX = ensureFiniteComponent(action(0, x), "x", actionName)
+    val newY = ensureFiniteComponent(action(1, y), "y", actionName)
+    val newZ = ensureFiniteComponent(action(2, z), "z", actionName)
+    val newW = ensureFiniteComponent(action(3, w), "w", actionName)
+    x = newX
+    y = newY
+    z = newZ
+    w = newW
+  }
 }
 
 // endregion
@@ -594,6 +612,10 @@ private class MutableQuaternionImpl(
   override val yFlow: StateFlow<Double> get() = _yFlow.asStateFlow()
   override val zFlow: StateFlow<Double> get() = _zFlow.asStateFlow()
   override val wFlow: StateFlow<Double> get() = _wFlow.asStateFlow()
+
+  override fun mutate(action: MutableQuaternion.() -> Unit) {
+    lock.withLock { action(this) }
+  }
 
   override fun observe(): ObserveTicket = Ticket(this)
 
