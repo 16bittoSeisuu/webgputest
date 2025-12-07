@@ -26,9 +26,6 @@ import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.drawIndexed
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
-import net.japanesehunter.webgpu.interop.GPUBindGroup
-import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
-import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
@@ -46,6 +43,7 @@ import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.pos3D
 import net.japanesehunter.webgpu.recordRenderBundle
 import net.japanesehunter.webgpu.rgbaColor
+import net.japanesehunter.webgpu.setBindGroup
 import net.japanesehunter.webgpu.setVertexBuffer
 import net.japanesehunter.webgpu.u16
 import org.w3c.dom.HTMLCanvasElement
@@ -83,7 +81,9 @@ fun main() =
           val pipeline = pipeline.await()
           setPipeline(pipeline)
           setVertexBuffer(listOf(vertexPosBuffer, vertexColorBuffer))
-          setBindGroup(0, createCameraBindGroup(pipeline, cameraBuf))
+          setBindGroup(listOf(listOf(cameraBuf.asBinding()))) {
+            pipeline.getBindGroupLayout(it)
+          }
           drawIndexed(indexBuffer)
         }
       while (true) {
@@ -168,24 +168,6 @@ private suspend fun createCameraBuffer(camera: Camera): CameraGpuBuffer =
   with(resource) {
     UniformGpuBuffer.camera(camera).bind()
   }
-
-context(device: GPUDevice)
-private fun createCameraBindGroup(
-  pipeline: GPURenderPipeline,
-  buffer: CameraGpuBuffer,
-): GPUBindGroup =
-  device.createBindGroup(
-    GPUBindGroupDescriptor(
-      layout = pipeline.getBindGroupLayout(0),
-      entries =
-        arrayOf(
-          GPUBindGroupEntry(
-            binding = 0,
-            resource = buffer.asBinding(),
-          ),
-        ),
-    ),
-  )
 
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
