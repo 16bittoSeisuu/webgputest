@@ -190,11 +190,29 @@ fun MutableTransform.Companion.copyOf(copyFrom: Transform): MutableTransform =
 
 // region operations
 
-/**
- * Returns `true` if this transform has zero translation, identity rotation, and unit scale.
- */
-inline val Transform.isIdentity: Boolean
-  get() = translation.isZero && rotation == Quaternion.identity && scale.isIdentity
+var MutableTransform.x
+  get() = translation.dx
+  set(value) {
+    mutateTranslation {
+      dx = value
+    }
+  }
+
+var MutableTransform.y
+  get() = translation.dy
+  set(value) {
+    mutateTranslation {
+      dy = value
+    }
+  }
+
+var MutableTransform.z
+  get() = translation.dz
+  set(value) {
+    mutateTranslation {
+      dz = value
+    }
+  }
 
 /**
  * Applies this transform to a [Point3] using `scale -> rotation -> translation`.

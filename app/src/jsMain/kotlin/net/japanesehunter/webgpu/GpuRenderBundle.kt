@@ -74,12 +74,18 @@ fun GPURenderBundleEncoder.setBindGroup(
   }
 }
 
-fun GPURenderBundleEncoder.drawIndexed(indexBuffer: IndexGpuBuffer) {
+fun GPURenderBundleEncoder.drawIndexed(
+  indexBuffer: IndexGpuBuffer,
+  instanceCount: Int = 1,
+) {
   setIndexBuffer(
     indexBuffer.raw,
     indexBuffer.indexFormat,
     indexBuffer.offset,
     indexBuffer.size,
   )
-  drawIndexed(indexCount = indexBuffer.indexCount)
+  drawIndexed(
+    indexCount = indexBuffer.indexCount,
+    instanceCount = instanceCount,
+  )
 }

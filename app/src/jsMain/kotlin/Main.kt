@@ -7,15 +7,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.await
 import kotlinx.coroutines.yield
-import net.japanesehunter.math.Camera
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
+import net.japanesehunter.math.MutableTransform
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.mutateScale
+import net.japanesehunter.math.mutateTranslation
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
-import net.japanesehunter.webgpu.CameraGpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
+import net.japanesehunter.webgpu.InstanceGpuBuffer
 import net.japanesehunter.webgpu.ShaderCompiler
 import net.japanesehunter.webgpu.UniformGpuBuffer
 import net.japanesehunter.webgpu.VertexGpuBuffer
@@ -39,12 +41,14 @@ import net.japanesehunter.webgpu.interop.GPUStoreOp
 import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexFormat
+import net.japanesehunter.webgpu.interop.GPUVertexStepMode
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.pos3D
 import net.japanesehunter.webgpu.recordRenderBundle
 import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.setBindGroup
 import net.japanesehunter.webgpu.setVertexBuffer
+import net.japanesehunter.webgpu.transforms
 import net.japanesehunter.webgpu.u16
 import org.w3c.dom.HTMLCanvasElement
 
@@ -70,21 +74,46 @@ fun main() =
       camera.aspect = canvas.width.toDouble() / canvas.height
     }
 
+    val transforms =
+      List(3) { x ->
+        List(3) { y ->
+          MutableTransform().apply {
+            mutateTranslation {
+              dx = (x - 1).meters
+              dy = (y - 1).meters
+              dz = (-2).meters
+            }
+            mutateScale {
+              sx = 0.5
+              sy = 0.5
+              sz = 0.5
+            }
+          }
+        }
+      }.flatten()
+
     webgpuContext(canvas) {
       val pipeline = compileTriangleShader()
+      val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
       val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
       val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
       val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
-      val cameraBuf = createCameraBuffer(camera)
+      val cameraBuf = UniformGpuBuffer.camera(camera).bind()
       val renderBundle =
         recordRenderBundle {
           val pipeline = pipeline.await()
           setPipeline(pipeline)
-          setVertexBuffer(listOf(vertexPosBuffer, vertexColorBuffer))
+          setVertexBuffer(
+            listOf(
+              transformBuffer,
+              vertexPosBuffer,
+              vertexColorBuffer,
+            ),
+          )
           setBindGroup(listOf(listOf(cameraBuf.asBinding()))) {
             pipeline.getBindGroupLayout(it)
           }
-          drawIndexed(indexBuffer)
+          drawIndexed(indexBuffer, instanceCount = transforms.size)
         }
       while (true) {
         cameraBuf.update()
@@ -133,23 +162,51 @@ context(compiler: ShaderCompiler, coroutine: CoroutineScope)
 private fun compileTriangleShader(): Deferred<GPURenderPipeline> {
   val layout0 =
     GPUVertexBufferLayout(
-      arrayStride = 3 * Float.SIZE_BYTES,
+      arrayStride = 16 * Float.SIZE_BYTES,
       attributes =
         arrayOf(
           GPUVertexAttribute(
             shaderLocation = 0,
             offset = 0,
+            format = GPUVertexFormat.Float32x4,
+          ),
+          GPUVertexAttribute(
+            shaderLocation = 1,
+            offset = 4L * Float.SIZE_BYTES,
+            format = GPUVertexFormat.Float32x4,
+          ),
+          GPUVertexAttribute(
+            shaderLocation = 2,
+            offset = 8L * Float.SIZE_BYTES,
+            format = GPUVertexFormat.Float32x4,
+          ),
+          GPUVertexAttribute(
+            shaderLocation = 3,
+            offset = 12L * Float.SIZE_BYTES,
+            format = GPUVertexFormat.Float32x4,
+          ),
+        ),
+      stepMode = GPUVertexStepMode.Instance,
+    )
+  val layout1 =
+    GPUVertexBufferLayout(
+      arrayStride = 3 * Float.SIZE_BYTES,
+      attributes =
+        arrayOf(
+          GPUVertexAttribute(
+            shaderLocation = 4,
+            offset = 0,
             format = GPUVertexFormat.Float32x3,
           ),
         ),
     )
-  val layout1 =
+  val layout2 =
     GPUVertexBufferLayout(
       arrayStride = 4 * Float.SIZE_BYTES,
       attributes =
         arrayOf(
           GPUVertexAttribute(
-            shaderLocation = 1,
+            shaderLocation = 5,
             offset = 0,
             format = GPUVertexFormat.Float32x4,
           ),
@@ -158,16 +215,10 @@ private fun compileTriangleShader(): Deferred<GPURenderPipeline> {
   return compiler.compile(
     vertexCode = code,
     fragmentCode = code,
-    vertexAttributes = arrayOf(layout0, layout1),
+    vertexAttributes = arrayOf(layout0, layout1, layout2),
     label = "Triangle Pipeline",
   )
 }
-
-context(bufAlloc: BufferAllocator, resource: ResourceScope)
-private suspend fun createCameraBuffer(camera: Camera): CameraGpuBuffer =
-  with(resource) {
-    UniformGpuBuffer.camera(camera).bind()
-  }
 
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
@@ -215,11 +266,21 @@ private val code =
   
   @vertex
   fn vs_main(
-    @location(0) pos: vec3f,
-    @location(1) color: vec4f,
+    @location(0) model0: vec4f,
+    @location(1) model1: vec4f,
+    @location(2) model2: vec4f,
+    @location(3) model3: vec4f,
+    @location(4) pos: vec3f,
+    @location(5) color: vec4f,
   ) -> VsOut {
+    let model = mat4x4f(
+      model0,
+      model1,
+      model2,
+      model3,
+    );
     var out: VsOut;
-    out.position = viewProj * vec4f(pos, 1.0);
+    out.position = viewProj * model * vec4f(pos, 1.0);
     out.color = color;
     return out;
   }

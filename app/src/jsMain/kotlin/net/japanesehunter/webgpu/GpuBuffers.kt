@@ -7,7 +7,9 @@ import arrow.fx.coroutines.resource
 import net.japanesehunter.math.Camera
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableMatrix4x4
+import net.japanesehunter.math.Transform
 import net.japanesehunter.math.setIdentity
+import net.japanesehunter.math.setTransform
 import net.japanesehunter.math.setViewProjRH
 import net.japanesehunter.math.toFloatArray
 import net.japanesehunter.webgpu.interop.GPUBufferBinding
@@ -102,6 +104,47 @@ fun IndexGpuBuffer.Companion.u32(data: IntArray): Resource<IndexGpuBuffer> {
 
 // endregion
 
+// region instance
+
+interface InstanceGpuBuffer : VertexGpuBuffer {
+  companion object
+}
+
+interface TransformGpuBuffer :
+  InstanceGpuBuffer,
+  MutableGpuBuffer {
+  override val format: GPUVertexFormat
+    get() = GPUVertexFormat.Float32x4
+}
+
+context(alloc: BufferAllocator)
+fun InstanceGpuBuffer.Companion.transforms(
+  data: List<Transform>,
+  initialSize: Int = data.size,
+): Resource<TransformGpuBuffer> {
+  require(data.size <= initialSize) {
+    "data.size(${data.size}) must be less than or equal to initialSize($initialSize)"
+  }
+  val arrayBuf = FloatArray(16 * initialSize)
+  data.forEachIndexed { transformIndex, transform ->
+    val modelArray = transform.toFloatArray()
+    modelArray.copyInto(arrayBuf, destinationOffset = transformIndex * modelArray.size)
+  }
+  val res =
+    alloc.mutable(
+      data = arrayBuf,
+      usage = GPUBufferUsage.Vertex,
+      label = "Instance Transform Buffer",
+    )
+  return resource {
+    val buf = res.bind()
+    object : TransformGpuBuffer, MutableGpuBuffer by buf {
+    }
+  }
+}
+
+// endregion
+
 // region uniform
 
 interface UniformGpuBuffer : GpuBuffer {
@@ -113,8 +156,6 @@ interface CameraGpuBuffer :
   MutableGpuBuffer {
   fun update()
 }
-
-private val tmpMatrix = AtomicReference(MutableMatrix4x4())
 
 context(alloc: BufferAllocator)
 fun UniformGpuBuffer.Companion.camera(
@@ -138,6 +179,33 @@ fun UniformGpuBuffer.Companion.camera(
   }
 }
 
+// endregion
+
+// region binding
+
+fun UniformGpuBuffer.asBinding(): GPUBufferBinding =
+  GPUBufferBinding(
+    buffer = raw,
+    offset = offset,
+    size = size,
+  )
+
+// endregion
+
+// region internal
+
+private val tmpMatrix = AtomicReference(MutableMatrix4x4())
+
+private fun Transform.toFloatArray(): FloatArray {
+  tmpMatrix.update {
+    it.apply {
+      setIdentity()
+      setTransform(this@toFloatArray)
+      return toFloatArray()
+    }
+  }
+}
+
 private fun Camera.toFloatArray(unit: LengthUnit): FloatArray {
   tmpMatrix.update {
     it.apply {
@@ -150,16 +218,5 @@ private fun Camera.toFloatArray(unit: LengthUnit): FloatArray {
     }
   }
 }
-
-// endregion
-
-// region binding
-
-fun UniformGpuBuffer.asBinding(): GPUBufferBinding =
-  GPUBufferBinding(
-    buffer = raw,
-    offset = offset,
-    size = size,
-  )
 
 // endregion
