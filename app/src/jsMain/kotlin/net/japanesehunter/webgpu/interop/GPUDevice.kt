@@ -4,6 +4,14 @@ import kotlin.js.Promise
 
 external interface GPUDevice : GPUObjectBase {
   val adapterInfo: GPUAdapterInfo
+
+  /**
+   * Supported resource and pipeline limits for this device.
+   *
+   * Values mirror WebGPU's `GPUSupportedLimits` and describe the validation caps that apply
+   * when creating buffers, textures, pipelines, or dispatching work.
+   */
+  val limits: GPUSupportedLimits
   val queue: GPUQueue
 
   fun createBuffer(descriptor: GPUBufferDescriptor): GPUBuffer

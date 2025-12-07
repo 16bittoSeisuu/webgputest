@@ -1,6 +1,7 @@
 
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.Level
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
@@ -52,7 +53,7 @@ import net.japanesehunter.webgpu.u16
 import org.w3c.dom.HTMLCanvasElement
 
 fun main() =
-  application {
+  application(loggerLevel = Level.DEBUG) {
     val canvas =
       canvas()?.apply {
         fit()
@@ -72,7 +73,6 @@ fun main() =
       canvas.fit()
       camera.aspect = canvas.width.toDouble() / canvas.height
     }
-
     val transforms =
       List(3) { x ->
         List(3) { y ->
@@ -92,6 +92,7 @@ fun main() =
       }.flatten()
 
     webgpuContext(canvas) {
+      debugPrintLimits()
       val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
       val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
       val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
@@ -159,6 +160,95 @@ private suspend inline fun <R> webgpuContext(
   val allocator = device.createBufferAllocator()
   return context(gpu, adapter, device, compiler, surfaceContext, allocator) {
     action()
+  }
+}
+
+context(device: GPUDevice)
+private fun debugPrintLimits() {
+  logger.debug {
+    val limits = device.limits
+    buildString {
+      appendLine("Device Limits:")
+      appendLine("Max texture dimension 1D: ${limits.maxTextureDimension1D}")
+      appendLine("Max texture dimension 2D: ${limits.maxTextureDimension2D}")
+      appendLine("Max texture dimension 3D: ${limits.maxTextureDimension3D}")
+      appendLine("Max texture array layers: ${limits.maxTextureArrayLayers}")
+      appendLine("Max bind groups: ${limits.maxBindGroups}")
+      appendLine(
+        "Max bind groups plus vertex buffers: " +
+          "${limits.maxBindGroupsPlusVertexBuffers}",
+      )
+      appendLine("Max bindings per bind group: ${limits.maxBindingsPerBindGroup}")
+      appendLine(
+        "Max dynamic uniform buffers per pipeline layout: " +
+          "${limits.maxDynamicUniformBuffersPerPipelineLayout}",
+      )
+      appendLine(
+        "Max dynamic storage buffers per pipeline layout: " +
+          "${limits.maxDynamicStorageBuffersPerPipelineLayout}",
+      )
+      appendLine(
+        "Max sampled textures per shader stage: " +
+          "${limits.maxSampledTexturesPerShaderStage}",
+      )
+      appendLine("Max samplers per shader stage: ${limits.maxSamplersPerShaderStage}")
+      appendLine(
+        "Max storage buffers per shader stage: " +
+          "${limits.maxStorageBuffersPerShaderStage}",
+      )
+      appendLine(
+        "Max storage textures per shader stage: " +
+          "${limits.maxStorageTexturesPerShaderStage}",
+      )
+      appendLine(
+        "Max uniform buffers per shader stage: " +
+          "${limits.maxUniformBuffersPerShaderStage}",
+      )
+      appendLine(
+        "Max uniform buffer binding size: " +
+          "${limits.maxUniformBufferBindingSize}",
+      )
+      appendLine(
+        "Max storage buffer binding size: " +
+          "${limits.maxStorageBufferBindingSize}",
+      )
+      appendLine(
+        "Min uniform buffer offset alignment: " +
+          "${limits.minUniformBufferOffsetAlignment}",
+      )
+      appendLine(
+        "Min storage buffer offset alignment: " +
+          "${limits.minStorageBufferOffsetAlignment}",
+      )
+      appendLine("Max vertex buffers: ${limits.maxVertexBuffers}")
+      appendLine("Max buffer size: ${limits.maxBufferSize}")
+      appendLine("Max vertex attributes: ${limits.maxVertexAttributes}")
+      appendLine("Max vertex buffer array stride: ${limits.maxVertexBufferArrayStride}")
+      appendLine(
+        "Max inter-stage shader variables: " +
+          "${limits.maxInterStageShaderVariables}",
+      )
+      appendLine("Max color attachments: ${limits.maxColorAttachments}")
+      appendLine(
+        "Max color attachment bytes per sample: " +
+          "${limits.maxColorAttachmentBytesPerSample}",
+      )
+      appendLine(
+        "Max compute workgroup storage size: " +
+          "${limits.maxComputeWorkgroupStorageSize}",
+      )
+      appendLine(
+        "Max compute invocations per workgroup: " +
+          "${limits.maxComputeInvocationsPerWorkgroup}",
+      )
+      appendLine("Max compute workgroup size X: ${limits.maxComputeWorkgroupSizeX}")
+      appendLine("Max compute workgroup size Y: ${limits.maxComputeWorkgroupSizeY}")
+      appendLine("Max compute workgroup size Z: ${limits.maxComputeWorkgroupSizeZ}")
+      appendLine(
+        "Max compute workgroups per dimension: " +
+          "${limits.maxComputeWorkgroupsPerDimension}",
+      )
+    }
   }
 }
 
