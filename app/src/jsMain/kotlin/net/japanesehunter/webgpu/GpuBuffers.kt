@@ -4,6 +4,7 @@ package net.japanesehunter.webgpu
 
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.resource
+import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.Camera
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableMatrix4x4
@@ -15,7 +16,6 @@ import net.japanesehunter.math.toFloatArray
 import net.japanesehunter.webgpu.interop.GPUBufferBinding
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
-import net.japanesehunter.webgpu.interop.GPUVertexFormat
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.update
@@ -23,7 +23,13 @@ import kotlin.concurrent.atomics.update
 // region vertex
 
 interface VertexGpuBuffer : GpuBuffer {
-  val format: GPUVertexFormat
+  val formats: List<GpuVertexFormat>
+  val stride get() = formats.sumOf { it.sizeInBytes }
+  val offsets get() =
+    formats
+      .runningFold(0L) { acc, format ->
+        acc + format.sizeInBytes
+      }.dropLast(1)
 
   companion object
 }
@@ -34,7 +40,7 @@ fun VertexGpuBuffer.Companion.pos3D(data: FloatArray): Resource<VertexGpuBuffer>
   return resource {
     val buf = res.bind()
     object : VertexGpuBuffer, GpuBuffer by buf {
-      override val format: GPUVertexFormat = GPUVertexFormat.Float32x3
+      override val formats = listOf(GpuVertexFormat.Float32x3)
     }
   }
 }
@@ -45,7 +51,7 @@ fun VertexGpuBuffer.Companion.rgbaColor(data: FloatArray): Resource<VertexGpuBuf
   return resource {
     val buf = res.bind()
     object : VertexGpuBuffer, GpuBuffer by buf {
-      override val format: GPUVertexFormat = GPUVertexFormat.Float32x4
+      override val formats = listOf(GpuVertexFormat.Float32x4)
     }
   }
 }
@@ -56,7 +62,7 @@ fun VertexGpuBuffer.Companion.uv(data: FloatArray): Resource<VertexGpuBuffer> {
   return resource {
     val buf = res.bind()
     object : VertexGpuBuffer, GpuBuffer by buf {
-      override val format: GPUVertexFormat = GPUVertexFormat.Float32x2
+      override val formats = listOf(GpuVertexFormat.Float32x2)
     }
   }
 }
@@ -113,8 +119,14 @@ interface InstanceGpuBuffer : VertexGpuBuffer {
 interface TransformGpuBuffer :
   InstanceGpuBuffer,
   MutableGpuBuffer {
-  override val format: GPUVertexFormat
-    get() = GPUVertexFormat.Float32x4
+  override val formats: List<GpuVertexFormat>
+    get() =
+      listOf(
+        GpuVertexFormat.Float32x4,
+        GpuVertexFormat.Float32x4,
+        GpuVertexFormat.Float32x4,
+        GpuVertexFormat.Float32x4,
+      )
 }
 
 context(alloc: BufferAllocator)

@@ -25,7 +25,7 @@ interface ShaderCompiler {
   context(coroutine: CoroutineScope)
   fun compile(
     vertexCode: String,
-    vertexAttributes: Array<GPUVertexBufferLayout>? = null,
+    vertexAttributes: List<GPUVertexBufferLayout> = emptyList(),
     fragmentCode: String? = null,
     label: String? = null,
   ): Deferred<GPURenderPipeline>
@@ -38,7 +38,7 @@ private class ShaderCompilerImpl(
   context(coroutine: CoroutineScope)
   override fun compile(
     vertexCode: String,
-    vertexAttributes: Array<GPUVertexBufferLayout>?,
+    vertexAttributes: List<GPUVertexBufferLayout>,
     fragmentCode: String?,
     label: String?,
   ): Deferred<GPURenderPipeline> {
@@ -58,7 +58,7 @@ private class ShaderCompilerImpl(
           ),
         )
       } ?: vertexModule
-    val vertexState = GPUVertexState(vertexModule, vertexAttributes)
+    val vertexState = GPUVertexState(vertexModule, vertexAttributes.toTypedArray())
     val fragmentState =
       GPUFragmentState(
         module = fragmentModule,

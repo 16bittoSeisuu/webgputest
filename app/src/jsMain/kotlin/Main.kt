@@ -40,7 +40,6 @@ import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPUStoreOp
 import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
-import net.japanesehunter.webgpu.interop.GPUVertexFormat
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.pos3D
@@ -93,12 +92,17 @@ fun main() =
       }.flatten()
 
     webgpuContext(canvas) {
-      val pipeline = compileTriangleShader()
       val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
       val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
       val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
       val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
       val cameraBuf = UniformGpuBuffer.camera(camera).bind()
+      val pipeline =
+        compileTriangleShader(
+          transformBuffer,
+          vertexPosBuffer,
+          vertexColorBuffer,
+        )
       val renderBundle =
         recordRenderBundle {
           val pipeline = pipeline.await()
@@ -159,63 +163,33 @@ private suspend inline fun <R> webgpuContext(
 }
 
 context(compiler: ShaderCompiler, coroutine: CoroutineScope)
-private fun compileTriangleShader(): Deferred<GPURenderPipeline> {
-  val layout0 =
-    GPUVertexBufferLayout(
-      arrayStride = 16 * Float.SIZE_BYTES,
-      attributes =
-        arrayOf(
-          GPUVertexAttribute(
-            shaderLocation = 0,
-            offset = 0,
-            format = GPUVertexFormat.Float32x4,
-          ),
-          GPUVertexAttribute(
-            shaderLocation = 1,
-            offset = 4L * Float.SIZE_BYTES,
-            format = GPUVertexFormat.Float32x4,
-          ),
-          GPUVertexAttribute(
-            shaderLocation = 2,
-            offset = 8L * Float.SIZE_BYTES,
-            format = GPUVertexFormat.Float32x4,
-          ),
-          GPUVertexAttribute(
-            shaderLocation = 3,
-            offset = 12L * Float.SIZE_BYTES,
-            format = GPUVertexFormat.Float32x4,
-          ),
-        ),
-      stepMode = GPUVertexStepMode.Instance,
-    )
-  val layout1 =
-    GPUVertexBufferLayout(
-      arrayStride = 3 * Float.SIZE_BYTES,
-      attributes =
-        arrayOf(
-          GPUVertexAttribute(
-            shaderLocation = 4,
-            offset = 0,
-            format = GPUVertexFormat.Float32x3,
-          ),
-        ),
-    )
-  val layout2 =
-    GPUVertexBufferLayout(
-      arrayStride = 4 * Float.SIZE_BYTES,
-      attributes =
-        arrayOf(
-          GPUVertexAttribute(
-            shaderLocation = 5,
-            offset = 0,
-            format = GPUVertexFormat.Float32x4,
-          ),
-        ),
-    )
+private fun compileTriangleShader(vararg vertexBuffers: VertexGpuBuffer): Deferred<GPURenderPipeline> {
+  var shaderLocation = 0
+  val layouts =
+    vertexBuffers.map { buf ->
+      GPUVertexBufferLayout(
+        arrayStride = buf.stride,
+        attributes =
+          buf.formats
+            .mapIndexed { index, format ->
+              GPUVertexAttribute(
+                shaderLocation = shaderLocation++,
+                offset = buf.offsets[index],
+                format = format.raw,
+              )
+            }.toTypedArray(),
+        stepMode =
+          if (buf is InstanceGpuBuffer) {
+            GPUVertexStepMode.Instance
+          } else {
+            GPUVertexStepMode.Vertex
+          },
+      )
+    }
   return compiler.compile(
     vertexCode = code,
     fragmentCode = code,
-    vertexAttributes = arrayOf(layout0, layout1, layout2),
+    vertexAttributes = layouts,
     label = "Triangle Pipeline",
   )
 }
