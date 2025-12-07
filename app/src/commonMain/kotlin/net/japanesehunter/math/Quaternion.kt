@@ -467,6 +467,54 @@ inline fun Length3.rotatedBy(quaternion: Quaternion): ImmutableLength3 = quatern
 inline fun Area3.rotatedBy(quaternion: Quaternion): ImmutableArea3 = quaternion.rotate(this)
 
 /**
+ * Orients this quaternion so its forward axis (-Z) points along [dir] while keeping [up] as the up reference.
+ *
+ * @param dir The direction to look toward. Must be normalized and non-zero.
+ * @param up The world up reference used to resolve roll. Must not be collinear with [dir].
+ * @throws IllegalArgumentException If [dir] is zero-length or collinear with [up].
+ */
+fun MutableQuaternion.lookAlong(
+  dir: Direction3,
+  up: Direction3 = Direction3.up,
+) {
+  val right = dir cross up
+  val orthoUp = right cross dir
+
+  val components =
+    quaternionFromRotationMatrix(
+      r00 = right.ux,
+      r01 = orthoUp.ux,
+      r02 = -dir.ux,
+      r10 = right.uy,
+      r11 = orthoUp.uy,
+      r12 = -dir.uy,
+      r20 = right.uz,
+      r21 = orthoUp.uz,
+      r22 = -dir.uz,
+    )
+
+  mutate {
+    x = components.x
+    y = components.y
+    z = components.z
+    w = components.w
+  }
+  normalize()
+}
+
+/**
+ * Builds an immutable quaternion that looks along [dir] with [up] as the up reference.
+ *
+ * @param dir The direction to look toward. Must be normalized and non-zero.
+ * @param up The world up reference used to resolve roll. Must not be collinear with [dir].
+ * @throws IllegalArgumentException If [dir] is zero-length or collinear with [up].
+ */
+fun Quaternion.Companion.lookingAlong(
+  dir: Direction3,
+  up: Direction3 = Direction3.up,
+): ImmutableQuaternion = Quaternion(mutator = { lookAlong(dir, up) })
+
+/**
  * Maps each component using [action] and writes the result back.
  *
  * @param actionName Optional name for diagnostics.
@@ -697,9 +745,9 @@ private fun createQuaternionImmutable(
   val finiteY = ensureFiniteComponent(y, "y")
   val finiteZ = ensureFiniteComponent(z, "z")
   val finiteW = ensureFiniteComponent(w, "w")
-  return when {
-    finiteX == 0.0 && finiteY == 0.0 && finiteZ == 0.0 && finiteW == 0.0 -> QUATERNION_ZERO
-    finiteX == 0.0 && finiteY == 0.0 && finiteZ == 0.0 && finiteW == 1.0 -> QUATERNION_IDENTITY
+  return when (finiteX) {
+    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 0.0 -> QUATERNION_ZERO
+    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 1.0 -> QUATERNION_IDENTITY
     else -> ImmutableQuaternionImpl(finiteX, finiteY, finiteZ, finiteW)
   }
 }
@@ -782,6 +830,53 @@ private fun selectAreaUnitForRotation(area: Area3): AreaUnit {
 
     // (1e3 nm)^2
     else -> AreaUnit.SQUARE_NANOMETER
+  }
+}
+
+private fun quaternionFromRotationMatrix(
+  r00: Double,
+  r01: Double,
+  r02: Double,
+  r10: Double,
+  r11: Double,
+  r12: Double,
+  r20: Double,
+  r21: Double,
+  r22: Double,
+): Quaternion {
+  val trace = r00 + r11 + r22
+  return if (trace > 0.0) {
+    val s = sqrt(trace + 1.0) * 2.0
+    Quaternion(
+      x = (r21 - r12) / s,
+      y = (r02 - r20) / s,
+      z = (r10 - r01) / s,
+      w = 0.25 * s,
+    )
+  } else if (r00 >= r11 && r00 >= r22) {
+    val s = sqrt(1.0 + r00 - r11 - r22) * 2.0
+    Quaternion(
+      x = 0.25 * s,
+      y = (r01 + r10) / s,
+      z = (r02 + r20) / s,
+      w = (r21 - r12) / s,
+    )
+  } else if (r11 > r22) {
+    val s = sqrt(1.0 + r11 - r00 - r22) * 2.0
+    Quaternion(
+      x = (r01 + r10) / s,
+      y = 0.25 * s,
+      z = (r12 + r21) / s,
+      w = (r02 - r20) / s,
+    )
+  } else {
+    val s = sqrt(1.0 + r22 - r00 - r11) * 2.0
+    Quaternion(
+      x = (r02 + r20) / s,
+      y = (r12 + r21) / s,
+      z = 0.25 * s,
+      w = (r10 - r01) / s,
+    )
   }
 }
 

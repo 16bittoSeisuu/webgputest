@@ -405,7 +405,7 @@ inline operator fun Point3.minus(distance: Length3): ImmutablePoint3 =
  * @param other The origin point of the displacement.
  * @return The [Length3] representing this - [other].
  */
-inline operator fun Point3.minus(other: Point3): Length3 =
+inline operator fun Point3.minus(other: Point3): ImmutableLength3 =
   Length3(
     dx = x - other.x,
     dy = y - other.y,

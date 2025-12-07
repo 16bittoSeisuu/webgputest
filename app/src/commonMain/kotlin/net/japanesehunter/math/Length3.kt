@@ -321,7 +321,11 @@ inline infix fun Length3.dot(other: Length3): Area {
  * @param other The distance to take the cross product with.
  * @return A new [Area3] representing the cross product in nm².
  */
-inline infix fun Length3.cross(other: Length3): Area3 = cross(other, LengthUnit.NANOMETER)
+inline infix fun Length3.cross(other: Length3): ImmutableArea3 =
+  cross(
+    other,
+    LengthUnit.NANOMETER,
+  )
 
 /**
  * Returns the cross product of this distance with [other] as an [Area3].
@@ -333,7 +337,7 @@ inline infix fun Length3.cross(other: Length3): Area3 = cross(other, LengthUnit.
 fun Length3.cross(
   other: Length3,
   unit: LengthUnit,
-): Area3 {
+): ImmutableArea3 {
   val dx = this.dx.toDouble(unit)
   val dy = this.dy.toDouble(unit)
   val dz = this.dz.toDouble(unit)

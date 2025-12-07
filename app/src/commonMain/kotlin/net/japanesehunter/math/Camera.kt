@@ -15,7 +15,7 @@ import kotlinx.atomicfu.locks.withLock
 sealed interface Camera {
   val transform: Transform
   val fov: Fov
-  var aspect: Double
+  val aspect: Double
   val nearFar: NearFar
 
   override fun toString(): String
@@ -29,11 +29,8 @@ sealed interface Camera {
 
 /**
  * Immutable camera.
- * TODO doc aspect mutability
  */
-sealed interface StaticCamera : Camera {
-  override var aspect: Double
-}
+sealed interface StaticCamera : Camera
 
 /**
  * Mutable camera. Default implementations are thread-safe via an internal [ReentrantLock]; callers can also rely on
@@ -163,6 +160,20 @@ inline fun MovableCamera.setRotation(rotation: Quaternion) =
       z = rotation.z
     }
   }
+
+/**
+ * Rotates the camera so it looks at [at] using [up] as the up reference.
+ */
+inline fun MovableCamera.lookAt(
+  at: Point3,
+  up: Direction3 = Direction3.up,
+) = mutateTransform {
+  val position = Point3.zero + translation
+  val dir = (at - position).toDirection()
+  mutateRotation {
+    lookAlong(dir, up)
+  }
+}
 
 /**
  * Adjusts the camera aspect ratio.

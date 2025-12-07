@@ -1,36 +1,44 @@
 
 import arrow.fx.coroutines.ResourceScope
-import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
-import kotlinx.browser.document
-import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.await
 import kotlinx.coroutines.yield
+import net.japanesehunter.math.Angle
+import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.MutableTransform
 import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.Point3
+import net.japanesehunter.math.degrees
+import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.mutateScale
 import net.japanesehunter.math.mutateTranslation
+import net.japanesehunter.math.x
+import net.japanesehunter.math.y
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
+import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.InstanceGpuBuffer
 import net.japanesehunter.webgpu.ShaderCompiler
 import net.japanesehunter.webgpu.UniformGpuBuffer
+import net.japanesehunter.webgpu.UnsupportedAdapterException
+import net.japanesehunter.webgpu.UnsupportedBrowserException
 import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.asBinding
 import net.japanesehunter.webgpu.camera
+import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.drawIndexed
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
-import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPULoadOp
@@ -50,93 +58,100 @@ import net.japanesehunter.webgpu.setBindGroup
 import net.japanesehunter.webgpu.setVertexBuffer
 import net.japanesehunter.webgpu.transforms
 import net.japanesehunter.webgpu.u16
-import org.w3c.dom.HTMLCanvasElement
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.tan
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 fun main() =
   application(loggerLevel = Level.DEBUG) {
-    val canvas =
-      canvas()?.apply {
-        fit()
-      } ?: run {
-        logger.error { "Canvas element not found" }
-        return@application
-      }
-    val camera =
-      MovableCamera(
-        fov = Fov.fromDegrees(60.0),
-        nearFar = NearFar(0.1.meters, 128.meters),
-        aspect = canvas.width.toDouble() / canvas.height,
-      ).apply {
-        z = 2.meters
-      }
-    window.onresize = {
-      canvas.fit()
-      camera.aspect = canvas.width.toDouble() / canvas.height
-    }
-    val transforms =
-      List(3) { x ->
-        List(3) { y ->
-          MutableTransform().apply {
-            mutateTranslation {
-              dx = (x - 1).meters
-              dy = (y - 1).meters
-              dz = (-2).meters
-            }
-            mutateScale {
-              sx = 0.5
-              sy = 0.5
-              sz = 0.5
+    canvasContext {
+      val camera =
+        MovableCamera(
+          fov = Fov.fromDegrees(60.0),
+          nearFar = NearFar(0.1.meters, 128.meters),
+          aspect = canvasAspect,
+        ).apply {
+          autoFit()
+        }
+      val transforms =
+        List(3) { x ->
+          List(3) { y ->
+            MutableTransform().apply {
+              mutateTranslation {
+                dx = (x - 1).meters
+                dy = (y - 1).meters
+              }
+              mutateScale {
+                sx = 0.5
+                sy = 0.5
+                sz = 0.5
+              }
             }
           }
-        }
-      }.flatten()
+        }.flatten()
 
-    webgpuContext(canvas) {
-      debugPrintLimits()
-      val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
-      val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
-      val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
-      val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
-      val cameraBuf = UniformGpuBuffer.camera(camera).bind()
-      val pipeline =
-        compileTriangleShader(
-          transformBuffer,
-          vertexPosBuffer,
-          vertexColorBuffer,
-        )
-      val renderBundle =
-        recordRenderBundle {
-          val pipeline = pipeline.await()
-          setPipeline(pipeline)
-          setVertexBuffer(
-            listOf(
-              transformBuffer,
-              vertexPosBuffer,
-              vertexColorBuffer,
-            ),
+      webgpuContext {
+        debugPrintLimits()
+        val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
+        val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
+        val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
+        val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
+        val cameraBuf = UniformGpuBuffer.camera(camera).bind()
+        val pipeline =
+          compileTriangleShader(
+            transformBuffer,
+            vertexPosBuffer,
+            vertexColorBuffer,
           )
-          setBindGroup(listOf(listOf(cameraBuf.asBinding()))) {
-            pipeline.getBindGroupLayout(it)
+        val renderBundle =
+          recordRenderBundle {
+            val pipeline = pipeline.await()
+            setPipeline(pipeline)
+            setVertexBuffer(
+              listOf(
+                transformBuffer,
+                vertexPosBuffer,
+                vertexColorBuffer,
+              ),
+            )
+            setBindGroup(listOf(listOf(cameraBuf.asBinding()))) {
+              pipeline.getBindGroupLayout(it)
+            }
+            drawIndexed(indexBuffer, instanceCount = transforms.size)
           }
-          drawIndexed(indexBuffer, instanceCount = transforms.size)
+        val time = TimeSource.Monotonic.markNow()
+        while (true) {
+          camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
+          camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
+          camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
+          val point =
+            run {
+              val rad = time.rad(perSec = 20.0.degrees)
+              Point3(
+                x = 1.meters * rad.cos(),
+                y = 1.meters * rad.sin(),
+                z = 0.meters,
+              )
+            }
+          camera.lookAt(point)
+          cameraBuf.update()
+          frame {
+            executeBundles(arrayOf(renderBundle))
+          }
+          yield()
         }
-      while (true) {
-        cameraBuf.update()
-        frame {
-          executeBundles(arrayOf(renderBundle))
-        }
-        yield()
       }
     }
   }
 
 // region helper
 
-context(resource: ResourceScope)
+context(canvas: CanvasContext, resource: ResourceScope)
 private suspend inline fun <R> webgpuContext(
-  canvas: HTMLCanvasElement,
   action: context(
-    GPU, GPUAdapter, GPUDevice, ShaderCompiler, GPUCanvasContext, BufferAllocator
+    GPU, GPUAdapter, GPUDevice, ShaderCompiler, BufferAllocator
   ) () -> R,
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
@@ -147,18 +162,15 @@ private suspend inline fun <R> webgpuContext(
   resource.onClose {
     device.destroy()
   }
-  val surfaceContext =
-    canvas.getContext("webgpu").unsafeCast<GPUCanvasContext>()
-  val preferredFormat = gpu.getPreferredCanvasFormat()
-  surfaceContext.configure(
+  canvas.configure(
     GPUCanvasConfiguration(
       device = device,
-      format = preferredFormat,
+      format = canvas.preferredFormat,
     ),
   )
-  val compiler = device.createShaderCompiler(preferredFormat)
+  val compiler = device.createShaderCompiler(canvas.preferredFormat)
   val allocator = device.createBufferAllocator()
-  return context(gpu, adapter, device, compiler, surfaceContext, allocator) {
+  return context(gpu, adapter, device, compiler, allocator) {
     action()
   }
 }
@@ -284,9 +296,9 @@ private fun compileTriangleShader(vararg vertexBuffers: VertexGpuBuffer): Deferr
   )
 }
 
-context(device: GPUDevice, surface: GPUCanvasContext)
+context(device: GPUDevice, canvas: CanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
-  val surfaceTexture = surface.getCurrentTexture()
+  val surfaceTexture = canvas.getCurrentTexture()
   val commandEncoder = device.createCommandEncoder()
   val renderPassEncoder =
     commandEncoder.beginRenderPass(
@@ -307,17 +319,19 @@ private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
   device.queue.submit(arrayOf(commandEncoder.finish()))
 }
 
-private class UnsupportedBrowserException :
-  Exception(
-    message = "WebGPU is not supported on this browser",
-  )
+private fun TimeMark.rad(perSec: Angle): Angle {
+  val elapsed = this.elapsedNow()
+  val seconds = elapsed.inWholeMilliseconds / 1000.0
+  return perSec * seconds
+}
 
-private class UnsupportedAdapterException :
-  Exception(
-    message = "WebGPU Adapter could not be obtained",
-  )
+private fun Angle.sin(): Double = sin(toDouble(AngleUnit.RADIAN))
 
-private val logger = KotlinLogging.logger("Main")
+private fun Angle.cos(): Double = cos(toDouble(AngleUnit.RADIAN))
+
+private fun Angle.tan(): Double = tan(toDouble(AngleUnit.RADIAN))
+
+private val logger = logger("Main")
 
 private val code =
   """
@@ -393,14 +407,13 @@ private val vertexColor =
     1.0f, // vertex 3
   )
 
-private fun canvas(): HTMLCanvasElement? =
-  document
-    .getElementById("canvas")
-    .unsafeCast<HTMLCanvasElement?>()
+context(canvas: CanvasContext)
+private val canvasAspect get() = canvas.width.toDouble() / canvas.height
 
-private fun HTMLCanvasElement.fit() {
-  width = window.innerWidth
-  height = window.innerHeight
-}
+context(canvas: CanvasContext)
+private fun MovableCamera.autoFit(): AutoCloseable =
+  canvas.onResize {
+    aspect = canvasAspect
+  }
 
 // endregion

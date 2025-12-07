@@ -661,13 +661,13 @@ private fun writeViewMatrix(
   val wz = rw * rz
 
   val r00 = 1.0 - 2.0 * (yy + zz)
-  val r01 = 2.0 * (xy + wz)
-  val r02 = 2.0 * (xz - wy)
-  val r10 = 2.0 * (xy - wz)
+  val r01 = 2.0 * (xy - wz)
+  val r02 = 2.0 * (xz + wy)
+  val r10 = 2.0 * (xy + wz)
   val r11 = 1.0 - 2.0 * (xx + zz)
-  val r12 = 2.0 * (yz + wx)
-  val r20 = 2.0 * (xz + wy)
-  val r21 = 2.0 * (yz - wx)
+  val r12 = 2.0 * (yz - wx)
+  val r20 = 2.0 * (xz - wy)
+  val r21 = 2.0 * (yz + wx)
   val r22 = 1.0 - 2.0 * (xx + yy)
 
   target[0] = invSx * r00

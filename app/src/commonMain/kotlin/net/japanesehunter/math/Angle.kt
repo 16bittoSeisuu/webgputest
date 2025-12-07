@@ -187,6 +187,18 @@ value class Angle internal constructor(
     return nanoradians.toDouble() / other.nanoradians.toDouble()
   }
 
+  /**
+   * Returns the remainder of dividing this angle by [other].
+   *
+   * @param other The divisor. Must not be zero.
+   * @return The remainder angle with the same sign as this angle.
+   * @throws IllegalArgumentException If [other] is zero.
+   */
+  operator fun rem(other: Angle): Angle {
+    require(other.nanoradians != 0L) { "Cannot take the remainder by a zero angle." }
+    return Angle(nanoradians % other.nanoradians)
+  }
+
   override fun compareTo(other: Angle): Int = nanoradians.compareTo(other.nanoradians)
 
   override fun toString(): String {
@@ -242,6 +254,18 @@ value class Angle internal constructor(
     ): Angle = Angle(unit.toNanoradians(value))
   }
 }
+
+/**
+ * Creates an [Angle] from this [Int] value expressed in radians.
+ */
+val Int.radians: Angle
+  get() = from(this.toLong(), AngleUnit.RADIAN)
+
+/**
+ * Creates an [Angle] from this [Int] value expressed in degrees.
+ */
+val Int.degrees: Angle
+  get() = from(this.toLong(), AngleUnit.DEGREE)
 
 /**
  * Creates an [Angle] from this [Long] value expressed in radians.
