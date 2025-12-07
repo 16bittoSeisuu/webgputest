@@ -159,7 +159,9 @@ fun InstanceGpuBuffer.Companion.transforms(
 
 // region uniform
 
-interface UniformGpuBuffer : GpuBuffer {
+interface UniformGpuBuffer :
+  BufferBindingProvider,
+  GpuBuffer {
   companion object
 }
 
@@ -193,9 +195,21 @@ fun UniformGpuBuffer.Companion.camera(
 
 // endregion
 
+// region storage
+
+interface StorageGpuBuffer :
+  GpuBuffer,
+  BufferBindingProvider {
+  companion object
+}
+
+// endregion
+
 // region binding
 
-fun UniformGpuBuffer.asBinding(): GPUBufferBinding =
+interface BufferBindingProvider : GpuBuffer
+
+fun BufferBindingProvider.asBinding(): GPUBufferBinding =
   GPUBufferBinding(
     buffer = raw,
     offset = offset,

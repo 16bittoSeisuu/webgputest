@@ -9,16 +9,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
+import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
-import net.japanesehunter.math.MutableTransform
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.degrees
+import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.mutateScale
-import net.japanesehunter.math.mutateTranslation
+import net.japanesehunter.math.north
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
@@ -27,12 +27,10 @@ import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.InstanceGpuBuffer
 import net.japanesehunter.webgpu.ShaderCompiler
-import net.japanesehunter.webgpu.UniformGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
 import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.asBinding
-import net.japanesehunter.webgpu.camera
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.createShaderCompiler
@@ -53,21 +51,20 @@ import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
-import net.japanesehunter.webgpu.pos3D
 import net.japanesehunter.webgpu.recordRenderBundle
-import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.setBindGroup
 import net.japanesehunter.webgpu.setVertexBuffer
-import net.japanesehunter.webgpu.transforms
 import net.japanesehunter.webgpu.u16
-import kotlin.concurrent.atomics.AtomicBoolean
+import net.japanesehunter.worldcreate.Quad
+import net.japanesehunter.worldcreate.toGpuBuffer
+import net.japanesehunter.worldcreate.toIndicesGpuBuffer
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-val end = AtomicBoolean(false)
+val end = Job()
 
 fun main() =
   application(loggerLevel = Level.DEBUG) {
@@ -80,51 +77,50 @@ fun main() =
         ).apply {
           autoFit()
         }
-      val transforms =
+      val quads =
         List(101) { x ->
           List(101) { y ->
-            MutableTransform().apply {
-              mutateTranslation {
-                dx = (x - 50).meters
-                dy = (y - 50).meters
-              }
-              mutateScale {
-                sx = 0.5
-                sy = 0.5
-                sz = 0.5
-              }
-            }
+            Quad(
+              pos =
+                Point3(
+                  x = (x - 50).meters,
+                  y = (y - 50).meters,
+                  z = 0.meters,
+                ),
+              normal = Direction3.north,
+              tangent = Direction3.east,
+              negateBitangent = false,
+              sizeU = 0.5.meters,
+              sizeV = 0.5.meters,
+              materialId = 0,
+            )
           }
         }.flatten()
 
       webgpuContext {
         debugPrintLimits()
-        val transformBuffer = InstanceGpuBuffer.transforms(transforms).bind()
-        val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
-        val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
         val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
-        val cameraBuf = UniformGpuBuffer.camera(camera).bind()
+        val cameraBuf = camera.toGpuBuffer().bind()
+        val quadInst = quads.toGpuBuffer().bind()
+        val quadIndices = quads.toIndicesGpuBuffer().bind()
         val pipeline =
-          compileTriangleShader(
-            transformBuffer,
-            vertexPosBuffer,
-            vertexColorBuffer,
-          )
+          compileTriangleShader(quadIndices)
         val renderBundle =
           recordRenderBundle {
             val pipeline = pipeline.await()
             setPipeline(pipeline)
             setVertexBuffer(
               listOf(
-                transformBuffer,
-                vertexPosBuffer,
-                vertexColorBuffer,
+                quadIndices,
               ),
             )
-            setBindGroup(listOf(listOf(cameraBuf.asBinding()))) {
-              pipeline.getBindGroupLayout(it)
-            }
-            drawIndexed(indexBuffer, instanceCount = transforms.size)
+            setBindGroup(
+              listOf(
+                listOf(cameraBuf.asBinding()),
+                listOf(quadInst.asBinding()),
+              ),
+            ) { pipeline.getBindGroupLayout(it) }
+            drawIndexed(indexBuffer, instanceCount = quads.size)
           }
         val time = TimeSource.Monotonic.markNow()
         val done = Job()
@@ -147,7 +143,7 @@ fun main() =
           frame {
             executeBundles(arrayOf(renderBundle))
           }
-          if (end.load()) {
+          if (end.isCompleted) {
             done.complete()
             return
           }
@@ -350,75 +346,86 @@ private val code =
   """
   struct VsOut {
     @builtin(position) position : vec4f,
-    @location(0) color : vec4f,
+    @location(0) @interpolate(flat) mat_id: u32,
   }
   
-  @group(0) @binding(0) var<uniform> viewProj : mat4x4f;
+  struct CameraUniform {
+    projection: mat4x4f,  // 64
+    rotation: mat3x3f,    // 48
+    block_pos: vec3i,     // 12
+    _pad0: u32,           // 4
+    local_pos: vec3f,     // 12
+    _pad1: u32,           // 4
+  }
+  
+  struct Quad {
+    block_pos: vec3i,     // 12
+    size_u: f32,          // 4
+    local_pos: vec3f,     // 12
+    size_v: f32,          // 4
+    normal: vec3f,        // 12
+    bitangent_sign: f32,  // 4
+    tangent: vec3f,       // 12
+    mat_id: u32,          // 4
+  }
+  
+  @group(0) @binding(0) var<uniform> camera : CameraUniform;
+  @group(1) @binding(0) var<storage, read> quad_instances : array<Quad>;
   
   @vertex
   fn vs_main(
-    @location(0) model0: vec4f,
-    @location(1) model1: vec4f,
-    @location(2) model2: vec4f,
-    @location(3) model3: vec4f,
-    @location(4) pos: vec3f,
-    @location(5) color: vec4f,
+    @builtin(vertex_index) vertex_index: u32,
+    @location(0) quad_index: u32,
   ) -> VsOut {
-    let model = mat4x4f(
-      model0,
-      model1,
-      model2,
-      model3,
-    );
+    let quad = quad_instances[quad_index];
+    let relative_block_pos = vec3f(quad.block_pos - camera.block_pos);
+    let relative_base_pos =
+      relative_block_pos 
+        + quad.local_pos
+        - camera.local_pos;
+    
+    let normal = normalize(quad.normal);
+    let tangent = normalize(quad.tangent);
+    let bitangent =
+      normalize(cross(normal, tangent)) *
+        quad.bitangent_sign;
+    let corner = corners[vertex_index];
+    let offset = 
+      tangent * (corner.x * quad.size_u) +
+      bitangent * (corner.y * quad.size_v);
+    let pos = relative_base_pos + offset;
+    let pos_relative_camera = camera.rotation * pos;
+    let clip_pos = camera.projection * vec4f(pos_relative_camera, 1.0);
+    
     var out: VsOut;
-    out.position = viewProj * model * vec4f(pos, 1.0);
-    out.color = color;
+    out.position = clip_pos;
+    out.mat_id = quad.mat_id;
     return out;
   }
 
   @fragment
   fn fs_main(
-    @location(0) color: vec4f,
+    @location(0) @interpolate(flat) mat_id: u32,
   ) -> @location(0) vec4f {
-    return color;
+    return vec4f(0.0, 1.0, 1.0, 1.0);
   }
+  
+  const corners: array<vec2f, 4> = 
+    array<vec2f, 4>(
+      vec2f(-0.5, -0.5), // left-bottom
+      vec2f( 0.5, -0.5), // right-bottom
+      vec2f(-0.5,  0.5), // left-top
+      vec2f( 0.5,  0.5), // right-top
+    );
+    
+  const uvs: array<vec2f, 4> = 
+    array<vec2f, 4>(
+      vec2f(0.0, 1.0), // left-bottom
+      vec2f(1.0, 1.0), // right-bottom
+      vec2f(0.0, 0.0), // left-top
+      vec2f(1.0, 0.0), // right-top
+    );
   """.trimIndent()
-
-private val vertexPos =
-  floatArrayOf(
-    -0.5f,
-    -0.5f,
-    0.0f, // vertex 0
-    0.5f,
-    -0.5f,
-    0.0f, // vertex 1
-    -0.5f,
-    0.5f,
-    0.0f, // vertex 2
-    0.5f,
-    0.5f,
-    0.0f, // vertex 3
-  )
-
-private val vertexColor =
-  floatArrayOf(
-    1.0f,
-    1.0f,
-    0.0f,
-    1.0f, // vertex 0
-    0.0f,
-    1.0f,
-    1.0f,
-    1.0f, // vertex 1
-    1.0f,
-    0.0f,
-    1.0f,
-    1.0f, // vertex 2
-    1.0f,
-    1.0f,
-    1.0f,
-    1.0f, // vertex 3
-  )
 
 context(canvas: CanvasContext)
 private val canvasAspect get() = canvas.width.toDouble() / canvas.height
