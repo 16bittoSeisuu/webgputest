@@ -1,10 +1,22 @@
+@file:OptIn(ExperimentalAtomicApi::class)
+
 package net.japanesehunter.webgpu
 
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.resource
+import net.japanesehunter.math.Camera
+import net.japanesehunter.math.LengthUnit
+import net.japanesehunter.math.MutableMatrix4x4
+import net.japanesehunter.math.setIdentity
+import net.japanesehunter.math.setViewProjRH
+import net.japanesehunter.math.toFloatArray
+import net.japanesehunter.webgpu.interop.GPUBufferBinding
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
 import net.japanesehunter.webgpu.interop.GPUVertexFormat
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.update
 
 // region vertex
 
@@ -87,5 +99,67 @@ fun IndexGpuBuffer.Companion.u32(data: IntArray): Resource<IndexGpuBuffer> {
     }
   }
 }
+
+// endregion
+
+// region uniform
+
+interface UniformGpuBuffer : GpuBuffer {
+  companion object
+}
+
+interface CameraGpuBuffer :
+  UniformGpuBuffer,
+  MutableGpuBuffer {
+  fun update()
+}
+
+private val tmpMatrix = AtomicReference(MutableMatrix4x4())
+
+context(alloc: BufferAllocator)
+fun UniformGpuBuffer.Companion.camera(
+  data: Camera,
+  unit: LengthUnit = LengthUnit.METER,
+): Resource<CameraGpuBuffer> {
+  val res =
+    alloc.mutable(
+      data = data.toFloatArray(unit),
+      usage = GPUBufferUsage.Uniform,
+      label = "Camera View Proj Uniform Buffer",
+    )
+  return resource {
+    val buf = res.bind()
+    object : CameraGpuBuffer, MutableGpuBuffer by buf {
+      override fun update() {
+        val array = data.toFloatArray(unit)
+        write(array)
+      }
+    }
+  }
+}
+
+private fun Camera.toFloatArray(unit: LengthUnit): FloatArray {
+  tmpMatrix.update {
+    it.apply {
+      setIdentity()
+      setViewProjRH(
+        camera = this@toFloatArray,
+        unit = unit,
+      )
+      return toFloatArray()
+    }
+  }
+}
+
+// endregion
+
+// region binding
+
+fun UniformGpuBuffer.asBinding(): GPUBufferBinding =
+  GPUBufferBinding(
+    buffer = raw,
+    offset = offset,
+    size = size,
+  )
 
 // endregion

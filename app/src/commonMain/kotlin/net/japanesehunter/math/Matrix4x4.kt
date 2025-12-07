@@ -284,6 +284,15 @@ inline infix fun Matrix4x4.multipliedBy(other: Matrix4x4): ImmutableMatrix4x4 {
 }
 
 /**
+ * Returns the matrix elements as [FloatArray] in column-major order.
+ */
+fun Matrix4x4.toFloatArray(): FloatArray {
+  val doubles = toDoubleArray()
+  val floats = FloatArray(16) { i -> doubles[i].toFloat() }
+  return floats
+}
+
+/**
  * Sets this matrix to a TRS built from [transform] (`scale -> rotation -> translation`).
  */
 fun MutableMatrix4x4.setTransform(
@@ -343,24 +352,37 @@ fun MutableMatrix4x4.setProduct(
 }
 
 /**
+ * Sets this matrix to a right-handed view-projection (`projection * view`) for [camera] with a `[0, 1]` depth range.
+ *
+ * @param camera The camera supplying transform, FOV, aspect ratio, and near/far planes.
+ * @param unit The length unit used to express translations; [NearFar] distances are converted using the same unit.
+ * @throws IllegalArgumentException If any scale component on [Camera.transform] is zero.
+ */
+fun MutableMatrix4x4.setViewProjRH(
+  camera: Camera,
+  unit: LengthUnit = LengthUnit.METER,
+) = mutateElements { target ->
+  val view = DoubleArray(16)
+  val proj = DoubleArray(16)
+  writeViewMatrix(view, camera.transform, unit)
+  writePerspectiveMatrix(proj, camera.fov, camera.aspect, camera.nearFar, unit)
+  multiplyInto(target, proj, view)
+}
+
+/**
  * Builds a right-handed view-projection matrix (`projection * view`) for [camera] with a `[0, 1]` depth range.
  *
  * @param camera The camera supplying transform, FOV, aspect ratio, and near/far planes.
- * @param unit The length unit used to express translations; [NearFar] distances are assumed to use the same unit.
+ * @param unit The length unit used to express translations; [NearFar] distances are converted using the same unit.
  * @throws IllegalArgumentException If any scale component on [Camera.transform] is zero.
  */
 fun Matrix4x4.Companion.viewProjRH(
   camera: Camera,
   unit: LengthUnit = LengthUnit.METER,
-): ImmutableMatrix4x4 {
-  val view = DoubleArray(16)
-  val proj = DoubleArray(16)
-  writeViewMatrix(view, camera.transform, unit)
-  writePerspectiveMatrix(proj, camera.fov, camera.aspect, camera.nearFar)
-  val out = DoubleArray(16)
-  multiplyInto(out, proj, view)
-  return Matrix4x4.fromColumnMajor(out)
-}
+): ImmutableMatrix4x4 =
+  Matrix4x4 {
+    setViewProjRH(camera, unit)
+  }
 
 // endregion
 
@@ -682,26 +704,22 @@ private fun writePerspectiveMatrix(
   fov: Fov,
   aspect: Double,
   nearFar: NearFar,
+  unit: LengthUnit,
 ) {
   require(target.size == 16) { "Projection matrix target must have 16 elements." }
   target.fill(0.0)
 
   val f = 1.0 / tan(fov.angle.toDouble(AngleUnit.RADIAN) / 2.0)
-  val near = nearFar.near
-  val far = nearFar.far
+  val near = nearFar.near.toDouble(unit)
+  val far = nearFar.far.toDouble(unit)
 
   target[0] = f / aspect
   target[5] = f
   target[11] = -1.0
 
-  if (far.isInfinite()) {
-    target[10] = -1.0
-    target[14] = -near
-  } else {
-    val invRange = 1.0 / (near - far)
-    target[10] = far * invRange
-    target[14] = near * far * invRange
-  }
+  val invRange = 1.0 / (near - far)
+  target[10] = far * invRange
+  target[14] = near * far * invRange
 }
 
 private fun multiplyInto(

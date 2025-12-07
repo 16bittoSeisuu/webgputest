@@ -6,6 +6,7 @@ import kotlin.math.roundToLong
 
 private const val NANOMETERS_PER_MICROMETER: Long = 1_000L
 private const val NANOMETERS_PER_MILLIMETER: Long = 1_000_000L
+private const val NANOMETERS_PER_CENTIMETER: Long = 10_000_000L
 private const val NANOMETERS_PER_METER: Long = 1_000_000_000L
 private const val NANOMETERS_PER_KILOMETER: Long = 1_000_000_000_000L
 
@@ -36,6 +37,11 @@ enum class LengthUnit(
   MILLIMETER(NANOMETERS_PER_MILLIMETER, "mm"),
 
   /**
+   * The centimeter unit (1e-2 meters).
+   */
+  CENTIMETER(NANOMETERS_PER_CENTIMETER, "cm"),
+
+  /**
    * The meter unit.
    */
   METER(NANOMETERS_PER_METER, "m"),
@@ -51,7 +57,7 @@ enum class LengthUnit(
  * Precision is fixed to nanometers; [from] with [Double] rounds to the
  * nearest nanometer and rejects non-finite values.
  * Use [LengthUnit] to view or construct values in nanometers, micrometers,
- * millimeters, meters, or kilometers.
+ * millimeters, centimeters, meters, or kilometers.
  * Arithmetic methods signal overflow with [ArithmeticException].
  *
  * @author Int16
@@ -80,6 +86,13 @@ value class Length internal constructor(
     get() = nanometers / NANOMETERS_PER_MILLIMETER
 
   /**
+   * Returns this distance as a whole number of centimeters,
+   * truncated toward zero.
+   */
+  val inWholeCentimeters: Long
+    get() = nanometers / NANOMETERS_PER_CENTIMETER
+
+  /**
    * Returns this distance as a whole number of meters,
    * truncated toward zero.
    */
@@ -105,6 +118,7 @@ value class Length internal constructor(
       LengthUnit.NANOMETER -> inWholeNanometers
       LengthUnit.MICROMETER -> inWholeMicrometers
       LengthUnit.MILLIMETER -> inWholeMillimeters
+      LengthUnit.CENTIMETER -> inWholeCentimeters
       LengthUnit.METER -> inWholeMeters
       LengthUnit.KILOMETER -> inWholeKilometers
     }
@@ -244,6 +258,10 @@ value class Length internal constructor(
           absNanometers.toDouble() / NANOMETERS_PER_METER to LengthUnit.METER
         }
 
+        absNanometers >= NANOMETERS_PER_CENTIMETER -> {
+          absNanometers.toDouble() / NANOMETERS_PER_CENTIMETER to LengthUnit.CENTIMETER
+        }
+
         absNanometers >= NANOMETERS_PER_MILLIMETER -> {
           absNanometers.toDouble() / NANOMETERS_PER_MILLIMETER to LengthUnit.MILLIMETER
         }
@@ -318,6 +336,12 @@ val Long.millimeters: Length
   get() = Length.from(this, LengthUnit.MILLIMETER)
 
 /**
+ * Creates a [Length] from this [Long] value expressed in centimeters.
+ */
+val Long.centimeters: Length
+  get() = Length.from(this, LengthUnit.CENTIMETER)
+
+/**
  * Creates a [Length] from this [Long] value expressed in meters.
  */
 val Long.meters: Length
@@ -351,6 +375,13 @@ val Double.millimeters: Length
   get() = Length.from(this, LengthUnit.MILLIMETER)
 
 /**
+ * Creates a [Length] from this [Double] value expressed in centimeters.
+ * The value is rounded to the nearest nanometer.
+ */
+val Double.centimeters: Length
+  get() = Length.from(this, LengthUnit.CENTIMETER)
+
+/**
  * Creates a [Length] from this [Double] value expressed in meters.
  * The value is rounded to the nearest nanometer.
  */
@@ -373,11 +404,48 @@ val Double.kilometers: Length
  */
 operator fun Double.times(distance: Length): Length = distance * this
 
+/**
+ * Creates a [Length] from this [Int] value expressed in nanometers.
+ */
+val Int.nanometers: Length
+  get() = toLong().nanometers
+
+/**
+ * Creates a [Length] from this [Int] value expressed in micrometers.
+ */
+val Int.micrometers: Length
+  get() = toLong().micrometers
+
+/**
+ * Creates a [Length] from this [Int] value expressed in millimeters.
+ */
+val Int.millimeters: Length
+  get() = toLong().millimeters
+
+/**
+ * Creates a [Length] from this [Int] value expressed in centimeters.
+ */
+val Int.centimeters: Length
+  get() = toLong().centimeters
+
+/**
+ * Creates a [Length] from this [Int] value expressed in meters.
+ */
+val Int.meters: Length
+  get() = toLong().meters
+
+/**
+ * Creates a [Length] from this [Int] value expressed in kilometers.
+ */
+val Int.kilometers: Length
+  get() = toLong().kilometers
+
 private fun LengthUnit.toNanometers(value: Long): Long =
   when (this) {
     LengthUnit.NANOMETER -> value
     LengthUnit.MICROMETER -> safeMultiply(value, NANOMETERS_PER_MICROMETER)
     LengthUnit.MILLIMETER -> safeMultiply(value, NANOMETERS_PER_MILLIMETER)
+    LengthUnit.CENTIMETER -> safeMultiply(value, NANOMETERS_PER_CENTIMETER)
     LengthUnit.METER -> safeMultiply(value, NANOMETERS_PER_METER)
     LengthUnit.KILOMETER -> safeMultiply(value, NANOMETERS_PER_KILOMETER)
   }

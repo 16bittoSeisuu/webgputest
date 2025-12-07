@@ -6,6 +6,7 @@ import kotlin.math.roundToLong
 
 private const val NANOMETERS_PER_MICROMETER: Long = 1_000L
 private const val NANOMETERS_PER_MILLIMETER: Long = 1_000_000L
+private const val NANOMETERS_PER_CENTIMETER: Long = 10_000_000L
 private const val NANOMETERS_PER_METER: Long = 1_000_000_000L
 private const val NANOMETERS_PER_KILOMETER: Long = 1_000_000_000_000L
 
@@ -13,6 +14,8 @@ private const val SQUARE_NANOMETERS_PER_MICROMETER: Double =
   NANOMETERS_PER_MICROMETER.toDouble() * NANOMETERS_PER_MICROMETER
 private const val SQUARE_NANOMETERS_PER_MILLIMETER: Double =
   NANOMETERS_PER_MILLIMETER.toDouble() * NANOMETERS_PER_MILLIMETER
+private const val SQUARE_NANOMETERS_PER_CENTIMETER: Double =
+  NANOMETERS_PER_CENTIMETER.toDouble() * NANOMETERS_PER_CENTIMETER
 private const val SQUARE_NANOMETERS_PER_METER: Double =
   NANOMETERS_PER_METER.toDouble() * NANOMETERS_PER_METER
 private const val SQUARE_NANOMETERS_PER_KILOMETER: Double =
@@ -32,6 +35,7 @@ enum class AreaUnit(
   SQUARE_NANOMETER(1.0, "nm^2"),
   SQUARE_MICROMETER(SQUARE_NANOMETERS_PER_MICROMETER, "um^2"),
   SQUARE_MILLIMETER(SQUARE_NANOMETERS_PER_MILLIMETER, "mm^2"),
+  SQUARE_CENTIMETER(SQUARE_NANOMETERS_PER_CENTIMETER, "cm^2"),
   SQUARE_METER(SQUARE_NANOMETERS_PER_METER, "m^2"),
   SQUARE_KILOMETER(SQUARE_NANOMETERS_PER_KILOMETER, "km^2"),
   ;
@@ -45,6 +49,7 @@ enum class AreaUnit(
         LengthUnit.NANOMETER -> SQUARE_NANOMETER
         LengthUnit.MICROMETER -> SQUARE_MICROMETER
         LengthUnit.MILLIMETER -> SQUARE_MILLIMETER
+        LengthUnit.CENTIMETER -> SQUARE_CENTIMETER
         LengthUnit.METER -> SQUARE_METER
         LengthUnit.KILOMETER -> SQUARE_KILOMETER
       }
@@ -242,6 +247,10 @@ value class Area internal constructor(
           absSquareNanometers / SQUARE_NANOMETERS_PER_METER to AreaUnit.SQUARE_METER
         }
 
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_CENTIMETER -> {
+          absSquareNanometers / SQUARE_NANOMETERS_PER_CENTIMETER to AreaUnit.SQUARE_CENTIMETER
+        }
+
         absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> {
           absSquareNanometers / SQUARE_NANOMETERS_PER_MILLIMETER to AreaUnit.SQUARE_MILLIMETER
         }
@@ -316,6 +325,12 @@ val Long.squareMillimeters: Area
   get() = Area.from(this, AreaUnit.SQUARE_MILLIMETER)
 
 /**
+ * Creates an [Area] from this [Long] value expressed in square centimeters.
+ */
+val Long.squareCentimeters: Area
+  get() = Area.from(this, AreaUnit.SQUARE_CENTIMETER)
+
+/**
  * Creates an [Area] from this [Long] value expressed in square meters.
  */
 val Long.squareMeters: Area
@@ -347,6 +362,13 @@ val Double.squareMicrometers: Area
  */
 val Double.squareMillimeters: Area
   get() = Area.from(this, AreaUnit.SQUARE_MILLIMETER)
+
+/**
+ * Creates an [Area] from this [Double] value expressed in square centimeters.
+ * The value is rounded to the nearest square nanometer.
+ */
+val Double.squareCentimeters: Area
+  get() = Area.from(this, AreaUnit.SQUARE_CENTIMETER)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square meters.

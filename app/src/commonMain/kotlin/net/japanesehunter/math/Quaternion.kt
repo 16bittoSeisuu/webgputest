@@ -748,6 +748,9 @@ private fun selectLengthUnitForRotation(vector: Length3): LengthUnit {
     maxNm >= 1e9 -> LengthUnit.METER
 
     // 1e9 nm = 1 m
+    maxNm >= 1e7 -> LengthUnit.CENTIMETER
+
+    // 1e7 nm = 1 cm
     maxNm >= 1e6 -> LengthUnit.MILLIMETER
 
     // 1e6 nm = 1 mm

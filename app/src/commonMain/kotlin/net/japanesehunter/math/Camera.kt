@@ -15,7 +15,7 @@ import kotlinx.atomicfu.locks.withLock
 sealed interface Camera {
   val transform: Transform
   val fov: Fov
-  val aspect: Double
+  var aspect: Double
   val nearFar: NearFar
 
   override fun toString(): String
@@ -29,8 +29,11 @@ sealed interface Camera {
 
 /**
  * Immutable camera.
+ * TODO doc aspect mutability
  */
-sealed interface StaticCamera : Camera
+sealed interface StaticCamera : Camera {
+  override var aspect: Double
+}
 
 /**
  * Mutable camera. Default implementations are thread-safe via an internal [ReentrantLock]; callers can also rely on
@@ -195,7 +198,7 @@ inline fun MovableCamera.setNearFar(nearFar: NearFar) =
  */
 @Suppress("FunctionName")
 fun Camera(
-  transform: Transform,
+  transform: Transform = Transform.identity,
   fov: Fov,
   aspect: Double,
   nearFar: NearFar,
@@ -236,7 +239,7 @@ inline fun Camera.Companion.copyOf(
  * Creates a [MovableCamera].
  */
 fun MovableCamera(
-  transform: Transform,
+  transform: Transform = Transform.identity,
   fov: Fov,
   aspect: Double,
   nearFar: NearFar,

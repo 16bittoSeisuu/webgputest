@@ -7,15 +7,28 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.await
 import kotlinx.coroutines.yield
+import net.japanesehunter.math.Camera
+import net.japanesehunter.math.Fov
+import net.japanesehunter.math.MovableCamera
+import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.meters
+import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
+import net.japanesehunter.webgpu.CameraGpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.ShaderCompiler
+import net.japanesehunter.webgpu.UniformGpuBuffer
 import net.japanesehunter.webgpu.VertexGpuBuffer
+import net.japanesehunter.webgpu.asBinding
+import net.japanesehunter.webgpu.camera
 import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.drawIndexed
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
+import net.japanesehunter.webgpu.interop.GPUBindGroup
+import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
+import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUColor
@@ -46,20 +59,35 @@ fun main() =
         logger.error { "Canvas element not found" }
         return@application
       }
-    window.onresize = { canvas.fit() }
+    val camera =
+      MovableCamera(
+        fov = Fov.fromDegrees(60.0),
+        nearFar = NearFar(0.1.meters, 128.meters),
+        aspect = canvas.width.toDouble() / canvas.height,
+      ).apply {
+        z = 2.meters
+      }
+    window.onresize = {
+      canvas.fit()
+      camera.aspect = canvas.width.toDouble() / canvas.height
+    }
 
     webgpuContext(canvas) {
       val pipeline = compileTriangleShader()
       val vertexPosBuffer = VertexGpuBuffer.pos3D(vertexPos).bind()
       val vertexColorBuffer = VertexGpuBuffer.rgbaColor(vertexColor).bind()
       val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
+      val cameraBuf = createCameraBuffer(camera)
       val renderBundle =
         recordRenderBundle {
-          setPipeline(pipeline.await())
+          val pipeline = pipeline.await()
+          setPipeline(pipeline)
           setVertexBuffer(listOf(vertexPosBuffer, vertexColorBuffer))
+          setBindGroup(0, createCameraBindGroup(pipeline, cameraBuf))
           drawIndexed(indexBuffer)
         }
       while (true) {
+        cameraBuf.update()
         frame {
           executeBundles(arrayOf(renderBundle))
         }
@@ -135,6 +163,30 @@ private fun compileTriangleShader(): Deferred<GPURenderPipeline> {
   )
 }
 
+context(bufAlloc: BufferAllocator, resource: ResourceScope)
+private suspend fun createCameraBuffer(camera: Camera): CameraGpuBuffer =
+  with(resource) {
+    UniformGpuBuffer.camera(camera).bind()
+  }
+
+context(device: GPUDevice)
+private fun createCameraBindGroup(
+  pipeline: GPURenderPipeline,
+  buffer: CameraGpuBuffer,
+): GPUBindGroup =
+  device.createBindGroup(
+    GPUBindGroupDescriptor(
+      layout = pipeline.getBindGroupLayout(0),
+      entries =
+        arrayOf(
+          GPUBindGroupEntry(
+            binding = 0,
+            resource = buffer.asBinding(),
+          ),
+        ),
+    ),
+  )
+
 context(device: GPUDevice, surface: GPUCanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
   val surfaceTexture = surface.getCurrentTexture()
@@ -177,13 +229,15 @@ private val code =
     @location(0) color : vec4f,
   }
   
+  @group(0) @binding(0) var<uniform> viewProj : mat4x4f;
+  
   @vertex
   fn vs_main(
     @location(0) pos: vec3f,
     @location(1) color: vec4f,
   ) -> VsOut {
     var out: VsOut;
-    out.position = vec4f(pos, 1.0);
+    out.position = viewProj * vec4f(pos, 1.0);
     out.color = color;
     return out;
   }
