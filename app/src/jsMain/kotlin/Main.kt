@@ -1,11 +1,12 @@
+@file:OptIn(ExperimentalAtomicApi::class)
 
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
-import kotlinx.coroutines.yield
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Fov
@@ -51,6 +52,7 @@ import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
 import net.japanesehunter.webgpu.interop.navigator.gpu
+import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.webgpu.pos3D
 import net.japanesehunter.webgpu.recordRenderBundle
 import net.japanesehunter.webgpu.rgbaColor
@@ -58,11 +60,14 @@ import net.japanesehunter.webgpu.setBindGroup
 import net.japanesehunter.webgpu.setVertexBuffer
 import net.japanesehunter.webgpu.transforms
 import net.japanesehunter.webgpu.u16
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.tan
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
+
+val end = AtomicBoolean(false)
 
 fun main() =
   application(loggerLevel = Level.DEBUG) {
@@ -76,12 +81,12 @@ fun main() =
           autoFit()
         }
       val transforms =
-        List(3) { x ->
-          List(3) { y ->
+        List(101) { x ->
+          List(101) { y ->
             MutableTransform().apply {
               mutateTranslation {
-                dx = (x - 1).meters
-                dy = (y - 1).meters
+                dx = (x - 50).meters
+                dy = (y - 50).meters
               }
               mutateScale {
                 sx = 0.5
@@ -122,7 +127,9 @@ fun main() =
             drawIndexed(indexBuffer, instanceCount = transforms.size)
           }
         val time = TimeSource.Monotonic.markNow()
-        while (true) {
+        val done = Job()
+
+        fun loop() {
           camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
           camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
           camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
@@ -140,8 +147,16 @@ fun main() =
           frame {
             executeBundles(arrayOf(renderBundle))
           }
-          yield()
+          if (end.load()) {
+            done.complete()
+            return
+          }
+          requestAnimationFrame { loop() }
         }
+        requestAnimationFrame {
+          loop()
+        }
+        done.join()
       }
     }
   }
@@ -328,8 +343,6 @@ private fun TimeMark.rad(perSec: Angle): Angle {
 private fun Angle.sin(): Double = sin(toDouble(AngleUnit.RADIAN))
 
 private fun Angle.cos(): Double = cos(toDouble(AngleUnit.RADIAN))
-
-private fun Angle.tan(): Double = tan(toDouble(AngleUnit.RADIAN))
 
 private val logger = logger("Main")
 
