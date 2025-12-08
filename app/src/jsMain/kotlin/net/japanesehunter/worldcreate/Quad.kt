@@ -8,6 +8,7 @@ import net.japanesehunter.math.Length
 import net.japanesehunter.math.Length3
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.cross
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.minus
@@ -16,12 +17,16 @@ import net.japanesehunter.webgpu.GpuBuffer
 import net.japanesehunter.webgpu.InstanceGpuBuffer
 import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
+import kotlin.math.roundToInt
 
 data class Quad(
   val pos: Point3,
   val normal: Direction3,
   val tangent: Direction3,
-  val negateBitangent: Boolean,
+  val aoLeftBottom: Proportion,
+  val aoRightBottom: Proportion,
+  val aoLeftTop: Proportion,
+  val aoRightTop: Proportion,
   val sizeU: Length,
   val sizeV: Length,
   val materialId: Int,
@@ -91,7 +96,14 @@ fun List<Quad>.toGpuBuffer(): Resource<StorageGpuBuffer> {
     val tangentX = quad.tangent.ux.toFloat()
     val tangentY = quad.tangent.uy.toFloat()
     val tangentZ = quad.tangent.uz.toFloat()
-    val tangentW = if (quad.negateBitangent) -1f else 1f
+
+    fun Proportion.parse(): Int = (toDouble() * 255).roundToInt() and 0xFF
+    val ao = (
+      ((quad.aoLeftTop.parse()) shl 0) or
+        ((quad.aoRightTop.parse()) shl 8) or
+        (quad.aoLeftBottom.parse() shl 16) or
+        ((quad.aoRightBottom.parse()) shl 24)
+    )
     val sizeUX = quad.sizeU.toDouble(LengthUnit.METER).toFloat()
     val sizeVY = quad.sizeV.toDouble(LengthUnit.METER).toFloat()
     // world_pos.x
@@ -116,8 +128,8 @@ fun List<Quad>.toGpuBuffer(): Resource<StorageGpuBuffer> {
     writeFloatLe(normalY)
     // normal.z
     writeFloatLe(normalZ)
-    // bitangent_sign
-    writeFloatLe(tangentW)
+    // ao
+    writeIntLe(ao)
     // tangent.x
     writeFloatLe(tangentX)
     // tangent.y

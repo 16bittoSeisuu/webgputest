@@ -18,6 +18,7 @@ import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.degrees
 import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
@@ -112,7 +113,10 @@ fun main() =
                 ),
               normal = Direction3.north,
               tangent = Direction3.east,
-              negateBitangent = false,
+              aoLeftBottom = Proportion.QUARTER,
+              aoRightBottom = Proportion.HALF,
+              aoLeftTop = Proportion.HALF,
+              aoRightTop = Proportion.ONE,
               sizeU = 0.9.meters,
               sizeV = 0.9.meters,
               materialId = 0,
@@ -450,6 +454,7 @@ private val code =
     @builtin(position) position : vec4f,
     @location(0) @interpolate(flat) mat_id: u32,
     @location(1) uv: vec2f,
+    @location(2) ao: f32,
   }
   
   struct CameraUniform {
@@ -472,7 +477,7 @@ private val code =
     local_pos: vec3f,     // 12
     size_v: f32,          // 4
     normal: vec3f,        // 12
-    bitangent_sign: f32,  // 4
+    ao: u32,              // 4
     tangent: vec3f,       // 12
     mat_id: u32,          // 4
   }
@@ -497,9 +502,7 @@ private val code =
     
     let normal = normalize(quad.normal);
     let tangent = normalize(quad.tangent);
-    let bitangent =
-      normalize(cross(normal, tangent)) *
-        quad.bitangent_sign;
+    let bitangent = normalize(cross(normal, tangent));
     let corner = corners[vertex_index];
     let offset = 
       tangent * (corner.x * quad.size_u) +
@@ -512,6 +515,7 @@ private val code =
     out.position = clip_pos;
     out.mat_id = quad.mat_id;
     out.uv = uvs[vertex_index];
+    out.ao = f32((quad.ao >> (vertex_index * 8)) & 0xFF) / 255.0;
     return out;
   }
 
@@ -519,6 +523,7 @@ private val code =
   fn fs_main(
     @location(0) @interpolate(flat) mat_id: u32,
     @location(1) uv: vec2f,
+    @location(2) ao: f32,
   ) -> @location(0) vec4f {
     let material = materials[mat_id];
     let uv_scaled =
@@ -527,7 +532,11 @@ private val code =
         material.uv_max,
         uv,
       );
-    let color = textureSample(tex, samp, uv_scaled);
+    let baseColor = textureSample(tex, samp, uv_scaled);
+    let color = vec4f(
+      baseColor.rgb * ao,
+      baseColor.a,
+    );
     return color;
   }
   
