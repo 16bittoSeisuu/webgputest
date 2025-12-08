@@ -1,11 +1,15 @@
 @file:OptIn(ExperimentalAtomicApi::class)
 
+import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
+import arrow.fx.coroutines.resource
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
+import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
@@ -24,9 +28,11 @@ import net.japanesehunter.math.y
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
+import net.japanesehunter.webgpu.GpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.InstanceGpuBuffer
 import net.japanesehunter.webgpu.ShaderCompiler
+import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
 import net.japanesehunter.webgpu.VertexGpuBuffer
@@ -37,18 +43,34 @@ import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.drawIndexed
 import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
+import net.japanesehunter.webgpu.interop.GPUAddressMode
+import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUDevice
+import net.japanesehunter.webgpu.interop.GPUExtent3D
+import net.japanesehunter.webgpu.interop.GPUFilterMode
+import net.japanesehunter.webgpu.interop.GPUImageCopyExternalImage
+import net.japanesehunter.webgpu.interop.GPUImageCopyTextureTagged
 import net.japanesehunter.webgpu.interop.GPULoadOp
+import net.japanesehunter.webgpu.interop.GPUMipmapFilterMode
+import net.japanesehunter.webgpu.interop.GPUOrigin3D
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
+import net.japanesehunter.webgpu.interop.GPUSampler
+import net.japanesehunter.webgpu.interop.GPUSamplerDescriptor
 import net.japanesehunter.webgpu.interop.GPUStoreOp
+import net.japanesehunter.webgpu.interop.GPUTexture
+import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
+import net.japanesehunter.webgpu.interop.GPUTextureDimension
+import net.japanesehunter.webgpu.interop.GPUTextureFormat
+import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
+import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.webgpu.recordRenderBundle
@@ -58,6 +80,7 @@ import net.japanesehunter.webgpu.u16
 import net.japanesehunter.worldcreate.Quad
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toIndicesGpuBuffer
+import org.w3c.dom.ImageBitmap
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.cos
 import kotlin.math.sin
@@ -90,8 +113,8 @@ fun main() =
               normal = Direction3.north,
               tangent = Direction3.east,
               negateBitangent = false,
-              sizeU = 0.5.meters,
-              sizeV = 0.5.meters,
+              sizeU = 0.9.meters,
+              sizeV = 0.9.meters,
               materialId = 0,
             )
           }
@@ -103,6 +126,12 @@ fun main() =
         val cameraBuf = camera.toGpuBuffer().bind()
         val quadInst = quads.toGpuBuffer().bind()
         val quadIndices = quads.toIndicesGpuBuffer().bind()
+        val uvs = createUvsBuffer().bind()
+        val textureDeferred =
+          createTexture(
+            "assets/vanilla/textures/doge.png",
+          )
+        val samp = createSampler()
         val pipeline =
           compileTriangleShader(quadIndices)
         val renderBundle =
@@ -114,9 +143,11 @@ fun main() =
                 quadIndices,
               ),
             )
+            val texture = textureDeferred.await().createView()
             setBindGroup(
               listOf(
                 listOf(cameraBuf.asBinding()),
+                listOf(uvs.asBinding(), texture, samp),
                 listOf(quadInst.asBinding()),
               ),
             ) { pipeline.getBindGroupLayout(it) }
@@ -307,6 +338,77 @@ private fun compileTriangleShader(vararg vertexBuffers: VertexGpuBuffer): Deferr
   )
 }
 
+context(coroutine: CoroutineScope)
+private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
+  coroutine.async {
+    val path = path.removePrefix("/")
+    val resp = window.fetch("/$path").await()
+    val blob = resp.blob().await()
+    createImageBitmap(blob).await()
+  }
+
+context(alloc: BufferAllocator)
+private fun createUvsBuffer(): Resource<StorageGpuBuffer> {
+  val res =
+    alloc.static(
+      data = floatArrayOf(0f, 0f, 1f, 1f),
+      usage = GPUBufferUsage.Storage,
+      label = "UVs Buffer",
+    )
+  return resource {
+    val buf = res.bind()
+    object : StorageGpuBuffer, GpuBuffer by buf {}
+  }
+}
+
+context(device: GPUDevice, coroutine: CoroutineScope)
+private fun createTexture(path: String): Deferred<GPUTexture> =
+  coroutine.async {
+    val bitmap = loadImageBitmap(path).await()
+    val textureSize = GPUExtent3D(bitmap.width, bitmap.height, 1)
+    val descriptor =
+      GPUTextureDescriptor(
+        size = textureSize,
+        mipLevelCount = 1,
+        sampleCount = 1,
+        dimension = GPUTextureDimension.D2,
+        format = GPUTextureFormat.Rgba8UnormSrgb,
+        usage =
+          GPUTextureUsage.TextureBinding + GPUTextureUsage.CopyDst +
+            GPUTextureUsage.RenderAttachment,
+      )
+    val texture = device.createTexture(descriptor)
+    device.queue.copyExternalImageToTexture(
+      GPUImageCopyExternalImage(
+        source = bitmap,
+        origin = GPUOrigin3D(),
+        flipY = false,
+        premultipliedAlpha = true,
+      ),
+      GPUImageCopyTextureTagged(
+        texture = texture,
+        mipLevel = 0,
+        origin = GPUOrigin3D(),
+      ),
+      textureSize,
+    )
+    texture
+  }
+
+context(device: GPUDevice)
+private fun createSampler(): GPUSampler {
+  val descriptor =
+    GPUSamplerDescriptor(
+      magFilter = GPUFilterMode.Nearest,
+      minFilter = GPUFilterMode.Nearest,
+      mipmapFilter = GPUMipmapFilterMode.Nearest,
+      addressModeU = GPUAddressMode.Repeat,
+      addressModeV = GPUAddressMode.Repeat,
+      addressModeW = GPUAddressMode.Repeat,
+    )
+  return device.createSampler(descriptor)
+}
+
 context(device: GPUDevice, canvas: CanvasContext)
 private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
   val surfaceTexture = canvas.getCurrentTexture()
@@ -347,6 +449,7 @@ private val code =
   struct VsOut {
     @builtin(position) position : vec4f,
     @location(0) @interpolate(flat) mat_id: u32,
+    @location(1) uv: vec2f,
   }
   
   struct CameraUniform {
@@ -356,6 +459,11 @@ private val code =
     _pad0: u32,           // 4
     local_pos: vec3f,     // 12
     _pad1: u32,           // 4
+  }
+  
+  struct Material {
+    uv_min: vec2f,      // 8
+    uv_max: vec2f,      // 8
   }
   
   struct Quad {
@@ -369,8 +477,11 @@ private val code =
     mat_id: u32,          // 4
   }
   
-  @group(0) @binding(0) var<uniform> camera : CameraUniform;
-  @group(1) @binding(0) var<storage, read> quad_instances : array<Quad>;
+  @group(0) @binding(0) var<uniform> camera: CameraUniform;
+  @group(1) @binding(0) var<storage, read> materials: array<Material>;
+  @group(1) @binding(1) var tex: texture_2d<f32>;
+  @group(1) @binding(2) var samp: sampler;
+  @group(2) @binding(0) var<storage, read> quad_instances: array<Quad>;
   
   @vertex
   fn vs_main(
@@ -400,14 +511,24 @@ private val code =
     var out: VsOut;
     out.position = clip_pos;
     out.mat_id = quad.mat_id;
+    out.uv = uvs[vertex_index];
     return out;
   }
 
   @fragment
   fn fs_main(
     @location(0) @interpolate(flat) mat_id: u32,
+    @location(1) uv: vec2f,
   ) -> @location(0) vec4f {
-    return vec4f(0.0, 1.0, 1.0, 1.0);
+    let material = materials[mat_id];
+    let uv_scaled =
+      mix(
+        material.uv_min,
+        material.uv_max,
+        uv,
+      );
+    let color = textureSample(tex, samp, uv_scaled);
+    return color;
   }
   
   const corners: array<vec2f, 4> = 
@@ -420,10 +541,10 @@ private val code =
     
   const uvs: array<vec2f, 4> = 
     array<vec2f, 4>(
-      vec2f(0.0, 1.0), // left-bottom
-      vec2f(1.0, 1.0), // right-bottom
-      vec2f(0.0, 0.0), // left-top
-      vec2f(1.0, 0.0), // right-top
+      vec2f(0.0, 0.0), // left-bottom
+      vec2f(1.0, 0.0), // right-bottom
+      vec2f(0.0, 1.0), // left-top
+      vec2f(1.0, 1.0), // right-top
     );
   """.trimIndent()
 

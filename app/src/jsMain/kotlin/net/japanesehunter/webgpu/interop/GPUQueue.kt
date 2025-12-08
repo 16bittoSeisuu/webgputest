@@ -12,4 +12,10 @@ external interface GPUQueue {
     dataOffset: Int = definedExternally,
     size: Int = definedExternally,
   )
+
+  fun copyExternalImageToTexture(
+    source: GPUImageCopyExternalImage,
+    destination: GPUImageCopyTextureTagged,
+    copySize: GPUExtent3D,
+  )
 }

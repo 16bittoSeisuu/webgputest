@@ -18,7 +18,11 @@ external interface GPUDevice : GPUObjectBase {
 
   fun createCommandEncoder(descriptor: GPUCommandEncoderDescriptor = definedExternally): GPUCommandEncoder
 
+  fun createSampler(descriptor: GPUSamplerDescriptor = definedExternally): GPUSampler
+
   fun createRenderPipelineAsync(descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline>
+
+  fun createTexture(descriptor: GPUTextureDescriptor): GPUTexture
 
   fun createRenderBundleEncoder(descriptor: GPURenderBundleEncoderDescriptor): GPURenderBundleEncoder
 
