@@ -1,6 +1,5 @@
 package net.japanesehunter.webgpu
 
-import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUBindGroup
 import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
 import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
@@ -12,7 +11,7 @@ import net.japanesehunter.webgpu.interop.GPURenderBundleDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoder
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
 
-context(device: GPUDevice, gpu: GPU)
+context(device: GPUDevice, canvas: CanvasContext)
 inline fun recordRenderBundle(
   sampleCount: Int? = null,
   label: String? = null,
@@ -21,7 +20,7 @@ inline fun recordRenderBundle(
   device
     .createRenderBundleEncoder(
       GPURenderBundleEncoderDescriptor(
-        colorFormats = arrayOf(gpu.getPreferredCanvasFormat()),
+        colorFormats = arrayOf(canvas.preferredFormat),
         sampleCount = sampleCount,
       ),
     ).run {

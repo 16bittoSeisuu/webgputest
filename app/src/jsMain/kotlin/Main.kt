@@ -44,7 +44,6 @@ import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.createShaderCompiler
 import net.japanesehunter.webgpu.drawIndexed
-import net.japanesehunter.webgpu.interop.GPU
 import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUAddressMode
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
@@ -206,7 +205,7 @@ fun main() =
 context(canvas: CanvasContext, resource: ResourceScope)
 private suspend inline fun <R> webgpuContext(
   action: context(
-    GPU, GPUAdapter, GPUDevice, ShaderCompiler, BufferAllocator
+    GPUAdapter, GPUDevice, ShaderCompiler, BufferAllocator
   ) () -> R,
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
@@ -225,7 +224,7 @@ private suspend inline fun <R> webgpuContext(
   )
   val compiler = device.createShaderCompiler(canvas.preferredFormat)
   val allocator = device.createBufferAllocator()
-  return context(gpu, adapter, device, compiler, allocator) {
+  return context(adapter, device, compiler, allocator) {
     action()
   }
 }
