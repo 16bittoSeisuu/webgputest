@@ -52,6 +52,9 @@ fun application(
           }
         }
       }
+    } catch (e: Throwable) {
+      logger.error(e) { "Application crashed with exception, message: ${e.message}" }
+      throw e
     } finally {
       logger.debug { "Application lasted for ${appTime.elapsedNow()}" }
       logger.debug { "Goodbye!" }
