@@ -70,6 +70,7 @@ import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureDimension
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.GPUTextureUsage
+import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
@@ -138,10 +139,12 @@ fun main() =
             "assets/vanilla/textures/doge.png",
           )
         val samp = createSampler()
+        val sampleCount = 4
         val pipeline =
-          compileTriangleShader(quadIndices)
+          compileTriangleShader(sampleCount, quadIndices)
+        val msaaTexture = createMsaaTexture(sampleCount)
         val renderBundle =
-          recordRenderBundle {
+          recordRenderBundle(sampleCount = sampleCount) {
             val pipeline = pipeline.await()
             setPipeline(pipeline)
             setVertexBuffer(
@@ -179,7 +182,7 @@ fun main() =
             camera.lookAt(point)
             directionHud.update(camera.currentDirection16())
             cameraBuf.update()
-            frame {
+            frame(msaaTexture.createView()) {
               executeBundles(arrayOf(renderBundle))
             }
             if (end.isCompleted) {
@@ -317,7 +320,10 @@ private fun debugPrintLimits() {
 }
 
 context(compiler: ShaderCompiler, coroutine: CoroutineScope)
-private fun compileTriangleShader(vararg vertexBuffers: VertexGpuBuffer): Deferred<GPURenderPipeline> {
+private fun compileTriangleShader(
+  sampleCount: Int,
+  vararg vertexBuffers: VertexGpuBuffer,
+): Deferred<GPURenderPipeline> {
   var shaderLocation = 0
   val layouts =
     vertexBuffers.map { buf ->
@@ -344,6 +350,7 @@ private fun compileTriangleShader(vararg vertexBuffers: VertexGpuBuffer): Deferr
     vertexCode = code,
     fragmentCode = code,
     vertexAttributes = layouts,
+    sampleCount = sampleCount,
     label = "Triangle Pipeline",
   )
 }
@@ -419,8 +426,28 @@ private fun createSampler(): GPUSampler {
   return device.createSampler(descriptor)
 }
 
+context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
+private fun createMsaaTexture(sampleCount: Int): GPUTexture {
+  val textureDescriptor =
+    GPUTextureDescriptor(
+      size = GPUExtent3D(canvas.width, canvas.height, 1),
+      sampleCount = sampleCount,
+      format = canvas.preferredFormat,
+      usage = GPUTextureUsage.RenderAttachment,
+    )
+  val ret = device.createTexture(textureDescriptor)
+  resource.onClose {
+    ret.destroy()
+  }
+  return ret
+}
+
 context(device: GPUDevice, canvas: CanvasContext)
-private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
+private inline fun frame(
+  view: GPUTextureView,
+  action: GPURenderPassEncoder.()
+  -> Unit,
+) {
   val surfaceTexture = canvas.getCurrentTexture()
   val commandEncoder = device.createCommandEncoder()
   val renderPassEncoder =
@@ -429,7 +456,8 @@ private inline fun frame(action: GPURenderPassEncoder.() -> Unit) {
         colorAttachments =
           arrayOf(
             GPURenderPassColorAttachment(
-              view = surfaceTexture.createView(),
+              view = view,
+              resolveTarget = surfaceTexture.createView(),
               clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
               loadOp = GPULoadOp.Clear,
               storeOp = GPUStoreOp.Store,

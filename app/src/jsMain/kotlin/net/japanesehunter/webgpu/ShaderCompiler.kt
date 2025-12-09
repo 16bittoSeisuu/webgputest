@@ -7,6 +7,7 @@ import kotlinx.coroutines.await
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
+import net.japanesehunter.webgpu.interop.GPUMultisampleState
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
@@ -27,6 +28,7 @@ interface ShaderCompiler {
     vertexCode: String,
     vertexAttributes: List<GPUVertexBufferLayout> = emptyList(),
     fragmentCode: String? = null,
+    sampleCount: Int? = null,
     label: String? = null,
   ): Deferred<GPURenderPipeline>
 }
@@ -40,6 +42,7 @@ private class ShaderCompilerImpl(
     vertexCode: String,
     vertexAttributes: List<GPUVertexBufferLayout>,
     fragmentCode: String?,
+    sampleCount: Int?,
     label: String?,
   ): Deferred<GPURenderPipeline> {
     val vertexModule =
@@ -69,6 +72,10 @@ private class ShaderCompilerImpl(
         GPURenderPipelineDescriptor(
           vertex = vertexState,
           fragment = fragmentState,
+          multisample =
+            sampleCount?.let {
+              GPUMultisampleState(sampleCount)
+            },
         ),
       ).toDeferred()
   }

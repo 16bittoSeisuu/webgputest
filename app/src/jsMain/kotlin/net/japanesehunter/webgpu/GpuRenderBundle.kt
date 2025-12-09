@@ -14,6 +14,7 @@ import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
 
 context(device: GPUDevice, gpu: GPU)
 inline fun recordRenderBundle(
+  sampleCount: Int? = null,
   label: String? = null,
   action: GPURenderBundleEncoder.() -> Unit,
 ): GPURenderBundle =
@@ -21,6 +22,7 @@ inline fun recordRenderBundle(
     .createRenderBundleEncoder(
       GPURenderBundleEncoderDescriptor(
         colorFormats = arrayOf(gpu.getPreferredCanvasFormat()),
+        sampleCount = sampleCount,
       ),
     ).run {
       action()
