@@ -176,6 +176,11 @@ inline fun MovableCamera.lookAt(
 }
 
 /**
+ * Returns the current 16-direction heading the camera is facing.
+ */
+fun Camera.currentDirection16(): Direction16 = transform.currentDirection16()
+
+/**
  * Adjusts the camera aspect ratio.
  */
 inline fun MovableCamera.setAspect(aspect: Double) =

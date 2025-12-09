@@ -232,6 +232,11 @@ fun Transform.transform(distance: Length3): ImmutableLength3 {
 }
 
 /**
+ * Returns the current 16-direction heading this transform is facing.
+ */
+fun Transform.currentDirection16(): Direction16 = rotation.toDirection16()
+
+/**
  * Applies the inverse of this transform to a [Point3]. Requires all scale components to be non-zero.
  */
 fun Transform.inverseTransform(point: Point3): ImmutablePoint3 {

@@ -457,9 +457,57 @@ fun Quaternion.rotate(area: Area3): ImmutableArea3 {
 }
 
 /**
+ * Rotates a [Direction3] unit vector by this quaternion. The quaternion is normalized internally so a zero quaternion
+ * throws. Rotation preserves unit length because [Direction3] normalizes its components after construction.
+ *
+ * @param direction The normalized direction to rotate.
+ * @return The rotated [ImmutableDirection3].
+ */
+fun Quaternion.rotate(direction: Direction3): ImmutableDirection3 {
+  val (qx, qy, qz, qw) = normalized()
+  val vx = direction.ux
+  val vy = direction.uy
+  val vz = direction.uz
+
+  val uvx = qy * vz - qz * vy
+  val uvy = qz * vx - qx * vz
+  val uvz = qx * vy - qy * vx
+
+  val uuvx = qy * uvz - qz * uvy
+  val uuvy = qz * uvx - qx * uvz
+  val uuvz = qx * uvy - qy * uvx
+
+  val rx = vx + (uvx * qw + uuvx) * 2.0
+  val ry = vy + (uvy * qw + uuvy) * 2.0
+  val rz = vz + (uvz * qw + uuvz) * 2.0
+
+  return Direction3(
+    ux = rx,
+    uy = ry,
+    uz = rz,
+  )
+}
+
+/**
  * Returns a copy of this [Length3] rotated by [quaternion].
  */
 inline fun Length3.rotatedBy(quaternion: Quaternion): ImmutableLength3 = quaternion.rotate(this)
+
+/**
+ * Returns a copy of this [Direction3] rotated by [quaternion].
+ */
+inline fun Direction3.rotatedBy(quaternion: Quaternion): ImmutableDirection3 = quaternion.rotate(this)
+
+/**
+ * Converts this rotation into a [Direction16] heading by rotating [forward].
+ *
+ * @param forward The reference forward direction. Defaults to -Z.
+ * @throws IllegalArgumentException If the rotated direction has undefined yaw (e.g., points straight up/down).
+ */
+fun Quaternion.toDirection16(forward: Direction3 = Direction3.forward): Direction16 {
+  val rotated = rotate(forward)
+  return rotated.toDirection16()
+}
 
 /**
  * Returns a copy of this [Area3] rotated by [quaternion].

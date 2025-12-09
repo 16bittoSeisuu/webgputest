@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.sqrt
 
@@ -259,6 +260,18 @@ fun Direction3.Companion.from(displacement: Length3): ImmutableDirection3 {
  * @throws IllegalArgumentException If the displacement is zero-length or non-finite.
  */
 inline fun Length3.toDirection(): ImmutableDirection3 = Direction3.from(this)
+
+/**
+ * Maps this direction to the nearest [Direction16] based on yaw around the Y-axis.
+ */
+fun Direction3.toDirection16(): Direction16 {
+  require(ux != 0.0 || uz != 0.0) {
+    "Cannot convert Direction3 with ux=0 and uz=0 to Direction16 (undefined yaw)."
+  }
+  val yawRadians = atan2(ux, -uz)
+  val yawAngle = yawRadians.radians
+  return Direction16.from(yawAngle)
+}
 
 // endregion
 

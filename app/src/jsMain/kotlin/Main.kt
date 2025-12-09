@@ -5,6 +5,7 @@ import arrow.fx.coroutines.ResourceScope
 import arrow.fx.coroutines.resource
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
+import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -12,19 +13,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Angle
-import net.japanesehunter.math.AngleUnit
+import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.Proportion
+import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.degrees
 import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.south
-import net.japanesehunter.math.up
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
@@ -82,10 +83,9 @@ import net.japanesehunter.webgpu.u16
 import net.japanesehunter.worldcreate.Quad
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toIndicesGpuBuffer
+import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -127,6 +127,7 @@ fun main() =
 
       webgpuContext {
         debugPrintLimits()
+        val directionHud = createCameraDirectionHud()
         val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
         val cameraBuf = camera.toGpuBuffer().bind()
         val quadInst = quads.toGpuBuffer().bind()
@@ -162,32 +163,36 @@ fun main() =
         val done = Job()
 
         fun loop() {
-          camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
-          camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
-          camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
-          val point =
-            run {
-              val rad = time.rad(perSec = 20.0.degrees)
-              Point3(
-                x = 1.meters * rad.cos(),
-                y = 1.meters * rad.sin(),
-                z = 0.meters,
-              )
+          try {
+            camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
+            camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
+            camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
+            val point =
+              run {
+                val rad = time.rad(perSec = 20.0.degrees)
+                Point3(
+                  x = 1.meters * rad.cos(),
+                  y = 1.meters * rad.sin(),
+                  z = 0.meters,
+                )
+              }
+            camera.lookAt(point)
+            directionHud.update(camera.currentDirection16())
+            cameraBuf.update()
+            frame {
+              executeBundles(arrayOf(renderBundle))
             }
-          camera.lookAt(point)
-          cameraBuf.update()
-          frame {
-            executeBundles(arrayOf(renderBundle))
+            if (end.isCompleted) {
+              done.complete()
+              return
+            }
+            requestAnimationFrame { loop() }
+          } catch (e: Throwable) {
+            logger.error(e) { "Error in main loop" }
+            done.completeExceptionally(e)
           }
-          if (end.isCompleted) {
-            done.complete()
-            return
-          }
-          requestAnimationFrame { loop() }
         }
-        requestAnimationFrame {
-          loop()
-        }
+        loop()
         done.join()
       }
     }
@@ -443,9 +448,45 @@ private fun TimeMark.rad(perSec: Angle): Angle {
   return perSec * seconds
 }
 
-private fun Angle.sin(): Double = sin(toDouble(AngleUnit.RADIAN))
+private fun createCameraDirectionHud(): CameraDirectionHud {
+  val body = document.body ?: error("Document body is not available")
+  val container =
+    (document.getElementById("camera-direction") as? HTMLDivElement)
+      ?: (document.createElement("div") as HTMLDivElement).also {
+        it.id = "camera-direction"
+        body.appendChild(it)
+      }
+  container.style.apply {
+    position = "fixed"
+    top = "12px"
+    left = "12px"
+    padding = "0.35rem 0.65rem"
+    backgroundColor = "rgba(0, 0, 0, 0.75)"
+    color = "#FFF"
+    borderRadius = "0.35rem"
+    fontFamily = "monospace, system-ui"
+    fontSize = "0.85rem"
+    setProperty("pointer-events", "none")
+    zIndex = "9000"
+  }
+  return CameraDirectionHud(container)
+}
 
-private fun Angle.cos(): Double = cos(toDouble(AngleUnit.RADIAN))
+private class CameraDirectionHud(
+  private val container: HTMLDivElement,
+) {
+  fun update(direction: Direction16) {
+    val label = direction.displayName()
+    container.textContent = "Direction: $label"
+  }
+}
+
+private fun Direction16.displayName(): String =
+  name
+    .split('_')
+    .joinToString(" ") { segment ->
+      segment.lowercase().replaceFirstChar(Char::titlecaseChar)
+    }
 
 private val logger = logger("Main")
 

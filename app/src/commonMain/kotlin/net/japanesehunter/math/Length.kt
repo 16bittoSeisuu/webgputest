@@ -3,6 +3,7 @@ package net.japanesehunter.math
 import net.japanesehunter.math.Length.Companion.from
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlin.math.atan2 as atan2Double
 
 private const val NANOMETERS_PER_MICROMETER: Long = 1_000L
 private const val NANOMETERS_PER_MILLIMETER: Long = 1_000_000L
@@ -232,6 +233,20 @@ value class Length internal constructor(
   }
 
   /**
+   * Returns the angle whose tangent is this length (opposite) over [adjacent].
+   *
+   * The result is the angle between the positive x-axis and the point ([adjacent], this).
+   */
+  fun atan2(adjacent: Length): Angle {
+    val radians =
+      atan2Double(
+        toDouble(LengthUnit.METER),
+        adjacent.toDouble(LengthUnit.METER),
+      )
+    return Angle.from(radians, AngleUnit.RADIAN)
+  }
+
+  /**
    * Divides this distance by another [Length], returning the ratio.
    *
    * @param other The divisor. Must not be zero.
@@ -314,6 +329,14 @@ value class Length internal constructor(
       value: Double,
       unit: LengthUnit = LengthUnit.NANOMETER,
     ): Length = Length(unit.toNanometers(value))
+
+    /**
+     * Returns the angle whose tangent is [y] divided by [x].
+     */
+    fun atan2(
+      y: Length,
+      x: Length,
+    ): Angle = y.atan2(x)
   }
 }
 

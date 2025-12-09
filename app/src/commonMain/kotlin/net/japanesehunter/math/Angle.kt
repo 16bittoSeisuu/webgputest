@@ -4,6 +4,9 @@ import net.japanesehunter.math.Angle.Companion.from
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlin.math.cos as cosDouble
+import kotlin.math.sin as sinDouble
+import kotlin.math.tan as tanDouble
 
 private const val NANORADIANS_PER_MICRORADIAN: Long = 1_000L
 private const val NANORADIANS_PER_MILLIRADIAN: Long = 1_000_000L
@@ -80,6 +83,21 @@ value class Angle internal constructor(
   fun toDouble(unit: AngleUnit): Double = nanoradians.toDouble() / unit.nanoradiansPerUnit
 
   /**
+   * Returns the sine of this angle.
+   */
+  fun sin(): Double = sinDouble(toDouble(AngleUnit.RADIAN))
+
+  /**
+   * Returns the cosine of this angle.
+   */
+  fun cos(): Double = cosDouble(toDouble(AngleUnit.RADIAN))
+
+  /**
+   * Returns the tangent of this angle.
+   */
+  fun tan(): Double = tanDouble(toDouble(AngleUnit.RADIAN))
+
+  /**
    * Returns the absolute value of this angle.
    */
   val absoluteValue: Angle
@@ -152,6 +170,15 @@ value class Angle internal constructor(
   operator fun times(factor: Double): Angle = Angle(scaleDouble(nanoradians, factor))
 
   /**
+   * Multiplies this angle by an [Int] factor.
+   *
+   * @param factor The scaling factor.
+   * @return The scaled [Angle].
+   * @throws ArithmeticException If the multiplication overflows [Long].
+   */
+  operator fun times(factor: Int): Angle = times(factor.toLong())
+
+  /**
    * Divides this angle by a [Long] divisor.
    *
    * @param divisor The divisor. Must not be zero.
@@ -174,6 +201,15 @@ value class Angle internal constructor(
     require(divisor.isFinite() && divisor != 0.0) { "Divisor must be finite and non-zero: $divisor" }
     return Angle(scaleDouble(nanoradians, 1.0 / divisor))
   }
+
+  /**
+   * Divides this angle by an [Int] divisor.
+   *
+   * @param divisor The divisor. Must not be zero.
+   * @return The scaled [Angle].
+   * @throws IllegalArgumentException If [divisor] is zero.
+   */
+  operator fun div(divisor: Int): Angle = div(divisor.toLong())
 
   /**
    * Divides this angle by another [Angle], returning the ratio.
