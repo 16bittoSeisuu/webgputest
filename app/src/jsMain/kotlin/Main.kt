@@ -23,7 +23,8 @@ import net.japanesehunter.math.degrees
 import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.north
+import net.japanesehunter.math.south
+import net.japanesehunter.math.up
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
@@ -111,7 +112,7 @@ fun main() =
                   y = (y - 50).meters,
                   z = 0.meters,
                 ),
-              normal = Direction3.north,
+              normal = Direction3.south,
               tangent = Direction3.east,
               aoLeftBottom = Proportion.QUARTER,
               aoRightBottom = Proportion.HALF,
@@ -526,7 +527,7 @@ private val code =
     @location(2) ao: f32,
   ) -> @location(0) vec4f {
     let material = materials[mat_id];
-    let uv_scaled =
+    let uv_scaled = 
       mix(
         material.uv_min,
         material.uv_max,
@@ -550,10 +551,10 @@ private val code =
     
   const uvs: array<vec2f, 4> = 
     array<vec2f, 4>(
-      vec2f(0.0, 0.0), // left-bottom
-      vec2f(1.0, 0.0), // right-bottom
-      vec2f(0.0, 1.0), // left-top
-      vec2f(1.0, 1.0), // right-top
+      vec2f(0.0, 1.0), // left-bottom
+      vec2f(1.0, 1.0), // right-bottom
+      vec2f(0.0, 0.0), // left-top
+      vec2f(1.0, 0.0), // right-top
     );
   """.trimIndent()
 

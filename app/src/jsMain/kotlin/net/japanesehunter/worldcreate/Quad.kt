@@ -99,10 +99,10 @@ fun List<Quad>.toGpuBuffer(): Resource<StorageGpuBuffer> {
 
     fun Proportion.parse(): Int = (toDouble() * 255).roundToInt() and 0xFF
     val ao = (
-      ((quad.aoLeftTop.parse()) shl 0) or
-        ((quad.aoRightTop.parse()) shl 8) or
-        (quad.aoLeftBottom.parse() shl 16) or
-        ((quad.aoRightBottom.parse()) shl 24)
+      (quad.aoLeftBottom.parse() shl 0) or
+        ((quad.aoRightBottom.parse()) shl 8) or
+        ((quad.aoLeftTop.parse()) shl 16) or
+        ((quad.aoRightTop.parse()) shl 24)
     )
     val sizeUX = quad.sizeU.toDouble(LengthUnit.METER).toFloat()
     val sizeVY = quad.sizeV.toDouble(LengthUnit.METER).toFloat()
