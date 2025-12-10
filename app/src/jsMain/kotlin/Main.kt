@@ -38,6 +38,7 @@ import net.japanesehunter.webgpu.UnsupportedBrowserException
 import net.japanesehunter.webgpu.buildRenderBundle
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
+import net.japanesehunter.webgpu.createMsaaTexture
 import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUAddressMode
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
@@ -117,11 +118,10 @@ fun main() =
         debugPrintLimits()
         val directionHud = createCameraDirectionHud()
         val cameraBuf = camera.toGpuBuffer().bind()
-        val sampleCount = 4
-        val msaaTexture = createMsaaTexture(sampleCount)
+        val msaaTexture = createMsaaTexture()
         val renderBundle =
           buildRenderBundle(
-            sampleCount = sampleCount,
+            sampleCount = msaaTexture.sampleCount,
             cullMode = GPUCullMode.Back,
           ) {
             val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
@@ -246,7 +246,7 @@ fun main() =
             camera.lookAt(point)
             directionHud.update(camera.currentDirection16())
             cameraBuf.update()
-            frame(view = msaaTexture.createView()) {
+            frame(view = msaaTexture.provide()) {
               executeBundles(arrayOf(renderBundle))
             }
             if (end.isCompleted) {
@@ -451,22 +451,6 @@ private fun createSampler(): GPUSampler {
       addressModeW = GPUAddressMode.Repeat,
     )
   return device.createSampler(descriptor)
-}
-
-context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
-private fun createMsaaTexture(sampleCount: Int): GPUTexture {
-  val textureDescriptor =
-    GPUTextureDescriptor(
-      size = GPUExtent3D(canvas.width, canvas.height, 1),
-      sampleCount = sampleCount,
-      format = canvas.preferredFormat,
-      usage = GPUTextureUsage.RenderAttachment,
-    )
-  val ret = device.createTexture(textureDescriptor)
-  resource.onClose {
-    ret.destroy()
-  }
-  return ret
 }
 
 context(device: GPUDevice, canvas: CanvasContext)
