@@ -15,8 +15,10 @@ import net.japanesehunter.webgpu.interop.GPURenderBundleDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPipeline
 import net.japanesehunter.webgpu.interop.GPURenderPipelineDescriptor
+import net.japanesehunter.webgpu.interop.GPUSampler
 import net.japanesehunter.webgpu.interop.GPUShaderModuleDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
+import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexState
@@ -73,6 +75,32 @@ class GpuRenderBundleEncoder
         bindings += binding
         ReadOnlyProperty { _, _ -> binding }
       }
+
+    operator fun GPUTextureView.provideDelegate(
+      thisRef: Any?,
+      property: KProperty<*>,
+    ): ReadOnlyProperty<Any?, Binding> {
+      val name = property.name
+      val bindIndex = bindings.size
+      val code =
+        "@group(0) @binding($bindIndex) var $name: texture_2d<f32>;"
+      val binding = Binding(name, this, code)
+      bindings += binding
+      return ReadOnlyProperty { _, _ -> binding }
+    }
+
+    operator fun GPUSampler.provideDelegate(
+      thisRef: Any?,
+      property: KProperty<*>,
+    ): ReadOnlyProperty<Any?, Binding> {
+      val name = property.name
+      val bindIndex = bindings.size
+      val code =
+        "@group(0) @binding($bindIndex) var $name: sampler;"
+      val binding = Binding(name, this, code)
+      bindings += binding
+      return ReadOnlyProperty { _, _ -> binding }
+    }
 
     fun vsOut(
       type: String,

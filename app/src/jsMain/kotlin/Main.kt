@@ -1,10 +1,15 @@
 
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
+import arrow.fx.coroutines.resource
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
 import kotlinx.browser.document
+import kotlinx.browser.window
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Fov
@@ -15,7 +20,9 @@ import net.japanesehunter.math.meters
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
+import net.japanesehunter.webgpu.GpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
+import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
 import net.japanesehunter.webgpu.VertexGpuBuffer
@@ -23,15 +30,31 @@ import net.japanesehunter.webgpu.buildRenderBundle
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
 import net.japanesehunter.webgpu.interop.GPUAdapter
+import net.japanesehunter.webgpu.interop.GPUAddressMode
+import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUColor
 import net.japanesehunter.webgpu.interop.GPUDevice
+import net.japanesehunter.webgpu.interop.GPUExtent3D
+import net.japanesehunter.webgpu.interop.GPUFilterMode
+import net.japanesehunter.webgpu.interop.GPUImageCopyExternalImage
+import net.japanesehunter.webgpu.interop.GPUImageCopyTextureTagged
 import net.japanesehunter.webgpu.interop.GPULoadOp
+import net.japanesehunter.webgpu.interop.GPUMipmapFilterMode
+import net.japanesehunter.webgpu.interop.GPUOrigin3D
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
+import net.japanesehunter.webgpu.interop.GPUSampler
+import net.japanesehunter.webgpu.interop.GPUSamplerDescriptor
 import net.japanesehunter.webgpu.interop.GPUStoreOp
+import net.japanesehunter.webgpu.interop.GPUTexture
+import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
+import net.japanesehunter.webgpu.interop.GPUTextureDimension
+import net.japanesehunter.webgpu.interop.GPUTextureFormat
+import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.GPUTextureView
+import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.webgpu.pos3D
@@ -39,6 +62,7 @@ import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.u16
 import net.japanesehunter.worldcreate.toGpuBuffer
 import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.ImageBitmap
 
 val end = Job()
 
@@ -85,8 +109,10 @@ fun main() =
         val renderBundle =
           buildRenderBundle {
             val vertexPosBuffer = vertexPosBuffer()
-            val vertexColorBuffer = vertexColorBuffer()
-            val color by vsOut("vec4f")
+            val textureBuffer =
+              createTexture(
+                "assets/vanilla/textures/doge.png",
+              ).await().createView()
 
             header {
               """
@@ -101,23 +127,31 @@ fun main() =
               """
             }
 
+            val uv by vsOut("vec2f")
             val camera by cameraBuf.asUniform(type = "CameraUniform")
+            val texture by textureBuffer
+            val samp by createSampler()
             vertex(indexBuffer) {
               val posBuf by vertexPosBuffer
-              val colorBuf by vertexColorBuffer
               """
+              let uvs = array<vec2f, 4>(
+                vec2f(0.0, 1.0),
+                vec2f(1.0, 1.0),
+                vec2f(0.0, 0.0),
+                vec2f(1.0, 0.0),
+              );
               let pos = 
                 camera.rotation * $posBuf +
-                  camera.local_pos -
-                  vec3f(camera.block_pos);
+                camera.local_pos -
+                vec3f(camera.block_pos);
               $position = $camera.projection * vec4f(pos, 1.0);
-              $color = $colorBuf;
+              $uv = uvs[$vertexIndex];
               """
             }
             fragment {
               val out by canvas
               """
-              $out = $color;
+              $out = textureSample($texture, $samp, $uv);
               """
             }
           }
@@ -321,76 +355,76 @@ private fun debugPrintLimits() {
   }
 }
 
-// context(coroutine: CoroutineScope)
-// private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
-//  coroutine.async {
-//    val path = path.removePrefix("/")
-//    val resp = window.fetch("/$path").await()
-//    val blob = resp.blob().await()
-//    createImageBitmap(blob).await()
-//  }
+context(coroutine: CoroutineScope)
+private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
+  coroutine.async {
+    val path = path.removePrefix("/")
+    val resp = window.fetch("/$path").await()
+    val blob = resp.blob().await()
+    createImageBitmap(blob).await()
+  }
 
-// context(alloc: BufferAllocator)
-// private fun createUvsBuffer(): Resource<StorageGpuBuffer> {
-//  val res =
-//    alloc.static(
-//      data = floatArrayOf(0f, 0f, 1f, 1f),
-//      usage = GPUBufferUsage.Storage,
-//      label = "UVs Buffer",
-//    )
-//  return resource {
-//    val buf = res.bind()
-//    object : StorageGpuBuffer, GpuBuffer by buf {}
-//  }
-// }
-//
-// context(device: GPUDevice, coroutine: CoroutineScope)
-// private fun createTexture(path: String): Deferred<GPUTexture> =
-//  coroutine.async {
-//    val bitmap = loadImageBitmap(path).await()
-//    val textureSize = GPUExtent3D(bitmap.width, bitmap.height, 1)
-//    val descriptor =
-//      GPUTextureDescriptor(
-//        size = textureSize,
-//        mipLevelCount = 1,
-//        sampleCount = 1,
-//        dimension = GPUTextureDimension.D2,
-//        format = GPUTextureFormat.Rgba8UnormSrgb,
-//        usage =
-//          GPUTextureUsage.TextureBinding + GPUTextureUsage.CopyDst +
-//            GPUTextureUsage.RenderAttachment,
-//      )
-//    val texture = device.createTexture(descriptor)
-//    device.queue.copyExternalImageToTexture(
-//      GPUImageCopyExternalImage(
-//        source = bitmap,
-//        origin = GPUOrigin3D(),
-//        flipY = false,
-//        premultipliedAlpha = true,
-//      ),
-//      GPUImageCopyTextureTagged(
-//        texture = texture,
-//        mipLevel = 0,
-//        origin = GPUOrigin3D(),
-//      ),
-//      textureSize,
-//    )
-//    texture
-//  }
-//
-// context(device: GPUDevice)
-// private fun createSampler(): GPUSampler {
-//  val descriptor =
-//    GPUSamplerDescriptor(
-//      magFilter = GPUFilterMode.Nearest,
-//      minFilter = GPUFilterMode.Nearest,
-//      mipmapFilter = GPUMipmapFilterMode.Nearest,
-//      addressModeU = GPUAddressMode.Repeat,
-//      addressModeV = GPUAddressMode.Repeat,
-//      addressModeW = GPUAddressMode.Repeat,
-//    )
-//  return device.createSampler(descriptor)
-// }
+context(alloc: BufferAllocator)
+private fun createUvsBuffer(): Resource<StorageGpuBuffer> {
+  val res =
+    alloc.static(
+      data = floatArrayOf(0f, 0f, 1f, 1f),
+      usage = GPUBufferUsage.Storage,
+      label = "UVs Buffer",
+    )
+  return resource {
+    val buf = res.bind()
+    object : StorageGpuBuffer, GpuBuffer by buf {}
+  }
+}
+
+context(device: GPUDevice, coroutine: CoroutineScope)
+private fun createTexture(path: String): Deferred<GPUTexture> =
+  coroutine.async {
+    val bitmap = loadImageBitmap(path).await()
+    val textureSize = GPUExtent3D(bitmap.width, bitmap.height, 1)
+    val descriptor =
+      GPUTextureDescriptor(
+        size = textureSize,
+        mipLevelCount = 1,
+        sampleCount = 1,
+        dimension = GPUTextureDimension.D2,
+        format = GPUTextureFormat.Rgba8UnormSrgb,
+        usage =
+          GPUTextureUsage.TextureBinding + GPUTextureUsage.CopyDst +
+            GPUTextureUsage.RenderAttachment,
+      )
+    val texture = device.createTexture(descriptor)
+    device.queue.copyExternalImageToTexture(
+      GPUImageCopyExternalImage(
+        source = bitmap,
+        origin = GPUOrigin3D(),
+        flipY = false,
+        premultipliedAlpha = true,
+      ),
+      GPUImageCopyTextureTagged(
+        texture = texture,
+        mipLevel = 0,
+        origin = GPUOrigin3D(),
+      ),
+      textureSize,
+    )
+    texture
+  }
+
+context(device: GPUDevice)
+private fun createSampler(): GPUSampler {
+  val descriptor =
+    GPUSamplerDescriptor(
+      magFilter = GPUFilterMode.Nearest,
+      minFilter = GPUFilterMode.Nearest,
+      mipmapFilter = GPUMipmapFilterMode.Nearest,
+      addressModeU = GPUAddressMode.Repeat,
+      addressModeV = GPUAddressMode.Repeat,
+      addressModeW = GPUAddressMode.Repeat,
+    )
+  return device.createSampler(descriptor)
+}
 //
 // context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
 // private fun createMsaaTexture(sampleCount: Int): GPUTexture {
