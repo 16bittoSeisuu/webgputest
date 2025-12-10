@@ -5,6 +5,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
+import net.japanesehunter.math.Direction16
+import net.japanesehunter.math.Fov
+import net.japanesehunter.math.MovableCamera
+import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.meters
+import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.IndexGpuBuffer
@@ -29,20 +35,23 @@ import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.webgpu.pos3D
 import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.u16
+import net.japanesehunter.worldcreate.toGpuBuffer
+import org.w3c.dom.HTMLDivElement
 
 val end = Job()
 
 fun main() =
   application(loggerLevel = Level.DEBUG) {
     canvasContext {
-//      val camera =
-//        MovableCamera(
-//          fov = Fov.fromDegrees(60.0),
-//          nearFar = NearFar(0.1.meters, 128.meters),
-//          aspect = canvasAspect,
-//        ).apply {
-//          autoFit()
-//        }
+      val camera =
+        MovableCamera(
+          fov = Fov.fromDegrees(60.0),
+          nearFar = NearFar(0.1.meters, 128.meters),
+          aspect = canvasAspect,
+        ).apply {
+          z = 2.meters
+          autoFit()
+        }
 //      val quads =
 //        List(101) { x ->
 //          List(101) { y ->
@@ -70,17 +79,36 @@ fun main() =
         debugPrintLimits()
 //        val directionHud = createCameraDirectionHud()
         val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
-//        val cameraBuf = camera.toGpuBuffer().bind()
+        val cameraBuf = camera.toGpuBuffer().bind()
         val renderBundle =
           buildRenderBundle {
             val vertexPosBuffer = vertexPosBuffer()
             val vertexColorBuffer = vertexColorBuffer()
             val color by vsOut("vec4f")
+
+            header {
+              """
+              struct CameraUniform {
+                projection: mat4x4f,
+                rotation: mat3x3f,
+                block_pos: vec3i,
+                pad0: u32,
+                local_pos: vec3f,
+                pad1: f32,
+              }
+              """
+            }
+
+            val camera by cameraBuf.asUniform(type = "CameraUniform")
             vertex(indexBuffer) {
               val posBuf by vertexPosBuffer
               val colorBuf by vertexColorBuffer
               """
-              $position = vec4f($posBuf, 1.0);
+              let pos = 
+                camera.rotation * $posBuf +
+                  camera.local_pos -
+                  vec3f(camera.block_pos);
+              $position = $camera.projection * vec4f(pos, 1.0);
               $color = $colorBuf;
               """
             }
@@ -110,7 +138,7 @@ fun main() =
 //              }
 //            camera.lookAt(point)
 //            directionHud.update(camera.currentDirection16())
-//            cameraBuf.update()
+            cameraBuf.update()
             frame {
               executeBundles(arrayOf(renderBundle))
             }
@@ -443,31 +471,31 @@ private inline fun frame(
 //  return CameraDirectionHud(container)
 // }
 
-// private class CameraDirectionHud(
-//  private val container: HTMLDivElement,
-// ) {
-//  fun update(direction: Direction16) {
-//    val label = direction.displayName()
-//    container.textContent = "Direction: $label"
-//  }
-// }
-//
-// private fun Direction16.displayName(): String =
-//  name
-//    .split('_')
-//    .joinToString(" ") { segment ->
-//      segment.lowercase().replaceFirstChar(Char::titlecaseChar)
-//    }
+private class CameraDirectionHud(
+  private val container: HTMLDivElement,
+) {
+  fun update(direction: Direction16) {
+    val label = direction.displayName()
+    container.textContent = "Direction: $label"
+  }
+}
+
+private fun Direction16.displayName(): String =
+  name
+    .split('_')
+    .joinToString(" ") { segment ->
+      segment.lowercase().replaceFirstChar(Char::titlecaseChar)
+    }
 
 private val logger = logger("Main")
-//
-// context(canvas: CanvasContext)
-// private val canvasAspect get() = canvas.width.toDouble() / canvas.height
-//
-// context(canvas: CanvasContext)
-// private fun MovableCamera.autoFit(): AutoCloseable =
-//  canvas.onResize {
-//    aspect = canvasAspect
-//  }
+
+context(canvas: CanvasContext)
+private val canvasAspect get() = canvas.width.toDouble() / canvas.height
+
+context(canvas: CanvasContext)
+private fun MovableCamera.autoFit(): AutoCloseable =
+  canvas.onResize {
+    aspect = canvasAspect
+  }
 
 // endregion

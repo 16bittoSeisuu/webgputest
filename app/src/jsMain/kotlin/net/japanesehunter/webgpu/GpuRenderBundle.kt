@@ -4,6 +4,9 @@ package net.japanesehunter.webgpu
 
 import kotlinx.coroutines.await
 import net.japanesehunter.GpuVertexFormat
+import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
+import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
+import net.japanesehunter.webgpu.interop.GPUBindingResource
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
@@ -41,6 +44,8 @@ class GpuRenderBundleEncoder
   internal constructor() {
     private val indexBuffer: AtomicReference<IndexGpuBuffer?> =
       AtomicReference(null)
+    private val headerCode: AtomicReference<(() -> String)?> =
+      AtomicReference(null)
     private val vertexCode: AtomicReference<(() -> String)?> =
       AtomicReference(null)
     private val vsOuts: MutableList<VsOut> = mutableListOf()
@@ -53,6 +58,21 @@ class GpuRenderBundleEncoder
       AtomicReference(null)
     private val targets: MutableList<Pair<String, GPUTextureFormat>> =
       mutableListOf()
+    private val bindings: MutableList<Binding> = mutableListOf()
+
+    fun UniformGpuBuffer.asUniform(type: String): PropertyDelegateProvider<
+      Any?,
+      ReadOnlyProperty<Any?, Binding>,
+    > =
+      PropertyDelegateProvider { _, property ->
+        val name = property.name
+        val bindIndex = bindings.size
+        val code =
+          "@group(0) @binding($bindIndex) var<uniform> $name: $type;"
+        val binding = Binding(name, this.asBinding(), code)
+        bindings += binding
+        ReadOnlyProperty { _, _ -> binding }
+      }
 
     fun vsOut(
       type: String,
@@ -71,6 +91,10 @@ class GpuRenderBundleEncoder
           ).also { vsOuts += it }
         ReadOnlyProperty { _, _ -> ret }
       }
+
+    fun header(action: () -> String) {
+      headerCode.store(action)
+    }
 
     fun vertex(
       indices: IndexGpuBuffer? = null,
@@ -140,10 +164,26 @@ class GpuRenderBundleEncoder
             label = label?.let { "$it-bundle-encoder" },
           ),
         ).run {
-          setPipeline(createPipeline(device))
+          val pipeline = createPipeline(device)
+          setPipeline(pipeline)
           vertexBuffers.forEachIndexed { i, v ->
             setVertexBuffer(i, v.raw, offset = v.offset, size = v.size)
           }
+          val bindGroup =
+            device.createBindGroup(
+              GPUBindGroupDescriptor(
+                layout = pipeline.getBindGroupLayout(0),
+                entries =
+                  bindings
+                    .mapIndexed { i, binding ->
+                      GPUBindGroupEntry(
+                        binding = i,
+                        resource = binding.resource,
+                      )
+                    }.toTypedArray(),
+              ),
+            )
+          setBindGroup(0, bindGroup)
           val indexBuf = indexBuffer.load()
           val instanceCount =
             vertexBuffers
@@ -178,13 +218,16 @@ class GpuRenderBundleEncoder
         }
 
     private suspend fun createPipeline(device: GPUDevice): GPURenderPipeline {
+      val header =
+        headerCode.load()?.invoke() ?: ""
+      val bindingCode = bindings.joinToString("\n") { it.code }
       val vertexCode =
         vertexCode.load()?.invoke()
           ?: error("Vertex shader code is not defined")
       val fragmentCode =
         fragmentCode.load()?.invoke()
           ?: error("Fragment shader code is not defined")
-      val code = vertexCode + "\n" + fragmentCode
+      val code = header + bindingCode + vertexCode + "\n" + fragmentCode
       val module =
         device.createShaderModule(
           GPUShaderModuleDescriptor(code = code),
@@ -228,6 +271,14 @@ class GpuRenderBundleEncoder
       internal fun setFragmentMode() {
         prefix = ""
       }
+    }
+
+    class Binding internal constructor(
+      val name: String,
+      internal val resource: GPUBindingResource,
+      internal val code: String,
+    ) {
+      override fun toString(): String = name
     }
 
     inner class VertexScope internal constructor() {
