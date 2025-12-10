@@ -1,4 +1,5 @@
 
+import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
@@ -9,6 +10,7 @@ import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
+import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.buildRenderBundle
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
@@ -24,6 +26,8 @@ import net.japanesehunter.webgpu.interop.GPUStoreOp
 import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
+import net.japanesehunter.webgpu.pos3D
+import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.u16
 
 val end = Job()
@@ -69,24 +73,15 @@ fun main() =
 //        val cameraBuf = camera.toGpuBuffer().bind()
         val renderBundle =
           buildRenderBundle {
+            val vertexPosBuffer = vertexPosBuffer()
+            val vertexColorBuffer = vertexColorBuffer()
             val color by vsOut("vec4f")
             vertex(indexBuffer) {
+              val posBuf by vertexPosBuffer
+              val colorBuf by vertexColorBuffer
               """
-              let vertices = array<vec3f, 4>(
-                vec3f(-0.5, -0.5, 0.0), // left-bottom
-                vec3f( 0.5, -0.5, 0.0), // right-bottom
-                vec3f(-0.5,  0.5, 0.0), // left-top
-                vec3f( 0.5,  0.5, 0.0), // right-top
-              );
-              let colors = array<vec4f, 4>(
-                vec4f(1.0, 0.0, 1.0, 1.0), // magenta
-                vec4f(1.0, 1.0, 1.0, 1.0), // white
-                vec4f(0.0, 1.0, 1.0, 1.0), // cyan
-                vec4f(1.0, 1.0, 0.0, 1.0), // yellow
-              );
-              let pos = vertices[$vertexIndex];
-              $position = vec4f(pos, 1.0);
-              $color = colors[$vertexIndex];
+              $position = vec4f($posBuf, 1.0);
+              $color = $colorBuf;
               """
             }
             fragment {
@@ -136,6 +131,50 @@ fun main() =
   }
 
 // region helper
+
+context(alloc: BufferAllocator)
+private val vertexPosBuffer: Resource<VertexGpuBuffer>
+  get() =
+    VertexGpuBuffer.pos3D(
+      floatArrayOf(
+        -0.5f,
+        -0.5f,
+        0.0f, // left-bottom
+        0.5f,
+        -0.5f,
+        0.0f, // right-bottom
+        -0.5f,
+        0.5f,
+        0.0f, // left-top
+        0.5f,
+        0.5f,
+        0.0f, // right-top
+      ),
+    )
+
+context(alloc: BufferAllocator)
+private val vertexColorBuffer: Resource<VertexGpuBuffer>
+  get() =
+    VertexGpuBuffer.rgbaColor(
+      floatArrayOf(
+        1.0f,
+        0.0f,
+        1.0f,
+        1.0f, // magenta
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f, // white
+        0.0f,
+        1.0f,
+        1.0f,
+        1.0f, // cyan
+        1.0f,
+        1.0f,
+        0.0f,
+        1.0f, // yellow
+      ),
+    )
 
 context(canvas: CanvasContext, resource: ResourceScope)
 private suspend inline fun <R> webgpuContext(

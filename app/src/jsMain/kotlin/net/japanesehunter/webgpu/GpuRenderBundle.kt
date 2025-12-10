@@ -18,8 +18,10 @@ import net.japanesehunter.webgpu.interop.GPUVertexAttribute
 import net.japanesehunter.webgpu.interop.GPUVertexBufferLayout
 import net.japanesehunter.webgpu.interop.GPUVertexState
 import net.japanesehunter.webgpu.interop.GPUVertexStepMode
+import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.fetchAndIncrement
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -42,7 +44,7 @@ class GpuRenderBundleEncoder
     private val vertexCode: AtomicReference<(() -> String)?> =
       AtomicReference(null)
     private val vsOuts: MutableList<VsOut> = mutableListOf()
-    private val attributes: MutableMap<
+    private val layout: MutableMap<
       VertexGpuBuffer,
       GPUVertexBufferLayout,
     > = mutableMapOf()
@@ -75,7 +77,7 @@ class GpuRenderBundleEncoder
       action: VertexScope.() -> String,
     ) {
       indexBuffer.store(indices)
-      val scope = VertexScope(attributes)
+      val scope = VertexScope()
       val code = scope.action().trimIndent()
       vertexCode.store {
         """
@@ -183,7 +185,6 @@ class GpuRenderBundleEncoder
         fragmentCode.load()?.invoke()
           ?: error("Fragment shader code is not defined")
       val code = vertexCode + "\n" + fragmentCode
-      println(code)
       val module =
         device.createShaderModule(
           GPUShaderModuleDescriptor(code = code),
@@ -191,7 +192,7 @@ class GpuRenderBundleEncoder
       val vertexState =
         GPUVertexState(
           module = module,
-          buffers = attributes.values.toTypedArray(),
+          buffers = layout.values.toTypedArray(),
         )
       val fragmentState =
         GPUFragmentState(
@@ -229,17 +230,16 @@ class GpuRenderBundleEncoder
       }
     }
 
-    class VertexScope internal constructor(
-      private val layout: MutableMap<VertexGpuBuffer, GPUVertexBufferLayout>,
-    ) {
+    inner class VertexScope internal constructor() {
       val position: String = "out._position"
       val vertexIndex: String = "_vertex_index"
       val instanceIndex: String = "_instance_index"
+      val location: AtomicInt = AtomicInt(0)
       internal val attributes: MutableList<String> = mutableListOf()
       internal val bufferAttrIndex: MutableMap<VertexGpuBuffer, Int> =
         mutableMapOf()
 
-      fun VertexGpuBuffer.provideDelegate(
+      operator fun VertexGpuBuffer.provideDelegate(
         thisRef: Any?,
         property: KProperty<*>,
       ): ReadOnlyProperty<Any?, String> =
@@ -248,7 +248,7 @@ class GpuRenderBundleEncoder
           stepMode = GPUVertexStepMode.Vertex,
         )
 
-      fun InstanceGpuBuffer.provideDelegate(
+      operator fun InstanceGpuBuffer.provideDelegate(
         thisRef: Any?,
         property: KProperty<*>,
       ): ReadOnlyProperty<Any?, String> =
@@ -267,6 +267,7 @@ class GpuRenderBundleEncoder
           "VertexGpuBuffer '${this.label}' has only ${formats.size} attributes, " +
             "but tried to access attribute index $index"
         }
+        val location = location.fetchAndIncrement()
         val type = formats[index].type
         val currentLayout =
           layout.getOrElse(this) {
@@ -284,10 +285,11 @@ class GpuRenderBundleEncoder
                 GPUVertexAttribute(
                   format = formats[index].raw,
                   offset = offsets[index],
-                  shaderLocation = layout.size,
+                  shaderLocation = location,
                 ),
           )
-        attributes += "@location($index) $name: $type,"
+        attributes += "@location($location) $name: $type,"
+        vertexBuffers += this
         return ReadOnlyProperty { _, _ -> name }
       }
 
