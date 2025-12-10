@@ -10,6 +10,7 @@ import net.japanesehunter.webgpu.interop.GPUBindingResource
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
+import net.japanesehunter.webgpu.interop.GPUMultisampleState
 import net.japanesehunter.webgpu.interop.GPURenderBundle
 import net.japanesehunter.webgpu.interop.GPURenderBundleDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
@@ -33,12 +34,13 @@ import kotlin.reflect.KProperty
 
 context(device: GPUDevice)
 suspend inline fun buildRenderBundle(
+  sampleCount: Int? = null,
   label: String? = null,
   action: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): GPURenderBundle =
   GpuRenderBundleEncoder().run {
     action()
-    build(device, label)
+    build(device, sampleCount, label)
   }
 
 class GpuRenderBundleEncoder
@@ -197,16 +199,18 @@ class GpuRenderBundleEncoder
     @PublishedApi
     internal suspend fun build(
       device: GPUDevice,
+      sampleCount: Int?,
       label: String?,
     ): GPURenderBundle =
       device
         .createRenderBundleEncoder(
           GPURenderBundleEncoderDescriptor(
             colorFormats = targets.map { (_, format) -> format }.toTypedArray(),
+            sampleCount = sampleCount,
             label = label?.let { "$it-bundle-encoder" },
           ),
         ).run {
-          val pipeline = createPipeline(device)
+          val pipeline = createPipeline(device, sampleCount)
           setPipeline(pipeline)
           vertexBuffers.forEachIndexed { i, v ->
             setVertexBuffer(i, v.raw, offset = v.offset, size = v.size)
@@ -259,7 +263,10 @@ class GpuRenderBundleEncoder
           )
         }
 
-    private suspend fun createPipeline(device: GPUDevice): GPURenderPipeline {
+    private suspend fun createPipeline(
+      device: GPUDevice,
+      sampleCount: Int?,
+    ): GPURenderPipeline {
       val header =
         headerCode.load()?.invoke() ?: ""
       val bindingCode = bindings.joinToString("\n") { it.code }
@@ -288,11 +295,14 @@ class GpuRenderBundleEncoder
                 GPUColorTargetState(format = format)
               }.toTypedArray(),
         )
+      val multisampleState =
+        GPUMultisampleState(count = sampleCount)
       return device
         .createRenderPipelineAsync(
           GPURenderPipelineDescriptor(
             vertex = vertexState,
             fragment = fragmentState,
+            multisample = multisampleState,
           ),
         ).await()
     }

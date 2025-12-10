@@ -116,8 +116,10 @@ fun main() =
         debugPrintLimits()
         val directionHud = createCameraDirectionHud()
         val cameraBuf = camera.toGpuBuffer().bind()
+        val sampleCount = 4
+        val msaaTexture = createMsaaTexture(sampleCount)
         val renderBundle =
-          buildRenderBundle {
+          buildRenderBundle(sampleCount) {
             val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
             val quadIndexBuffer = quads.toIndicesGpuBuffer().bind()
             val textureBuffer =
@@ -240,7 +242,7 @@ fun main() =
             camera.lookAt(point)
             directionHud.update(camera.currentDirection16())
             cameraBuf.update()
-            frame {
+            frame(view = msaaTexture.createView()) {
               executeBundles(arrayOf(renderBundle))
             }
             if (end.isCompleted) {
@@ -446,22 +448,22 @@ private fun createSampler(): GPUSampler {
     )
   return device.createSampler(descriptor)
 }
-//
-// context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
-// private fun createMsaaTexture(sampleCount: Int): GPUTexture {
-//  val textureDescriptor =
-//    GPUTextureDescriptor(
-//      size = GPUExtent3D(canvas.width, canvas.height, 1),
-//      sampleCount = sampleCount,
-//      format = canvas.preferredFormat,
-//      usage = GPUTextureUsage.RenderAttachment,
-//    )
-//  val ret = device.createTexture(textureDescriptor)
-//  resource.onClose {
-//    ret.destroy()
-//  }
-//  return ret
-// }
+
+context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
+private fun createMsaaTexture(sampleCount: Int): GPUTexture {
+  val textureDescriptor =
+    GPUTextureDescriptor(
+      size = GPUExtent3D(canvas.width, canvas.height, 1),
+      sampleCount = sampleCount,
+      format = canvas.preferredFormat,
+      usage = GPUTextureUsage.RenderAttachment,
+    )
+  val ret = device.createTexture(textureDescriptor)
+  resource.onClose {
+    ret.destroy()
+  }
+  return ret
+}
 
 context(device: GPUDevice, canvas: CanvasContext)
 private inline fun frame(
