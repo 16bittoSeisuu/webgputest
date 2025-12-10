@@ -115,10 +115,10 @@ fun main() =
       webgpuContext {
         debugPrintLimits()
         val directionHud = createCameraDirectionHud()
-        val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
         val cameraBuf = camera.toGpuBuffer().bind()
         val renderBundle =
           buildRenderBundle {
+            val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
             val quadIndexBuffer = quads.toIndicesGpuBuffer().bind()
             val textureBuffer =
               createTexture(
@@ -152,23 +152,26 @@ fun main() =
                 uv_max: vec2f,
               }
               
-              const corners = array<vec2f, 4>(
-                vec2f(-0.5, -0.5),
-                vec2f(0.5, -0.5),
-                vec2f(-0.5, 0.5),
-                vec2f(0.5, 0.5),
-              );
+              const corners =
+                array<vec2f, 4>(
+                  vec2f(-0.5, -0.5),
+                  vec2f(0.5, -0.5),
+                  vec2f(-0.5, 0.5),
+                  vec2f(0.5, 0.5),
+                );
               
-              const uvs = array<vec2f, 4>(
-                vec2f(0.0, 1.0),
-                vec2f(1.0, 1.0),
-                vec2f(0.0, 0.0),
-                vec2f(1.0, 0.0),
-              );
+              const uvs =
+                array<vec2f, 4>(
+                  vec2f(0.0, 1.0),
+                  vec2f(1.0, 1.0),
+                  vec2f(0.0, 0.0),
+                  vec2f(1.0, 0.0),
+                );
               """
             }
 
             val uv by vsOut("vec2f")
+            val ao by vsOut("f32")
             val matId by vsOut("u32", interpolation = "flat")
             val camera by cameraBuf.asUniform(type = "CameraUniform")
             val quadsInst by quads.toGpuBuffer().bind().asStorage("array<Quad>")
@@ -197,6 +200,7 @@ fun main() =
               let camera_pos = camera.rotation * relative_pos;
               $position = $camera.projection * vec4f(camera_pos, 1.0);
               $uv = uvs[$vertexIndex];
+              $ao = f32((quad.ao >> ($vertexIndex * 8)) & 0xFF) / 255.0;
               """
             }
             fragment {
@@ -210,7 +214,9 @@ fun main() =
                   material.uv_max,
                   $uv,
                 );
-              $out = textureSample($texture, $samp, uv_scaled);
+              let base_color = textureSample($texture, $samp, uv_scaled);
+              let color = vec4f(base_color.rgb * $ao, base_color.a);
+              $out = color;
               """
             }
           }
@@ -517,7 +523,7 @@ private fun createCameraDirectionHud(): CameraDirectionHud {
     fontFamily = "monospace, system-ui"
     fontSize = "0.85rem"
     setProperty("pointer-events", "none")
-    zIndex = "9000"
+    zIndex = "1"
   }
   return CameraDirectionHud(container)
 }
