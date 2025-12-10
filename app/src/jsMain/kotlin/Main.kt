@@ -3,12 +3,14 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
+import kotlinx.browser.document
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
@@ -77,7 +79,7 @@ fun main() =
 
       webgpuContext {
         debugPrintLimits()
-//        val directionHud = createCameraDirectionHud()
+        val directionHud = createCameraDirectionHud()
         val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
         val cameraBuf = camera.toGpuBuffer().bind()
         val renderBundle =
@@ -137,7 +139,7 @@ fun main() =
 //                )
 //              }
 //            camera.lookAt(point)
-//            directionHud.update(camera.currentDirection16())
+            directionHud.update(camera.currentDirection16())
             cameraBuf.update()
             frame {
               executeBundles(arrayOf(renderBundle))
@@ -446,30 +448,30 @@ private inline fun frame(
 //  val seconds = elapsed.inWholeMilliseconds / 1000.0
 //  return perSec * seconds
 // }
-//
-// private fun createCameraDirectionHud(): CameraDirectionHud {
-//  val body = document.body ?: error("Document body is not available")
-//  val container =
-//    (document.getElementById("camera-direction") as? HTMLDivElement)
-//      ?: (document.createElement("div") as HTMLDivElement).also {
-//        it.id = "camera-direction"
-//        body.appendChild(it)
-//      }
-//  container.style.apply {
-//    position = "fixed"
-//    top = "12px"
-//    left = "12px"
-//    padding = "0.35rem 0.65rem"
-//    backgroundColor = "rgba(0, 0, 0, 0.75)"
-//    color = "#FFF"
-//    borderRadius = "0.35rem"
-//    fontFamily = "monospace, system-ui"
-//    fontSize = "0.85rem"
-//    setProperty("pointer-events", "none")
-//    zIndex = "9000"
-//  }
-//  return CameraDirectionHud(container)
-// }
+
+private fun createCameraDirectionHud(): CameraDirectionHud {
+  val body = document.body ?: error("Document body is not available")
+  val container =
+    (document.getElementById("camera-direction") as? HTMLDivElement)
+      ?: (document.createElement("div") as HTMLDivElement).also {
+        it.id = "camera-direction"
+        body.appendChild(it)
+      }
+  container.style.apply {
+    position = "fixed"
+    top = "12px"
+    left = "12px"
+    padding = "0.35rem 0.65rem"
+    backgroundColor = "rgba(0, 0, 0, 0.75)"
+    color = "#FFF"
+    borderRadius = "0.35rem"
+    fontFamily = "monospace, system-ui"
+    fontSize = "0.85rem"
+    setProperty("pointer-events", "none")
+    zIndex = "9000"
+  }
+  return CameraDirectionHud(container)
+}
 
 private class CameraDirectionHud(
   private val container: HTMLDivElement,
