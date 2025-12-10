@@ -43,6 +43,7 @@ import net.japanesehunter.webgpu.interop.GPUAddressMode
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
 import net.japanesehunter.webgpu.interop.GPUColor
+import net.japanesehunter.webgpu.interop.GPUCullMode
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUExtent3D
 import net.japanesehunter.webgpu.interop.GPUFilterMode
@@ -119,7 +120,10 @@ fun main() =
         val sampleCount = 4
         val msaaTexture = createMsaaTexture(sampleCount)
         val renderBundle =
-          buildRenderBundle(sampleCount) {
+          buildRenderBundle(
+            sampleCount = sampleCount,
+            cullMode = GPUCullMode.Back,
+          ) {
             val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
             val quadIndexBuffer = quads.toIndicesGpuBuffer().bind()
             val textureBuffer =

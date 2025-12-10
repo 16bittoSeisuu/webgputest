@@ -8,9 +8,12 @@ import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
 import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUBindingResource
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
+import net.japanesehunter.webgpu.interop.GPUCullMode
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
 import net.japanesehunter.webgpu.interop.GPUMultisampleState
+import net.japanesehunter.webgpu.interop.GPUPrimitiveState
+import net.japanesehunter.webgpu.interop.GPUPrimitiveTopology
 import net.japanesehunter.webgpu.interop.GPURenderBundle
 import net.japanesehunter.webgpu.interop.GPURenderBundleDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderBundleEncoderDescriptor
@@ -35,12 +38,13 @@ import kotlin.reflect.KProperty
 context(device: GPUDevice)
 suspend inline fun buildRenderBundle(
   sampleCount: Int? = null,
+  cullMode: GPUCullMode? = null,
   label: String? = null,
   action: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): GPURenderBundle =
   GpuRenderBundleEncoder().run {
     action()
-    build(device, sampleCount, label)
+    build(device, sampleCount, cullMode, label)
   }
 
 class GpuRenderBundleEncoder
@@ -200,6 +204,7 @@ class GpuRenderBundleEncoder
     internal suspend fun build(
       device: GPUDevice,
       sampleCount: Int?,
+      cullMode: GPUCullMode?,
       label: String?,
     ): GPURenderBundle =
       device
@@ -210,7 +215,7 @@ class GpuRenderBundleEncoder
             label = label?.let { "$it-bundle-encoder" },
           ),
         ).run {
-          val pipeline = createPipeline(device, sampleCount)
+          val pipeline = createPipeline(device, sampleCount, cullMode)
           setPipeline(pipeline)
           vertexBuffers.forEachIndexed { i, v ->
             setVertexBuffer(i, v.raw, offset = v.offset, size = v.size)
@@ -266,6 +271,7 @@ class GpuRenderBundleEncoder
     private suspend fun createPipeline(
       device: GPUDevice,
       sampleCount: Int?,
+      cullMode: GPUCullMode?,
     ): GPURenderPipeline {
       val header =
         headerCode.load()?.invoke() ?: ""
@@ -295,6 +301,11 @@ class GpuRenderBundleEncoder
                 GPUColorTargetState(format = format)
               }.toTypedArray(),
         )
+      val primitiveState =
+        GPUPrimitiveState(
+          topology = GPUPrimitiveTopology.TriangleList,
+          cullMode = cullMode,
+        )
       val multisampleState =
         GPUMultisampleState(count = sampleCount)
       return device
@@ -302,6 +313,7 @@ class GpuRenderBundleEncoder
           GPURenderPipelineDescriptor(
             vertex = vertexState,
             fragment = fragmentState,
+            primitive = primitiveState,
             multisample = multisampleState,
           ),
         ).await()
