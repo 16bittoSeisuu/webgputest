@@ -11,12 +11,18 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
+import net.japanesehunter.math.Angle
 import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.Point3
 import net.japanesehunter.math.currentDirection16
+import net.japanesehunter.math.degrees
+import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.x
+import net.japanesehunter.math.y
 import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
@@ -63,6 +69,8 @@ import net.japanesehunter.webgpu.u16
 import net.japanesehunter.worldcreate.toGpuBuffer
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 val end = Job()
 
@@ -141,9 +149,9 @@ fun main() =
                 vec2f(1.0, 0.0),
               );
               let pos = 
-                camera.rotation * $posBuf +
+                camera.rotation * ($posBuf -
                 camera.local_pos -
-                vec3f(camera.block_pos);
+                vec3f(camera.block_pos));
               $position = $camera.projection * vec4f(pos, 1.0);
               $uv = uvs[$vertexIndex];
               """
@@ -155,24 +163,24 @@ fun main() =
               """
             }
           }
-//        val time = TimeSource.Monotonic.markNow()
+        val time = TimeSource.Monotonic.markNow()
         val done = Job()
 
         fun loop() {
           try {
-//            camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
-//            camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
-//            camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
-//            val point =
-//              run {
-//                val rad = time.rad(perSec = 20.0.degrees)
-//                Point3(
-//                  x = 1.meters * rad.cos(),
-//                  y = 1.meters * rad.sin(),
-//                  z = 0.meters,
-//                )
-//              }
-//            camera.lookAt(point)
+            camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
+            camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
+            camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
+            val point =
+              run {
+                val rad = time.rad(perSec = 20.0.degrees)
+                Point3(
+                  x = 1.meters * rad.cos(),
+                  y = 1.meters * rad.sin(),
+                  z = 0.meters,
+                )
+              }
+            camera.lookAt(point)
             directionHud.update(camera.currentDirection16())
             cameraBuf.update()
             frame {
@@ -476,12 +484,12 @@ private inline fun frame(
   renderPassEncoder.end()
   device.queue.submit(arrayOf(commandEncoder.finish()))
 }
-//
-// private fun TimeMark.rad(perSec: Angle): Angle {
-//  val elapsed = this.elapsedNow()
-//  val seconds = elapsed.inWholeMilliseconds / 1000.0
-//  return perSec * seconds
-// }
+
+private fun TimeMark.rad(perSec: Angle): Angle {
+  val elapsed = this.elapsedNow()
+  val seconds = elapsed.inWholeMilliseconds / 1000.0
+  return perSec * seconds
+}
 
 private fun createCameraDirectionHud(): CameraDirectionHud {
   val body = document.body ?: error("Document body is not available")
