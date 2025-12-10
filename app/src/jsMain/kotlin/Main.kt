@@ -13,14 +13,18 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.Direction16
+import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.degrees
+import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.south
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
@@ -31,7 +35,6 @@ import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
-import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.buildRenderBundle
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
@@ -63,10 +66,10 @@ import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
-import net.japanesehunter.webgpu.pos3D
-import net.japanesehunter.webgpu.rgbaColor
 import net.japanesehunter.webgpu.u16
+import net.japanesehunter.worldcreate.Quad
 import net.japanesehunter.worldcreate.toGpuBuffer
+import net.japanesehunter.worldcreate.toIndicesGpuBuffer
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
 import kotlin.time.TimeMark
@@ -86,28 +89,28 @@ fun main() =
           z = 2.meters
           autoFit()
         }
-//      val quads =
-//        List(101) { x ->
-//          List(101) { y ->
-//            Quad(
-//              pos =
-//                Point3(
-//                  x = (x - 50).meters,
-//                  y = (y - 50).meters,
-//                  z = 0.meters,
-//                ),
-//              normal = Direction3.south,
-//              tangent = Direction3.east,
-//              aoLeftBottom = Proportion.QUARTER,
-//              aoRightBottom = Proportion.HALF,
-//              aoLeftTop = Proportion.HALF,
-//              aoRightTop = Proportion.ONE,
-//              sizeU = 0.9.meters,
-//              sizeV = 0.9.meters,
-//              materialId = 0,
-//            )
-//          }
-//        }.flatten()
+      val quads =
+        List(101) { x ->
+          List(101) { y ->
+            Quad(
+              pos =
+                Point3(
+                  x = (x - 50).meters,
+                  y = (y - 50).meters,
+                  z = 0.meters,
+                ),
+              normal = Direction3.south,
+              tangent = Direction3.east,
+              aoLeftBottom = Proportion.QUARTER,
+              aoRightBottom = Proportion.HALF,
+              aoLeftTop = Proportion.HALF,
+              aoRightTop = Proportion.ONE,
+              sizeU = 0.9.meters,
+              sizeV = 0.9.meters,
+              materialId = 0,
+            )
+          }
+        }.flatten()
 
       webgpuContext {
         debugPrintLimits()
@@ -116,7 +119,7 @@ fun main() =
         val cameraBuf = camera.toGpuBuffer().bind()
         val renderBundle =
           buildRenderBundle {
-            val vertexPosBuffer = vertexPosBuffer()
+            val quadIndexBuffer = quads.toIndicesGpuBuffer().bind()
             val textureBuffer =
               createTexture(
                 "assets/vanilla/textures/doge.png",
@@ -132,34 +135,82 @@ fun main() =
                 local_pos: vec3f,
                 pad1: f32,
               }
-              """
-            }
-
-            val uv by vsOut("vec2f")
-            val camera by cameraBuf.asUniform(type = "CameraUniform")
-            val texture by textureBuffer
-            val samp by createSampler()
-            vertex(indexBuffer) {
-              val posBuf by vertexPosBuffer
-              """
-              let uvs = array<vec2f, 4>(
+              
+              struct Quad {
+                block_pos: vec3i,     // 12
+                size_u: f32,          // 4
+                local_pos: vec3f,     // 12
+                size_v: f32,          // 4
+                normal: vec3f,        // 12
+                ao: u32,              // 4
+                tangent: vec3f,       // 12
+                mat_id: u32,          // 4
+              }
+              
+              struct Material {
+                uv_min: vec2f,
+                uv_max: vec2f,
+              }
+              
+              const corners = array<vec2f, 4>(
+                vec2f(-0.5, -0.5),
+                vec2f(0.5, -0.5),
+                vec2f(-0.5, 0.5),
+                vec2f(0.5, 0.5),
+              );
+              
+              const uvs = array<vec2f, 4>(
                 vec2f(0.0, 1.0),
                 vec2f(1.0, 1.0),
                 vec2f(0.0, 0.0),
                 vec2f(1.0, 0.0),
               );
-              let pos = 
-                camera.rotation * ($posBuf -
-                camera.local_pos -
-                vec3f(camera.block_pos));
-              $position = $camera.projection * vec4f(pos, 1.0);
+              """
+            }
+
+            val uv by vsOut("vec2f")
+            val matId by vsOut("u32", interpolation = "flat")
+            val camera by cameraBuf.asUniform(type = "CameraUniform")
+            val quadsInst by quads.toGpuBuffer().bind().asStorage("array<Quad>")
+            val material by createMaterialBuffer().bind().asStorage("array<Material>")
+            val texture by textureBuffer
+            val samp by createSampler()
+            vertex(indexBuffer) {
+              val quadIndices by quadIndexBuffer
+              """
+              let quad = $quadsInst[$quadIndices];
+              
+              let normal = normalize(quad.normal);
+              let tangent = normalize(quad.tangent);
+              let bitangent = normalize(cross(normal, tangent));
+              let u_offset = corners[$vertexIndex].x * quad.size_u;
+              let v_offset = corners[$vertexIndex].y * quad.size_v;
+              
+              let relative_block_pos = quad.block_pos - camera.block_pos;
+              let relative_local_pos = quad.local_pos - camera.local_pos;
+              let relative_base_pos = 
+                vec3f(relative_block_pos) + relative_local_pos;
+              let relative_pos = 
+                relative_base_pos +
+                (tangent * u_offset) +
+                (bitangent * v_offset);
+              let camera_pos = camera.rotation * relative_pos;
+              $position = $camera.projection * vec4f(camera_pos, 1.0);
               $uv = uvs[$vertexIndex];
               """
             }
             fragment {
               val out by canvas
               """
-              $out = textureSample($texture, $samp, $uv);
+              
+              let material = $material[$matId];
+              let uv_scaled = 
+                mix(
+                  material.uv_min,
+                  material.uv_max,
+                  $uv,
+                );
+              $out = textureSample($texture, $samp, uv_scaled);
               """
             }
           }
@@ -203,50 +254,6 @@ fun main() =
   }
 
 // region helper
-
-context(alloc: BufferAllocator)
-private val vertexPosBuffer: Resource<VertexGpuBuffer>
-  get() =
-    VertexGpuBuffer.pos3D(
-      floatArrayOf(
-        -0.5f,
-        -0.5f,
-        0.0f, // left-bottom
-        0.5f,
-        -0.5f,
-        0.0f, // right-bottom
-        -0.5f,
-        0.5f,
-        0.0f, // left-top
-        0.5f,
-        0.5f,
-        0.0f, // right-top
-      ),
-    )
-
-context(alloc: BufferAllocator)
-private val vertexColorBuffer: Resource<VertexGpuBuffer>
-  get() =
-    VertexGpuBuffer.rgbaColor(
-      floatArrayOf(
-        1.0f,
-        0.0f,
-        1.0f,
-        1.0f, // magenta
-        1.0f,
-        1.0f,
-        1.0f,
-        1.0f, // white
-        0.0f,
-        1.0f,
-        1.0f,
-        1.0f, // cyan
-        1.0f,
-        1.0f,
-        0.0f,
-        1.0f, // yellow
-      ),
-    )
 
 context(canvas: CanvasContext, resource: ResourceScope)
 private suspend inline fun <R> webgpuContext(
@@ -373,12 +380,12 @@ private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
   }
 
 context(alloc: BufferAllocator)
-private fun createUvsBuffer(): Resource<StorageGpuBuffer> {
+private fun createMaterialBuffer(): Resource<StorageGpuBuffer> {
   val res =
     alloc.static(
       data = floatArrayOf(0f, 0f, 1f, 1f),
       usage = GPUBufferUsage.Storage,
-      label = "UVs Buffer",
+      label = "Material Buffer",
     )
   return resource {
     val buf = res.bind()

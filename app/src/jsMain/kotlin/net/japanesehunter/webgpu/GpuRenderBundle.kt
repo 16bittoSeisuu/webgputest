@@ -76,6 +76,20 @@ class GpuRenderBundleEncoder
         ReadOnlyProperty { _, _ -> binding }
       }
 
+    fun StorageGpuBuffer.asStorage(type: String): PropertyDelegateProvider<
+      Any?,
+      ReadOnlyProperty<Any?, Binding>,
+    > =
+      PropertyDelegateProvider { _, property ->
+        val name = property.name
+        val bindIndex = bindings.size
+        val code =
+          "@group(0) @binding($bindIndex) var<storage, read> $name: $type;"
+        val binding = Binding(name, this.asBinding(), code)
+        bindings += binding
+        ReadOnlyProperty { _, _ -> binding }
+      }
+
     operator fun GPUTextureView.provideDelegate(
       thisRef: Any?,
       property: KProperty<*>,
@@ -111,7 +125,7 @@ class GpuRenderBundleEncoder
     > =
       PropertyDelegateProvider { _, property ->
         val name = property.name
-        val ip = interpolation?.let { "@interpolation($it) " } ?: ""
+        val ip = interpolation?.let { "@interpolate($it) " } ?: ""
         val ret =
           VsOut(
             name,
