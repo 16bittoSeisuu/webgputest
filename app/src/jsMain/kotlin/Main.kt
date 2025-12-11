@@ -523,7 +523,9 @@ private class CameraDirectionHud(
 ) {
   fun update(direction: Direction16) {
     val label = direction.displayName()
-    container.textContent = "Direction: $label"
+    val text = "Direction: $label"
+    if (container.textContent == text) return
+    container.textContent = text
   }
 }
 
