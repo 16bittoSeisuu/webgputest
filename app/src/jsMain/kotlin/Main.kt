@@ -59,10 +59,12 @@ import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
+import net.japanesehunter.worldcreate.CameraNavigator
 import net.japanesehunter.worldcreate.GreedyQuad
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.QuadShape
 import net.japanesehunter.worldcreate.toGpuBuffer
+import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
 
@@ -83,6 +85,8 @@ fun main() =
           lookAt(Point3.zero)
           autoFit()
         }
+      val navigator = CameraNavigator(currentCanvasElement(), camera)
+      onClose { navigator.close() }
       webgpuContext {
         debugPrintLimits()
         val cameraHud = createCameraDirectionHud()
@@ -150,6 +154,7 @@ fun main() =
 
         fun loop() {
           try {
+            navigator.update()
             cameraHud.update(camera.currentDirection16())
             cameraBuf.update()
 
@@ -400,6 +405,9 @@ private val logger = logger("Main")
 
 context(canvas: CanvasContext)
 private val canvasAspect get() = canvas.width.toDouble() / canvas.height
+
+context(canvas: CanvasContext)
+private fun currentCanvasElement(): HTMLCanvasElement = canvas.canvas
 
 context(canvas: CanvasContext)
 private fun MovableCamera.autoFit(): AutoCloseable =
