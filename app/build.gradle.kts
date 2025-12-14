@@ -39,6 +39,8 @@ kotlin {
         api(libs.arrow.fx.coroutines)
         api(libs.arrow.resilience)
         implementation(libs.korge.foundation)
+        implementation(libs.kotlinx.io.core)
+        implementation(libs.kotlinx.io.bytestring)
       }
     }
     commonTest {
