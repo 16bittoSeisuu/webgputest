@@ -5,10 +5,14 @@ import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUExtent3D
 import net.japanesehunter.webgpu.interop.GPUTexture
 import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
+import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.GPUTextureUsage
 
 context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
-fun createMsaaTexture(sampleCount: Int = 4): () -> GPUTexture {
+fun createDepthStencilTexture(
+  sampleCount: Int,
+  format: GPUTextureFormat = GPUTextureFormat.Depth24PlusStencil8,
+): () -> GPUTexture {
   var knownWidth = canvas.width
   var knownHeight = canvas.height
 
@@ -16,10 +20,10 @@ fun createMsaaTexture(sampleCount: Int = 4): () -> GPUTexture {
     device.createTexture(
       GPUTextureDescriptor(
         size = GPUExtent3D(width = knownWidth, height = knownHeight),
+        format = format,
         sampleCount = sampleCount,
-        format = canvas.preferredFormat,
         usage = GPUTextureUsage.RenderAttachment,
-        label = "MSAA Texture ${knownWidth}x$knownHeight",
+        label = "Depth Stencil Texture ${knownWidth}x$knownHeight",
       ),
     )
   var isDestroyed = false
@@ -31,7 +35,7 @@ fun createMsaaTexture(sampleCount: Int = 4): () -> GPUTexture {
       texture.destroy()
       texture = create()
     }
-    check(!isDestroyed) { "MSAA Texture has been destroyed" }
+    check(!isDestroyed) { "Depth Stencil Texture has been destroyed" }
     texture
   }.also {
     resource.onClose {

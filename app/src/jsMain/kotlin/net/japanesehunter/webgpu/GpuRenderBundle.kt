@@ -40,13 +40,14 @@ import kotlin.reflect.KProperty
 context(device: GPUDevice)
 suspend inline fun buildRenderBundle(
   sampleCount: Int? = null,
+  depthStencilFormat: GPUTextureFormat? = null,
   cullMode: GPUCullMode? = null,
   label: String? = null,
   action: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): GPURenderBundle =
   GpuRenderBundleEncoder().run {
     action()
-    build(device, sampleCount, cullMode, label)
+    build(device, sampleCount, depthStencilFormat, cullMode, label)
   }
 
 class GpuRenderBundleEncoder
@@ -206,6 +207,7 @@ class GpuRenderBundleEncoder
     internal suspend fun build(
       device: GPUDevice,
       sampleCount: Int?,
+      depthStencilFormat: GPUTextureFormat?,
       cullMode: GPUCullMode?,
       label: String?,
     ): GPURenderBundle =
@@ -213,7 +215,7 @@ class GpuRenderBundleEncoder
         .createRenderBundleEncoder(
           GPURenderBundleEncoderDescriptor(
             colorFormats = targets.map { (_, format) -> format }.toTypedArray(),
-            depthStencilFormat = GPUTextureFormat.Depth24PlusStencil8,
+            depthStencilFormat = depthStencilFormat,
             sampleCount = sampleCount,
             label = label?.let { "$it-bundle-encoder" },
           ),

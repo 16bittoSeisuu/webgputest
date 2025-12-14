@@ -1,7 +1,5 @@
 
-import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
-import arrow.fx.coroutines.resource
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
 import kotlinx.browser.document
@@ -11,7 +9,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
-import net.japanesehunter.math.Angle
+import net.japanesehunter.math.Color
 import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
@@ -19,6 +17,7 @@ import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.Proportion
+import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.down
 import net.japanesehunter.math.east
@@ -34,41 +33,29 @@ import net.japanesehunter.math.z
 import net.japanesehunter.math.zero
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
-import net.japanesehunter.webgpu.GpuBuffer
-import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
-import net.japanesehunter.webgpu.buildRenderBundle
+import net.japanesehunter.webgpu.buildDrawCommand
 import net.japanesehunter.webgpu.canvasContext
 import net.japanesehunter.webgpu.createBufferAllocator
-import net.japanesehunter.webgpu.createMsaaTexture
 import net.japanesehunter.webgpu.interop.GPUAdapter
 import net.japanesehunter.webgpu.interop.GPUAddressMode
-import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUCanvasConfiguration
-import net.japanesehunter.webgpu.interop.GPUColor
-import net.japanesehunter.webgpu.interop.GPUCullMode
+import net.japanesehunter.webgpu.interop.GPUCommandEncoder
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUExtent3D
 import net.japanesehunter.webgpu.interop.GPUFilterMode
 import net.japanesehunter.webgpu.interop.GPUImageCopyExternalImage
 import net.japanesehunter.webgpu.interop.GPUImageCopyTextureTagged
-import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPUMipmapFilterMode
 import net.japanesehunter.webgpu.interop.GPUOrigin3D
-import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
-import net.japanesehunter.webgpu.interop.GPURenderPassDepthStencilAttachment
-import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
-import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPUSampler
 import net.japanesehunter.webgpu.interop.GPUSamplerDescriptor
-import net.japanesehunter.webgpu.interop.GPUStoreOp
 import net.japanesehunter.webgpu.interop.GPUTexture
 import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureDimension
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.GPUTextureUsage
-import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
@@ -78,7 +65,6 @@ import net.japanesehunter.worldcreate.QuadShape
 import net.japanesehunter.worldcreate.toGpuBuffer
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
-import kotlin.time.TimeMark
 
 val end = Job()
 
@@ -101,13 +87,8 @@ fun main() =
         debugPrintLimits()
         val cameraHud = createCameraDirectionHud()
         val cameraBuf = camera.toGpuBuffer().bind()
-        val depthStencil = createDepthStencilTexture().createView()
-        val msaaTexture = createMsaaTexture()
-        val renderBundle =
-          buildRenderBundle(
-            sampleCount = msaaTexture.sampleCount,
-            cullMode = GPUCullMode.Back,
-          ) {
+        val draw =
+          buildDrawCommand(clearColor = { Color.blue }) {
             val textureBuffer =
               createTexture(
                 "assets/vanilla/textures/doge.png",
@@ -171,9 +152,11 @@ fun main() =
           try {
             cameraHud.update(camera.currentDirection16())
             cameraBuf.update()
-            frame(view = msaaTexture.provide(), depthStencil) {
-              executeBundles(arrayOf(renderBundle))
+
+            gpuCommand {
+              draw.dispatch()
             }
+
             if (end.isCompleted) {
               done.complete()
               return
@@ -316,38 +299,6 @@ private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
     createImageBitmap(blob).await()
   }
 
-context(alloc: BufferAllocator)
-private fun createMaterialBuffer(): Resource<StorageGpuBuffer> {
-  val res =
-    alloc.static(
-      data = floatArrayOf(0f, 0f, 1f, 1f),
-      usage = GPUBufferUsage.Storage,
-      label = "Material Buffer",
-    )
-  return resource {
-    val buf = res.bind()
-    object : StorageGpuBuffer, GpuBuffer by buf {}
-  }
-}
-
-context(device: GPUDevice, canvas: CanvasContext)
-private fun createDepthStencilTexture(): GPUTexture {
-  val textureSize =
-    GPUExtent3D(
-      width = canvas.width,
-      height = canvas.height,
-      depthOrArrayLayers = 1,
-    )
-  val descriptor =
-    GPUTextureDescriptor(
-      size = textureSize,
-      sampleCount = 4,
-      format = GPUTextureFormat.Depth24PlusStencil8,
-      usage = GPUTextureUsage.RenderAttachment,
-    )
-  return device.createTexture(descriptor)
-}
-
 context(device: GPUDevice, coroutine: CoroutineScope)
 private fun createTexture(path: String): Deferred<GPUTexture> =
   coroutine.async {
@@ -396,56 +347,11 @@ private fun createSampler(): GPUSampler {
   return device.createSampler(descriptor)
 }
 
-context(device: GPUDevice, canvas: CanvasContext)
-private inline fun frame(
-  view: GPUTextureView? = null,
-  depthStencil: GPUTextureView? = null,
-  action: GPURenderPassEncoder.() -> Unit,
-) {
-  val surfaceTexture = canvas.getCurrentTexture()
+context(device: GPUDevice)
+private inline fun gpuCommand(action: GPUCommandEncoder.() -> Unit) {
   val commandEncoder = device.createCommandEncoder()
-  val renderPassEncoder =
-    commandEncoder.beginRenderPass(
-      GPURenderPassDescriptor(
-        colorAttachments =
-          arrayOf(
-            view?.let {
-              GPURenderPassColorAttachment(
-                view = view,
-                resolveTarget = surfaceTexture.createView(),
-                clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
-                loadOp = GPULoadOp.Clear,
-                storeOp = GPUStoreOp.Store,
-              )
-            } ?: GPURenderPassColorAttachment(
-              view = surfaceTexture.createView(),
-              clearValue = GPUColor(0.8, 0.8, 0.8, 1.0),
-              loadOp = GPULoadOp.Clear,
-              storeOp = GPUStoreOp.Store,
-            ),
-          ),
-        depthStencilAttachment =
-          depthStencil?.let {
-            GPURenderPassDepthStencilAttachment(
-              view = depthStencil,
-              depthClearValue = 1.0,
-              depthLoadOp = GPULoadOp.Clear,
-              depthStoreOp = GPUStoreOp.Store,
-              stencilLoadOp = GPULoadOp.Clear,
-              stencilStoreOp = GPUStoreOp.Store,
-            )
-          },
-      ),
-    )
-  renderPassEncoder.action()
-  renderPassEncoder.end()
+  commandEncoder.action()
   device.queue.submit(arrayOf(commandEncoder.finish()))
-}
-
-private fun TimeMark.rad(perSec: Angle): Angle {
-  val elapsed = this.elapsedNow()
-  val seconds = elapsed.inWholeMilliseconds / 1000.0
-  return perSec * seconds
 }
 
 private fun createCameraDirectionHud(): CameraDirectionHud {
