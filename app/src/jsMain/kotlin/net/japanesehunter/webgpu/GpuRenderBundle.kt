@@ -8,7 +8,9 @@ import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
 import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUBindingResource
 import net.japanesehunter.webgpu.interop.GPUColorTargetState
+import net.japanesehunter.webgpu.interop.GPUCompareFunction
 import net.japanesehunter.webgpu.interop.GPUCullMode
+import net.japanesehunter.webgpu.interop.GPUDepthStencilState
 import net.japanesehunter.webgpu.interop.GPUDevice
 import net.japanesehunter.webgpu.interop.GPUFragmentState
 import net.japanesehunter.webgpu.interop.GPUMultisampleState
@@ -211,6 +213,7 @@ class GpuRenderBundleEncoder
         .createRenderBundleEncoder(
           GPURenderBundleEncoderDescriptor(
             colorFormats = targets.map { (_, format) -> format }.toTypedArray(),
+            depthStencilFormat = GPUTextureFormat.Depth24PlusStencil8,
             sampleCount = sampleCount,
             label = label?.let { "$it-bundle-encoder" },
           ),
@@ -306,6 +309,12 @@ class GpuRenderBundleEncoder
           topology = GPUPrimitiveTopology.TriangleList,
           cullMode = cullMode,
         )
+      val depthStencilState =
+        GPUDepthStencilState(
+          depthWriteEnabled = true,
+          depthCompare = GPUCompareFunction.Less,
+          format = GPUTextureFormat.Depth24PlusStencil8,
+        )
       val multisampleState =
         GPUMultisampleState(count = sampleCount)
       return device
@@ -314,6 +323,7 @@ class GpuRenderBundleEncoder
             vertex = vertexState,
             fragment = fragmentState,
             primitive = primitiveState,
+            depthStencil = depthStencilState,
             multisample = multisampleState,
           ),
         ).await()

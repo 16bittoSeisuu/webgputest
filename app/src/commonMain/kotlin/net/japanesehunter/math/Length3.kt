@@ -238,6 +238,19 @@ fun MutableLength3(
  */
 fun MutableLength3.Companion.copyOf(copyFrom: Length3): MutableLength3 = MutableLength3(copyFrom.dx, copyFrom.dy, copyFrom.dz)
 
+/**
+ * Returns a new [ImmutableLength3] by scaling the given [Direction3] by the specified [Length].
+ *
+ * @param other The length to scale by.
+ * @return A new [ImmutableLength3] representing the scaled direction.
+ */
+operator fun Direction3.times(other: Length): ImmutableLength3 =
+  Length3(
+    dx = this.ux * other,
+    dy = this.uy * other,
+    dz = this.uz * other,
+  )
+
 // endregion
 
 // region arithmetic

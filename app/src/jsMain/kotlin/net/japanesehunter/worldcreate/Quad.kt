@@ -1,135 +1,116 @@
 package net.japanesehunter.worldcreate
 
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.resource
+import arrow.fx.coroutines.ResourceScope
 import net.japanesehunter.GpuVertexFormat
-import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Length
-import net.japanesehunter.math.Length3
 import net.japanesehunter.math.LengthUnit
-import net.japanesehunter.math.Point3
-import net.japanesehunter.math.Proportion
-import net.japanesehunter.math.cross
-import net.japanesehunter.math.meters
-import net.japanesehunter.math.minus
+import net.japanesehunter.math.plus
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.GpuBuffer
-import net.japanesehunter.webgpu.InstanceGpuBuffer
-import net.japanesehunter.webgpu.StorageGpuBuffer
+import net.japanesehunter.webgpu.IndexGpuBuffer
+import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
-import kotlin.math.roundToInt
+import net.japanesehunter.webgpu.interop.GPUIndexFormat
 
-context(alloc: BufferAllocator)
-fun List<Quad>.toGpuBuffer(): Resource<StorageGpuBuffer> {
-  val stride = 64
+context(alloc: BufferAllocator, resource: ResourceScope)
+suspend fun List<GreedyQuad>.toGpuBuffer(): Pair<VertexGpuBuffer, IndexGpuBuffer> {
+  val vertices =
+    map {
+      listOf(
+        it.shape.min + it.shape.v to (0f to 1f),
+        it.shape.max to (1f to 1f),
+        it.shape.min to (0f to 0f),
+        it.shape.min + it.shape.u to (1f to 0f),
+      )
+    }
+  val verticesDistinct =
+    vertices.flatten().toSet()
+  val vertexArray =
+    ByteArray(
+      verticesDistinct.size *
+        (
+          3 * Int.SIZE_BYTES +
+            3 * Float.SIZE_BYTES +
+            2 * Float.SIZE_BYTES
+        ),
+    )
+  val indexArray =
+    IntArray(vertices.size * 6)
+  var pos = 0
 
-  fun ByteArray.write(
-    offset: Int,
-    quad: Quad,
-  ) {
-    var pos = 0
+  fun ByteArray.writeFloatLe(value: Float) {
+    val bits = value.toRawBits()
+    this[pos++] = (bits and 0xFF).toByte()
+    this[pos++] = ((bits ushr 8) and 0xFF).toByte()
+    this[pos++] = ((bits ushr 16) and 0xFF).toByte()
+    this[pos++] = ((bits ushr 24) and 0xFF).toByte()
+  }
 
-    fun writeIntLe(value: Int) {
-      this[offset + pos + 0] = (value ushr 0 and 0xFF).toByte()
-      this[offset + pos + 1] = (value ushr 8 and 0xFF).toByte()
-      this[offset + pos + 2] = (value ushr 16 and 0xFF).toByte()
-      this[offset + pos + 3] = (value ushr 24 and 0xFF).toByte()
-      // Kotlin being too dumb
-      @Suppress("AssignedValueIsNeverRead")
-      pos += 4
+  fun ByteArray.writeIntLe(value: Int) {
+    this[pos++] = (value and 0xFF).toByte()
+    this[pos++] = ((value ushr 8) and 0xFF).toByte()
+    this[pos++] = ((value ushr 16) and 0xFF).toByte()
+    this[pos++] = ((value ushr 24) and 0xFF).toByte()
+  }
+
+  verticesDistinct.forEach { (vertex, uv) ->
+    fun Length.inWholeMeters(): Int = inWholeMeters.toInt()
+
+    fun Length.subMeterToFloat(): Float = (toDouble(LengthUnit.METER) - inWholeMeters).toFloat()
+
+    vertexArray.writeIntLe(vertex.x.inWholeMeters())
+    vertexArray.writeIntLe(vertex.y.inWholeMeters())
+    vertexArray.writeIntLe(vertex.z.inWholeMeters())
+    vertexArray.writeFloatLe(vertex.x.subMeterToFloat())
+    vertexArray.writeFloatLe(vertex.y.subMeterToFloat())
+    vertexArray.writeFloatLe(vertex.z.subMeterToFloat())
+    vertexArray.writeFloatLe(uv.first)
+    vertexArray.writeFloatLe(uv.second)
+  }
+  pos = 0
+  vertices.forEach { (v0, v1, v2, v3) ->
+    val v0Index = verticesDistinct.indexOf(v0)
+    val v1Index = verticesDistinct.indexOf(v1)
+    val v2Index = verticesDistinct.indexOf(v2)
+    val v3Index = verticesDistinct.indexOf(v3)
+    indexArray[pos++] = v0Index
+    indexArray[pos++] = v1Index
+    indexArray[pos++] = v2Index
+    indexArray[pos++] = v1Index
+    indexArray[pos++] = v3Index
+    indexArray[pos++] = v2Index
+  }
+  check(pos == indexArray.size)
+
+  val vBuf =
+    with(resource) {
+      alloc
+        .static(
+          data = vertexArray,
+          usage = GPUBufferUsage.Vertex,
+          label = "Triangle Vertex Buffer",
+        ).bind()
+    }
+  val iBuf =
+    with(resource) {
+      alloc
+        .static(
+          data = indexArray,
+          usage = GPUBufferUsage.Index,
+          label = "Triangle Index Buffer",
+        ).bind()
     }
 
-    fun writeFloatLe(value: Float) {
-      val intBits = value.toRawBits()
-      writeIntLe(intBits)
+  return object : VertexGpuBuffer, GpuBuffer by vBuf {
+    override val formats =
+      listOf(
+        GpuVertexFormat.Sint32x3, // block pos
+        GpuVertexFormat.Float32x3, // local pos
+        GpuVertexFormat.Float32x2, // uv
+      )
+  } to
+    object : IndexGpuBuffer, GpuBuffer by iBuf {
+      override val indexCount: Int = indexArray.size
+      override val indexFormat: GPUIndexFormat = GPUIndexFormat.Uint32
     }
-
-    val blockPosX = quad.pos.x.inWholeMeters
-    val blockPosY = quad.pos.y.inWholeMeters
-    val blockPosZ = quad.pos.z.inWholeMeters
-    val localPos = quad.pos - Length3(blockPosX.meters, blockPosY.meters, blockPosZ.meters)
-    val localPosX = localPos.x.toDouble(LengthUnit.METER).toFloat()
-    val localPosY = localPos.y.toDouble(LengthUnit.METER).toFloat()
-    val localPosZ = localPos.z.toDouble(LengthUnit.METER).toFloat()
-    val normalX = quad.normal.ux.toFloat()
-    val normalY = quad.normal.uy.toFloat()
-    val normalZ = quad.normal.uz.toFloat()
-    val tangentX = quad.tangent.ux.toFloat()
-    val tangentY = quad.tangent.uy.toFloat()
-    val tangentZ = quad.tangent.uz.toFloat()
-
-    fun Proportion.parse(): Int = (toDouble() * 255).roundToInt() and 0xFF
-    val ao = (
-      (quad.aoLeftBottom.parse() shl 0) or
-        ((quad.aoRightBottom.parse()) shl 8) or
-        ((quad.aoLeftTop.parse()) shl 16) or
-        ((quad.aoRightTop.parse()) shl 24)
-    )
-    val sizeUX = quad.sizeU.toDouble(LengthUnit.METER).toFloat()
-    val sizeVY = quad.sizeV.toDouble(LengthUnit.METER).toFloat()
-    // world_pos.x
-    writeIntLe(blockPosX.toInt())
-    // world_pos.y
-    writeIntLe(blockPosY.toInt())
-    // world_pos.z
-    writeIntLe(blockPosZ.toInt())
-    // quad_size.u
-    writeFloatLe(sizeUX)
-    // local_pos.x
-    writeFloatLe(localPosX)
-    // local_pos.y
-    writeFloatLe(localPosY)
-    // local_pos.z
-    writeFloatLe(localPosZ)
-    // quad_size.v
-    writeFloatLe(sizeVY)
-    // normal.x
-    writeFloatLe(normalX)
-    // normal.y
-    writeFloatLe(normalY)
-    // normal.z
-    writeFloatLe(normalZ)
-    // ao
-    writeIntLe(ao)
-    // tangent.x
-    writeFloatLe(tangentX)
-    // tangent.y
-    writeFloatLe(tangentY)
-    // tangent.z
-    writeFloatLe(tangentZ)
-    // mat_id
-    writeIntLe(quad.materialId)
-  }
-
-  val array = ByteArray(size * stride)
-  this.forEachIndexed { index, quad ->
-    array.write(index * stride, quad)
-  }
-  val res =
-    alloc.static(
-      data = array,
-      usage = GPUBufferUsage.Storage,
-      label = "Quad Instance Buffer",
-    )
-  return resource {
-    val buf = res.bind()
-    object : StorageGpuBuffer, GpuBuffer by buf {}
-  }
-}
-
-context(alloc: BufferAllocator)
-fun List<Quad>.toIndicesGpuBuffer(): Resource<InstanceGpuBuffer> {
-  val indices = IntArray(size) { it }
-  val res =
-    alloc.static(
-      data = indices,
-      usage = GPUBufferUsage.Vertex,
-      label = "Quad Indices Buffer",
-    )
-  return resource {
-    val buf = res.bind()
-    object : InstanceGpuBuffer, GpuBuffer by buf {
-      override val formats = listOf(GpuVertexFormat.Uint32)
-    }
-  }
 }

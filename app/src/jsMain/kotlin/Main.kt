@@ -20,18 +20,21 @@ import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.currentDirection16
-import net.japanesehunter.math.degrees
+import net.japanesehunter.math.down
 import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.north
 import net.japanesehunter.math.south
+import net.japanesehunter.math.up
+import net.japanesehunter.math.west
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
+import net.japanesehunter.math.zero
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.GpuBuffer
-import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.StorageGpuBuffer
 import net.japanesehunter.webgpu.UnsupportedAdapterException
 import net.japanesehunter.webgpu.UnsupportedBrowserException
@@ -54,6 +57,7 @@ import net.japanesehunter.webgpu.interop.GPULoadOp
 import net.japanesehunter.webgpu.interop.GPUMipmapFilterMode
 import net.japanesehunter.webgpu.interop.GPUOrigin3D
 import net.japanesehunter.webgpu.interop.GPURenderPassColorAttachment
+import net.japanesehunter.webgpu.interop.GPURenderPassDepthStencilAttachment
 import net.japanesehunter.webgpu.interop.GPURenderPassDescriptor
 import net.japanesehunter.webgpu.interop.GPURenderPassEncoder
 import net.japanesehunter.webgpu.interop.GPUSampler
@@ -68,14 +72,13 @@ import net.japanesehunter.webgpu.interop.GPUTextureView
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
-import net.japanesehunter.webgpu.u16
-import net.japanesehunter.worldcreate.Quad
+import net.japanesehunter.worldcreate.GreedyQuad
+import net.japanesehunter.worldcreate.MaterialKey
+import net.japanesehunter.worldcreate.QuadShape
 import net.japanesehunter.worldcreate.toGpuBuffer
-import net.japanesehunter.worldcreate.toIndicesGpuBuffer
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.ImageBitmap
 import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 
 val end = Job()
 
@@ -88,44 +91,23 @@ fun main() =
           nearFar = NearFar(0.1.meters, 128.meters),
           aspect = canvasAspect,
         ).apply {
+          x = 2.meters
+          y = 2.meters
           z = 2.meters
+          lookAt(Point3.zero)
           autoFit()
         }
-      val quads =
-        List(101) { x ->
-          List(101) { y ->
-            Quad(
-              pos =
-                Point3(
-                  x = (x - 50).meters,
-                  y = (y - 50).meters,
-                  z = 0.meters,
-                ),
-              normal = Direction3.south,
-              tangent = Direction3.east,
-              aoLeftBottom = Proportion.QUARTER,
-              aoRightBottom = Proportion.HALF,
-              aoLeftTop = Proportion.HALF,
-              aoRightTop = Proportion.ONE,
-              sizeU = 0.9.meters,
-              sizeV = 0.9.meters,
-              materialId = 0,
-            )
-          }
-        }.flatten()
-
       webgpuContext {
         debugPrintLimits()
-        val directionHud = createCameraDirectionHud()
+        val cameraHud = createCameraDirectionHud()
         val cameraBuf = camera.toGpuBuffer().bind()
+        val depthStencil = createDepthStencilTexture().createView()
         val msaaTexture = createMsaaTexture()
         val renderBundle =
           buildRenderBundle(
             sampleCount = msaaTexture.sampleCount,
             cullMode = GPUCullMode.Back,
           ) {
-            val indexBuffer = IndexGpuBuffer.u16(0, 1, 2, 1, 3, 2).bind()
-            val quadIndexBuffer = quads.toIndicesGpuBuffer().bind()
             val textureBuffer =
               createTexture(
                 "assets/vanilla/textures/doge.png",
@@ -142,30 +124,6 @@ fun main() =
                 pad1: f32,
               }
               
-              struct Quad {
-                block_pos: vec3i,     // 12
-                size_u: f32,          // 4
-                local_pos: vec3f,     // 12
-                size_v: f32,          // 4
-                normal: vec3f,        // 12
-                ao: u32,              // 4
-                tangent: vec3f,       // 12
-                mat_id: u32,          // 4
-              }
-              
-              struct Material {
-                uv_min: vec2f,
-                uv_max: vec2f,
-              }
-              
-              const corners =
-                array<vec2f, 4>(
-                  vec2f(-0.5, -0.5),
-                  vec2f(0.5, -0.5),
-                  vec2f(-0.5, 0.5),
-                  vec2f(0.5, 0.5),
-                );
-              
               const uvs =
                 array<vec2f, 4>(
                   vec2f(0.0, 1.0),
@@ -177,76 +135,43 @@ fun main() =
             }
 
             val uv by vsOut("vec2f")
-            val ao by vsOut("f32")
-            val matId by vsOut("u32", interpolation = "flat")
+
             val camera by cameraBuf.asUniform(type = "CameraUniform")
-            val quadsInst by quads.toGpuBuffer().bind().asStorage("array<Quad>")
-            val material by createMaterialBuffer().bind().asStorage("array<Material>")
             val texture by textureBuffer
             val samp by createSampler()
-            vertex(indexBuffer) {
-              val quadIndices by quadIndexBuffer
+
+            val (vBuf, iBuf) = quads.toGpuBuffer()
+            vertex(iBuf) {
+              val aBlockPos by vBuf
+              val aLocalPos by vBuf
+              val aUv by vBuf
               """
-              let quad = $quadsInst[$quadIndices];
-              
-              let normal = normalize(quad.normal);
-              let tangent = normalize(quad.tangent);
-              let bitangent = normalize(cross(normal, tangent));
-              let u_offset = corners[$vertexIndex].x * quad.size_u;
-              let v_offset = corners[$vertexIndex].y * quad.size_v;
-              
-              let relative_block_pos = quad.block_pos - camera.block_pos;
-              let relative_local_pos = quad.local_pos - camera.local_pos;
-              let relative_base_pos = 
-                vec3f(relative_block_pos) + relative_local_pos;
-              let relative_pos = 
-                relative_base_pos +
-                (tangent * u_offset) +
-                (bitangent * v_offset);
-              let camera_pos = camera.rotation * relative_pos;
-              $position = $camera.projection * vec4f(camera_pos, 1.0);
-              $uv = uvs[$vertexIndex];
-              $ao = f32((quad.ao >> ($vertexIndex * 8)) & 0xFF) / 255.0;
+              let relative_block_pos = vec3f($aBlockPos - $camera.block_pos);
+              let relative_local_pos = $aLocalPos - $camera.local_pos;
+              let relative_pos = relative_block_pos + relative_local_pos;
+              let pos = $camera.rotation * relative_pos;
+              $position = $camera.projection * vec4f(pos, 1.0);
+              $uv = $aUv;
               """
             }
             fragment {
               val out by canvas
               """
               
-              let material = $material[$matId];
-              let uv_scaled = 
-                mix(
-                  material.uv_min,
-                  material.uv_max,
-                  $uv,
-                );
-              let base_color = textureSample($texture, $samp, uv_scaled);
-              let color = vec4f(base_color.rgb * $ao, base_color.a);
+              let uv_interpolated = $uv;
+              let base_color = textureSample($texture, $samp, uv_interpolated);
+              let color = vec4f(base_color.rgb, base_color.a);
               $out = color;
               """
             }
           }
-        val time = TimeSource.Monotonic.markNow()
         val done = Job()
 
         fun loop() {
           try {
-            camera.x = 1.meters * time.rad(perSec = 15.0.degrees).sin()
-            camera.y = 1.meters * time.rad(perSec = 30.0.degrees).cos()
-            camera.z = 5.meters * time.rad(perSec = 10.0.degrees).cos()
-            val point =
-              run {
-                val rad = time.rad(perSec = 20.0.degrees)
-                Point3(
-                  x = 1.meters * rad.cos(),
-                  y = 1.meters * rad.sin(),
-                  z = 0.meters,
-                )
-              }
-            camera.lookAt(point)
-            directionHud.update(camera.currentDirection16())
+            cameraHud.update(camera.currentDirection16())
             cameraBuf.update()
-            frame(view = msaaTexture.provide()) {
+            frame(view = msaaTexture.provide(), depthStencil) {
               executeBundles(arrayOf(renderBundle))
             }
             if (end.isCompleted) {
@@ -405,6 +330,24 @@ private fun createMaterialBuffer(): Resource<StorageGpuBuffer> {
   }
 }
 
+context(device: GPUDevice, canvas: CanvasContext)
+private fun createDepthStencilTexture(): GPUTexture {
+  val textureSize =
+    GPUExtent3D(
+      width = canvas.width,
+      height = canvas.height,
+      depthOrArrayLayers = 1,
+    )
+  val descriptor =
+    GPUTextureDescriptor(
+      size = textureSize,
+      sampleCount = 4,
+      format = GPUTextureFormat.Depth24PlusStencil8,
+      usage = GPUTextureUsage.RenderAttachment,
+    )
+  return device.createTexture(descriptor)
+}
+
 context(device: GPUDevice, coroutine: CoroutineScope)
 private fun createTexture(path: String): Deferred<GPUTexture> =
   coroutine.async {
@@ -456,8 +399,8 @@ private fun createSampler(): GPUSampler {
 context(device: GPUDevice, canvas: CanvasContext)
 private inline fun frame(
   view: GPUTextureView? = null,
-  action: GPURenderPassEncoder.()
-  -> Unit,
+  depthStencil: GPUTextureView? = null,
+  action: GPURenderPassEncoder.() -> Unit,
 ) {
   val surfaceTexture = canvas.getCurrentTexture()
   val commandEncoder = device.createCommandEncoder()
@@ -481,6 +424,17 @@ private inline fun frame(
               storeOp = GPUStoreOp.Store,
             ),
           ),
+        depthStencilAttachment =
+          depthStencil?.let {
+            GPURenderPassDepthStencilAttachment(
+              view = depthStencil,
+              depthClearValue = 1.0,
+              depthLoadOp = GPULoadOp.Clear,
+              depthStoreOp = GPUStoreOp.Store,
+              stencilLoadOp = GPULoadOp.Clear,
+              stencilStoreOp = GPUStoreOp.Store,
+            )
+          },
       ),
     )
   renderPassEncoder.action()
@@ -545,6 +499,45 @@ context(canvas: CanvasContext)
 private fun MovableCamera.autoFit(): AutoCloseable =
   canvas.onResize {
     aspect = canvasAspect
+  }
+
+private val quads =
+  run {
+    fun quad(
+      min: Point3,
+      normal: Direction3,
+      tangent: Direction3,
+    ) = GreedyQuad(
+      shape =
+        QuadShape(
+          min = min,
+          normal = normal,
+          tangent = tangent,
+          sizeU = 1.meters,
+          sizeV = 1.meters,
+        ),
+      aoLeftBottom = Proportion.ONE,
+      aoRightBottom = Proportion.ONE,
+      aoLeftTop = Proportion.ONE,
+      aoRightTop = Proportion.ONE,
+      repeatU = 1,
+      repeatV = 1,
+      material = MaterialKey.vanilla("doge"),
+    )
+    listOf(
+      // UP
+      quad(Point3(0.meters, 1.meters, 0.meters), Direction3.up, Direction3.east),
+      // NORTH
+      quad(Point3(1.meters, 1.meters, 0.meters), Direction3.north, Direction3.west),
+      // EAST
+      quad(Point3(1.meters, 1.meters, 1.meters), Direction3.east, Direction3.north),
+      // SOUTH
+      quad(Point3(0.meters, 1.meters, 1.meters), Direction3.south, Direction3.east),
+      // WEST
+      quad(Point3(0.meters, 1.meters, 0.meters), Direction3.west, Direction3.south),
+      // BOTTOM
+      quad(Point3(1.meters, 0.meters, 0.meters), Direction3.down, Direction3.west),
+    )
   }
 
 // endregion
