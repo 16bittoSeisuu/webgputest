@@ -1,5 +1,6 @@
 package net.japanesehunter.worldcreate
 
+import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import kotlinx.browser.document
 import kotlinx.browser.window
@@ -19,6 +20,7 @@ import net.japanesehunter.math.setRotation
 import net.japanesehunter.math.translate
 import net.japanesehunter.math.up
 import net.japanesehunter.math.zero
+import net.japanesehunter.webgpu.CanvasContext
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
@@ -31,11 +33,77 @@ import kotlin.math.sign
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-class CameraNavigator(
+/**
+ * Installs a pointer-locked navigator that maps mouse movement and navigation keys to camera translation and rotation.
+ *
+ * Registers DOM listeners on the provided canvas and window, requests pointer lock on click when available, and must be called on the browser main thread.
+ * The returned navigator stays active until it is closed through the resource scope or manually.
+ *
+ * @param settings navigator input bindings and motion parameters.
+ * @return the installed navigator instance.
+ */
+context(resource: ResourceScope, canvas: CanvasContext)
+fun MovableCamera.navigator(settings: CameraNavigator.Settings = CameraNavigator.Settings()): CameraNavigator =
+  resource.install(
+    CameraNavigator(
+      canvas = canvas.canvas,
+      camera = this,
+      settings = settings,
+    ),
+  )
+
+/**
+ * Provides pointer-locked first-person navigation for a movable camera using keyboard and mouse input.
+ *
+ * Listeners remain registered on the canvas, document, and window while the instance is alive, and pointer lock is requested when the canvas is clicked and available.
+ * The navigator keeps yaw and pitch within the configured limits, applying rotation and translation to the provided camera on update.
+ * Implementations are not thread-safe and must run on the browser main thread where DOM access is allowed.
+ *
+ * @param canvas HTML canvas that receives clicks and holds pointer lock.
+ * @param camera target camera mutated by navigation updates.
+ * @param settings mutable navigation bindings and motion parameters.
+ */
+class CameraNavigator internal constructor(
   private val canvas: HTMLCanvasElement,
   private val camera: MovableCamera,
   private val settings: Settings = Settings(),
 ) : AutoCloseable {
+  /**
+   * Holds mutable input bindings and movement parameters for the camera navigator.
+   *
+   * Key codes follow the `KeyboardEvent.code` values. Speeds are expressed in meters per second, and the pitch limit must remain below a right angle to avoid gimbal lock.
+   * Settings are not thread-safe and are intended for use on the browser main thread.
+   *
+   * @param forwardKey key code used for forward movement.
+   * @param backwardKey key code used for backward movement.
+   * @param leftKey key code used for strafing left.
+   * @param rightKey key code used for strafing right.
+   * @param upKey key code used for ascending.
+   * @param downKey key code used for descending.
+   * @param mouseSensitivityDegPerDot mouse sensitivity in degrees per pointer movement dot.
+   *
+   *   range: mouseSensitivityDegPerDot >= 0.0
+   *
+   *   NaN: treated as invalid and rejected
+   *
+   *   Infinity: treated as invalid and rejected
+   * @param horizontalSpeedMetersPerSecond planar movement speed in meters per second.
+   *
+   *   range: horizontalSpeedMetersPerSecond >= 0.0
+   *
+   *   NaN: treated as invalid and rejected
+   *
+   *   Infinity: treated as invalid and rejected
+   * @param verticalSpeedMetersPerSecond vertical movement speed in meters per second.
+   *
+   *   range: verticalSpeedMetersPerSecond >= 0.0
+   *
+   *   NaN: treated as invalid and rejected
+   *
+   *   Infinity: treated as invalid and rejected
+   * @param maxPitch maximum absolute pitch angle allowed before clamping.
+   *   range: 0 <= maxPitch <= 90 degrees
+   */
   data class Settings(
     var forwardKey: String = "KeyW",
     var backwardKey: String = "KeyS",
@@ -136,6 +204,11 @@ class CameraNavigator(
     registerListeners()
   }
 
+  /**
+   * Advances navigator state by applying accumulated mouse movement and active key input to the camera.
+   *
+   * Returns immediately when pointer lock is not active. Uses the elapsed time since the previous call to scale translation, clamps pitch within the configured limit, and updates the camera rotation and position in place.
+   */
   fun update() {
     val now = window.performance.now()
     val deltaSeconds = ((now - lastTimestamp) / 1000.0).coerceAtLeast(0.0)

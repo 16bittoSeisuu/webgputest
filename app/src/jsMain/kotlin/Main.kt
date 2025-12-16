@@ -2,7 +2,6 @@
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.github.oshai.kotlinlogging.Level
-import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -59,14 +58,13 @@ import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.worldcreate.CameraNavigator
-import net.japanesehunter.worldcreate.CameraNavigator.Settings
 import net.japanesehunter.worldcreate.GreedyQuad
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.QuadShape
 import net.japanesehunter.worldcreate.hud.CameraHud
-import net.japanesehunter.worldcreate.hud.NavigatorControlsHud
+import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
+import net.japanesehunter.worldcreate.navigator
 import net.japanesehunter.worldcreate.toGpuBuffer
-import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.ImageBitmap
 
 val end = Job()
@@ -86,14 +84,10 @@ fun main() =
           lookAt(Point3.zero)
           autoFit()
         }
-      val navigatorSettings = Settings()
-      val navigator = CameraNavigator(currentCanvasElement(), camera, navigatorSettings)
-      val controls = NavigatorControlsHud(navigatorSettings)
       val cameraHud = CameraHud()
-      onClose {
-        controls.close()
-        navigator.close()
-      }
+      val navigatorSettings = CameraNavigator.Settings()
+      val navigator = camera.navigator(navigatorSettings)
+      showNavigatorControlsHud(navigatorSettings)
       webgpuContext {
         debugPrintLimits()
         val cameraBuf = camera.toGpuBuffer().bind()
@@ -369,9 +363,6 @@ private val logger = logger("Main")
 
 context(canvas: CanvasContext)
 private val canvasAspect get() = canvas.width.toDouble() / canvas.height
-
-context(canvas: CanvasContext)
-private fun currentCanvasElement(): HTMLCanvasElement = canvas.canvas
 
 context(canvas: CanvasContext)
 private fun MovableCamera.autoFit(): AutoCloseable =

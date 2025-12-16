@@ -1,5 +1,6 @@
 package net.japanesehunter.worldcreate.hud
 
+import arrow.fx.coroutines.ResourceScope
 import kotlinx.browser.document
 import kotlinx.browser.window
 import net.japanesehunter.worldcreate.CameraNavigator.Settings
@@ -10,12 +11,29 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 
 /**
+ * Shows a heads-up display that lets users edit navigator key bindings and pointer sensitivity in place.
+ *
+ * The HUD mutates the provided settings instance directly in response to user input, so changes take effect immediately for the active navigator.
+ * It must be invoked on the browser main thread because it manipulates the DOM.
+ *
+ * @param settings mutable navigator configuration that will be updated when controls change.
+ * @return the installed HUD resource.
+ */
+context(resource: ResourceScope)
+fun showNavigatorControlsHud(settings: Settings): NavigatorControlsHud =
+  resource.install(
+    NavigatorControlsHud(
+      settings = settings,
+    ),
+  )
+
+/**
  * Represents a heads-up display that exposes camera navigator controls for key bindings and sensitivity.
  *
+ * The HUD writes user selections back into the supplied settings instance, ensuring live updates for the active navigator.
  * The container remains attached to the document body while the instance is alive, and it must be used on the browser main thread because it manipulates the DOM directly.
- * @param settings navigator configuration that is mutated in response to user interaction.
  */
-class NavigatorControlsHud(
+class NavigatorControlsHud internal constructor(
   private val settings: Settings,
 ) : AutoCloseable {
   private val container: HTMLDivElement =
