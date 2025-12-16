@@ -7,7 +7,9 @@ import kotlinx.io.writeFloatLe
 import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.Length
+import net.japanesehunter.math.Length3
 import net.japanesehunter.math.LengthUnit
+import net.japanesehunter.math.meters
 import net.japanesehunter.math.plus
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.GpuBuffer
@@ -17,15 +19,30 @@ import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
 
 context(alloc: BufferAllocator, resource: ResourceScope)
-suspend fun List<MaterialQuad>.toGpuBuffer(): Pair<VertexGpuBuffer, IndexGpuBuffer> {
+suspend fun List<List<List<BlockState>>>.toGpuBuffer(): Pair<
+  VertexGpuBuffer,
+  IndexGpuBuffer,
+> {
   val vertices =
-    map {
-      listOf(
-        it.min + it.v to (0f to 1f),
-        it.max to (1f to 1f),
-        it.min to (0f to 0f),
-        it.min + it.u to (1f to 0f),
-      )
+    flatMapIndexed { x, plane ->
+      plane.flatMapIndexed { y, line ->
+        line.flatMapIndexed { z, block ->
+          val offset =
+            Length3(
+              dx = x.meters,
+              dy = y.meters,
+              dz = z.meters,
+            )
+          block.quads.map { quad ->
+            listOf(
+              quad.min + quad.v + offset to (0f to 1f),
+              quad.max + offset to (1f to 1f),
+              quad.min + offset to (0f to 0f),
+              quad.min + quad.u + offset to (1f to 0f),
+            )
+          }
+        }
+      }
     }
   val verticesDistinct =
     vertices.flatten().toSet()

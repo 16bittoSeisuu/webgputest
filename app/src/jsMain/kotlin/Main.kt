@@ -9,22 +9,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Color
-import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
-import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
-import net.japanesehunter.math.down
-import net.japanesehunter.math.east
 import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.north
-import net.japanesehunter.math.south
-import net.japanesehunter.math.up
-import net.japanesehunter.math.west
 import net.japanesehunter.math.x
 import net.japanesehunter.math.y
 import net.japanesehunter.math.z
@@ -57,9 +49,11 @@ import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
+import net.japanesehunter.worldcreate.BlockState
 import net.japanesehunter.worldcreate.CameraNavigator
+import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
-import net.japanesehunter.worldcreate.MaterialQuad
+import net.japanesehunter.worldcreate.World
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
 import net.japanesehunter.worldcreate.navigator
@@ -124,7 +118,7 @@ fun main() =
             val texture by textureBuffer
             val samp by createSampler()
 
-            val (vBuf, iBuf) = quads.toGpuBuffer()
+            val (vBuf, iBuf) = chunk.toGpuBuffer()
             vertex(iBuf) {
               val aBlockPos by vBuf
               val aLocalPos by vBuf
@@ -369,38 +363,21 @@ private fun MovableCamera.autoFit(): AutoCloseable =
     aspect = canvasAspect
   }
 
-private val quads =
+private val chunk =
   run {
-    fun quad(
-      min: Point3,
-      normal: Direction3,
-      tangent: Direction3,
-    ) = MaterialQuad(
-      min = min,
-      normal = normal,
-      tangent = tangent,
-      sizeU = 1.meters,
-      sizeV = 1.meters,
-      aoLeftBottom = Proportion.ONE,
-      aoRightBottom = Proportion.ONE,
-      aoLeftTop = Proportion.ONE,
-      aoRightTop = Proportion.ONE,
-      material = MaterialKey.vanilla("doge"),
-    )
-    listOf(
-      // UP
-      quad(Point3(0.meters, 1.meters, 0.meters), Direction3.up, Direction3.east),
-      // NORTH
-      quad(Point3(1.meters, 1.meters, 0.meters), Direction3.north, Direction3.west),
-      // EAST
-      quad(Point3(1.meters, 1.meters, 1.meters), Direction3.east, Direction3.north),
-      // SOUTH
-      quad(Point3(0.meters, 1.meters, 1.meters), Direction3.south, Direction3.east),
-      // WEST
-      quad(Point3(0.meters, 1.meters, 0.meters), Direction3.west, Direction3.south),
-      // BOTTOM
-      quad(Point3(1.meters, 0.meters, 0.meters), Direction3.down, Direction3.west),
-    )
+    val air = BlockState.Air
+    val dirt = FullBlockState(MaterialKey.vanilla("doge"))
+    List(World.CHUNK_LENGTH_BLOCKS) {
+      List(World.CHUNK_LENGTH_BLOCKS) { y ->
+        List(World.CHUNK_LENGTH_BLOCKS) {
+          if (y == 0) {
+            dirt
+          } else {
+            air
+          }
+        }
+      }
+    }
   }
 
 // endregion
