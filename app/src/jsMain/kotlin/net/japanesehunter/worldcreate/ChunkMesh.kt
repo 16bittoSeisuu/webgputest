@@ -24,21 +24,36 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   IndexGpuBuffer,
 > {
   val world = this
-  val vertexIndices = LinkedHashMap<Pair<Point3, Pair<Float, Float>>, Int>()
-  val vertices = mutableListOf<Pair<Point3, Pair<Float, Float>>>()
-  val indexList = mutableListOf<Int>()
+  val vertexBytes = Buffer()
+  val indexBytes = Buffer()
+  var vertexCount = 0
 
-  fun indexFor(
+  fun appendVertex(
     vertex: Point3,
     uv: Pair<Float, Float>,
   ): Int {
-    val key = vertex to uv
-    val existing = vertexIndices[key]
-    if (existing != null) return existing
-    val newIndex = vertices.size
-    vertexIndices[key] = newIndex
-    vertices.add(key)
-    return newIndex
+    val mx = vertex.x.toDouble(LengthUnit.METER)
+    val my = vertex.y.toDouble(LengthUnit.METER)
+    val mz = vertex.z.toDouble(LengthUnit.METER)
+
+    val wholeX = mx.toInt()
+    val wholeY = my.toInt()
+    val wholeZ = mz.toInt()
+
+    val subX = (mx - wholeX).toFloat()
+    val subY = (my - wholeY).toFloat()
+    val subZ = (mz - wholeZ).toFloat()
+
+    vertexBytes.writeIntLe(wholeX)
+    vertexBytes.writeIntLe(wholeY)
+    vertexBytes.writeIntLe(wholeZ)
+    vertexBytes.writeFloatLe(subX)
+    vertexBytes.writeFloatLe(subY)
+    vertexBytes.writeFloatLe(subZ)
+    vertexBytes.writeFloatLe(uv.first)
+    vertexBytes.writeFloatLe(uv.second)
+
+    return vertexCount++
   }
 
   var x = 0
@@ -91,16 +106,19 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
         val v1 = quad.max + offset
         val v2 = quad.min + offset
         val v3 = quad.min + quad.u + offset
-        val i0 = indexFor(v0, 0f to 1f)
-        val i1 = indexFor(v1, 1f to 1f)
-        val i2 = indexFor(v2, 0f to 0f)
-        val i3 = indexFor(v3, 1f to 0f)
-        indexList.add(i0)
-        indexList.add(i1)
-        indexList.add(i2)
-        indexList.add(i1)
-        indexList.add(i3)
-        indexList.add(i2)
+
+        val base = vertexCount
+        appendVertex(v0, 0f to 1f)
+        appendVertex(v1, 1f to 1f)
+        appendVertex(v2, 0f to 0f)
+        appendVertex(v3, 1f to 0f)
+
+        indexBytes.writeIntLe(base)
+        indexBytes.writeIntLe(base + 1)
+        indexBytes.writeIntLe(base + 2)
+        indexBytes.writeIntLe(base + 1)
+        indexBytes.writeIntLe(base + 3)
+        indexBytes.writeIntLe(base + 2)
       }
     }
   for (plane in world) {
@@ -118,34 +136,8 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     x++
   }
 
-  val bytes = Buffer()
-  vertices.forEach { (vertex, uv) ->
-    val mx = vertex.x.toDouble(LengthUnit.METER)
-    val my = vertex.y.toDouble(LengthUnit.METER)
-    val mz = vertex.z.toDouble(LengthUnit.METER)
-
-    val wholeX = mx.toInt()
-    val wholeY = my.toInt()
-    val wholeZ = mz.toInt()
-
-    val subX = (mx - wholeX).toFloat()
-    val subY = (my - wholeY).toFloat()
-    val subZ = (mz - wholeZ).toFloat()
-
-    bytes.writeIntLe(wholeX)
-    bytes.writeIntLe(wholeY)
-    bytes.writeIntLe(wholeZ)
-    bytes.writeFloatLe(subX)
-    bytes.writeFloatLe(subY)
-    bytes.writeFloatLe(subZ)
-    bytes.writeFloatLe(uv.first)
-    bytes.writeFloatLe(uv.second)
-  }
-  val vertexData = bytes.readByteString()
-  indexList.forEach { index ->
-    bytes.writeIntLe(index)
-  }
-  val indexData = bytes.readByteString()
+  val vertexData = vertexBytes.readByteString()
+  val indexData = indexBytes.readByteString()
 
   val vBuf =
     with(resource) {
