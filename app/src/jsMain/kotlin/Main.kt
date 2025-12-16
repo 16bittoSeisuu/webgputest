@@ -58,9 +58,8 @@ import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.worldcreate.CameraNavigator
-import net.japanesehunter.worldcreate.GreedyQuad
 import net.japanesehunter.worldcreate.MaterialKey
-import net.japanesehunter.worldcreate.QuadShape
+import net.japanesehunter.worldcreate.MaterialQuad
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
 import net.japanesehunter.worldcreate.navigator
@@ -376,21 +375,16 @@ private val quads =
       min: Point3,
       normal: Direction3,
       tangent: Direction3,
-    ) = GreedyQuad(
-      shape =
-        QuadShape(
-          min = min,
-          normal = normal,
-          tangent = tangent,
-          sizeU = 1.meters,
-          sizeV = 1.meters,
-        ),
+    ) = MaterialQuad(
+      min = min,
+      normal = normal,
+      tangent = tangent,
+      sizeU = 1.meters,
+      sizeV = 1.meters,
       aoLeftBottom = Proportion.ONE,
       aoRightBottom = Proportion.ONE,
       aoLeftTop = Proportion.ONE,
       aoRightTop = Proportion.ONE,
-      repeatU = 1,
-      repeatV = 1,
       material = MaterialKey.vanilla("doge"),
     )
     listOf(

@@ -9,44 +9,40 @@ import net.japanesehunter.math.cross
 import net.japanesehunter.math.plus
 import net.japanesehunter.math.times
 
-class GreedyQuad(
-  val shape: QuadShape,
+class MaterialQuad(
+  min: Point3,
+  normal: Direction3,
+  tangent: Direction3,
+  sizeU: Length,
+  sizeV: Length,
   val aoLeftBottom: Proportion,
   val aoRightBottom: Proportion,
   val aoLeftTop: Proportion,
   val aoRightTop: Proportion,
-  val repeatU: Int,
-  val repeatV: Int,
   val material: MaterialKey,
-) {
-  fun toTriangles(): Pair<GreedyTriangle, GreedyTriangle> {
-    val v0 = shape.min
-    val v1 = shape.min + shape.u
-    val v2 = shape.min + shape.v
-    val v3 = shape.max
+) : Quad(min, normal, tangent, sizeU, sizeV) {
+  fun toTriangles(): Pair<MaterialTriangle, MaterialTriangle> {
+    val v0 = min
+    val v1 = min + u
+    val v2 = min + v
+    val v3 = max
 
-    return GreedyTriangle(
-      shape = Triangle(v0, v1, v2),
-      aoV0 = aoLeftBottom,
-      aoV1 = aoRightBottom,
-      aoV2 = aoLeftTop,
-      repeatU = repeatU,
-      repeatV = repeatV,
+    return MaterialTriangle(
+      v0 = v0 to aoLeftBottom,
+      v1 = v1 to aoRightBottom,
+      v2 = v2 to aoLeftTop,
       material = material,
     ) to
-      GreedyTriangle(
-        shape = Triangle(v2, v1, v3),
-        aoV0 = aoLeftTop,
-        aoV1 = aoRightBottom,
-        aoV2 = aoRightTop,
-        repeatU = repeatU,
-        repeatV = repeatV,
+      MaterialTriangle(
+        v0 = v1 to aoLeftTop,
+        v1 = v3 to aoRightBottom,
+        v2 = v2 to aoRightTop,
         material = material,
       )
   }
 }
 
-data class QuadShape(
+open class Quad(
   val min: Point3,
   val normal: Direction3,
   val tangent: Direction3,

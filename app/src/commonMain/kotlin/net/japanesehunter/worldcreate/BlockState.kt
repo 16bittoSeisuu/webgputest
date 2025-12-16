@@ -1,22 +1,22 @@
 package net.japanesehunter.worldcreate
 
 interface BlockState {
-  val quads: List<QuadShape>
+  val quads: List<Quad>
 
   fun isOpaque(face: BlockFace): Boolean
 }
 
 open class FullBlockState(
-  top: QuadShape,
-  north: QuadShape,
-  east: QuadShape,
-  south: QuadShape,
-  west: QuadShape,
-  bottom: QuadShape,
+  top: Quad,
+  north: Quad,
+  east: Quad,
+  south: Quad,
+  west: Quad,
+  bottom: Quad,
 ) : BlockState {
-  constructor(face: QuadShape) : this(face, face, face, face, face, face)
+  constructor(face: Quad) : this(face, face, face, face, face, face)
 
-  constructor(top: QuadShape, side: QuadShape, bottom: QuadShape) : this(
+  constructor(top: Quad, side: Quad, bottom: Quad) : this(
     top,
     side,
     side,
@@ -25,7 +25,7 @@ open class FullBlockState(
     bottom,
   )
 
-  override val quads: List<QuadShape> = listOf(top, north, east, south, west, bottom)
+  override val quads: List<Quad> = listOf(top, north, east, south, west, bottom)
 
   override fun isOpaque(face: BlockFace): Boolean = true
 }

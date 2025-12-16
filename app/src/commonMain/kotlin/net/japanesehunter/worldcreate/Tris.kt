@@ -8,17 +8,18 @@ import net.japanesehunter.math.minus
 import net.japanesehunter.math.toDirection
 import net.japanesehunter.math.unaryMinus
 
-class GreedyTriangle(
-  val shape: Triangle,
-  val aoV0: Proportion,
-  val aoV1: Proportion,
-  val aoV2: Proportion,
-  val repeatU: Int,
-  val repeatV: Int,
+class MaterialTriangle(
+  v0: Pair<Point3, Proportion>,
+  v1: Pair<Point3, Proportion>,
+  v2: Pair<Point3, Proportion>,
   val material: MaterialKey,
-)
+) : Triangle(v0.first, v1.first, v2.first) {
+  val aoV0: Proportion = v0.second
+  val aoV1: Proportion = v1.second
+  val aoV2: Proportion = v2.second
+}
 
-data class Triangle(
+open class Triangle(
   val v0: Point3,
   val v1: Point3,
   val v2: Point3,

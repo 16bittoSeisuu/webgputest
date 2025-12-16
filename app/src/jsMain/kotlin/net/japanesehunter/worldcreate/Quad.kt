@@ -17,14 +17,14 @@ import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
 
 context(alloc: BufferAllocator, resource: ResourceScope)
-suspend fun List<GreedyQuad>.toGpuBuffer(): Pair<VertexGpuBuffer, IndexGpuBuffer> {
+suspend fun List<MaterialQuad>.toGpuBuffer(): Pair<VertexGpuBuffer, IndexGpuBuffer> {
   val vertices =
     map {
       listOf(
-        it.shape.min + it.shape.v to (0f to 1f),
-        it.shape.max to (1f to 1f),
-        it.shape.min to (0f to 0f),
-        it.shape.min + it.shape.u to (1f to 0f),
+        it.min + it.v to (0f to 1f),
+        it.max to (1f to 1f),
+        it.min to (0f to 0f),
+        it.min + it.u to (1f to 0f),
       )
     }
   val verticesDistinct =
