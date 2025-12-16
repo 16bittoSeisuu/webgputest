@@ -1,10 +1,6 @@
 package net.japanesehunter.worldcreate
 
 import arrow.fx.coroutines.ResourceScope
-import kotlinx.io.Buffer
-import kotlinx.io.readByteString
-import kotlinx.io.writeFloatLe
-import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.webgpu.BufferAllocator
@@ -27,8 +23,32 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   val faceOpposites = Array(faces.size) { i -> faces[i].opposite() }
   val faceBits = IntArray(faces.size) { i -> 1 shl i }
 
-  val vertexBytes = Buffer()
-  val indexBytes = Buffer()
+  class IntWriter(
+    initialCapacity: Int,
+  ) {
+    private var buf = IntArray(initialCapacity)
+    var size: Int = 0
+      private set
+
+    fun write(value: Int) {
+      val idx = size
+      if (idx == buf.size) {
+        buf = buf.copyOf(maxOf(16, buf.size * 2))
+      }
+      buf[idx] = value
+      size = idx + 1
+    }
+
+    fun toArray(): IntArray =
+      if (size == buf.size) {
+        buf
+      } else {
+        buf.copyOf(size)
+      }
+  }
+
+  val vertexInts = IntWriter(initialCapacity = 8 * 1024)
+  val indexInts = IntWriter(initialCapacity = 6 * 1024)
   var vertexCount = 0
   val nanosPerMeter = LengthUnit.METER.nanometersPerUnit.toInt()
   val nanosToMeters = 1e-9f
@@ -40,7 +60,8 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     localXNanometers: Int,
     localYNanometers: Int,
     localZNanometers: Int,
-    uv: Pair<Float, Float>,
+    uvX: Float,
+    uvY: Float,
   ): Int {
     var wholeX = blockX
     var wholeY = blockY
@@ -84,14 +105,14 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     val subY = subYNanometers.toFloat() * nanosToMeters
     val subZ = subZNanometers.toFloat() * nanosToMeters
 
-    vertexBytes.writeIntLe(wholeX)
-    vertexBytes.writeIntLe(wholeY)
-    vertexBytes.writeIntLe(wholeZ)
-    vertexBytes.writeFloatLe(subX)
-    vertexBytes.writeFloatLe(subY)
-    vertexBytes.writeFloatLe(subZ)
-    vertexBytes.writeFloatLe(uv.first)
-    vertexBytes.writeFloatLe(uv.second)
+    vertexInts.write(wholeX)
+    vertexInts.write(wholeY)
+    vertexInts.write(wholeZ)
+    vertexInts.write(subX.toRawBits())
+    vertexInts.write(subY.toRawBits())
+    vertexInts.write(subZ.toRawBits())
+    vertexInts.write(uvX.toRawBits())
+    vertexInts.write(uvY.toRawBits())
 
     return vertexCount++
   }
@@ -170,17 +191,17 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
         val y3 = minY + uY
         val z3 = minZ + uZ
 
-        val i0 = appendVertex(x, y, z, x0, y0, z0, 0f to 1f)
-        val i1 = appendVertex(x, y, z, x1, y1, z1, 1f to 1f)
-        val i2 = appendVertex(x, y, z, x2, y2, z2, 0f to 0f)
-        val i3 = appendVertex(x, y, z, x3, y3, z3, 1f to 0f)
+        val i0 = appendVertex(x, y, z, x0, y0, z0, 0f, 1f)
+        val i1 = appendVertex(x, y, z, x1, y1, z1, 1f, 1f)
+        val i2 = appendVertex(x, y, z, x2, y2, z2, 0f, 0f)
+        val i3 = appendVertex(x, y, z, x3, y3, z3, 1f, 0f)
 
-        indexBytes.writeIntLe(i0)
-        indexBytes.writeIntLe(i1)
-        indexBytes.writeIntLe(i2)
-        indexBytes.writeIntLe(i1)
-        indexBytes.writeIntLe(i3)
-        indexBytes.writeIntLe(i2)
+        indexInts.write(i0)
+        indexInts.write(i1)
+        indexInts.write(i2)
+        indexInts.write(i1)
+        indexInts.write(i3)
+        indexInts.write(i2)
       }
     }
   for (plane in world) {
@@ -198,8 +219,8 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     x++
   }
 
-  val vertexData = vertexBytes.readByteString()
-  val indexData = indexBytes.readByteString()
+  val vertexData = vertexInts.toArray()
+  val indexData = indexInts.toArray()
 
   val vBuf =
     with(resource) {
@@ -229,7 +250,7 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
       )
   } to
     object : IndexGpuBuffer, GpuBuffer by iBuf {
-      override val indexCount: Int = indexData.size / Int.SIZE_BYTES
+      override val indexCount: Int = indexData.size
       override val indexFormat: GPUIndexFormat = GPUIndexFormat.Uint32
     }
 }
