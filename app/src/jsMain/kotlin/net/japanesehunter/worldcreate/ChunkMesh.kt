@@ -23,32 +23,74 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   VertexGpuBuffer,
   IndexGpuBuffer,
 > {
-  val vertices =
-    flatMapIndexed { x, plane ->
-      plane.flatMapIndexed { y, line ->
-        line.flatMapIndexed { z, block ->
-          val offset =
-            Length3(
-              dx = x.meters,
-              dy = y.meters,
-              dz = z.meters,
-            )
-          block.quads.map { quad ->
-            listOf(
-              quad.min + quad.v + offset to (0f to 1f),
-              quad.max + offset to (1f to 1f),
-              quad.min + offset to (0f to 0f),
-              quad.min + quad.u + offset to (1f to 0f),
-            )
+  val world = this
+  val quads =
+    buildList {
+      var x = 0
+      var y = 0
+      var z = 0
+      val requiredOpaqueNeighbors = mutableSetOf<BlockFace>()
+      val actualOpaqueNeighbors = mutableSetOf<BlockFace>()
+
+      fun setNeighborOpaqueFaces() {
+        actualOpaqueNeighbors.clear()
+        for (face in BlockFace.entries) {
+          val nx = x + face.normal.ux.toInt()
+          val ny = y + face.normal.uy.toInt()
+          val nz = z + face.normal.uz.toInt()
+          val neighbor = world.getOrNull(nx)?.getOrNull(ny)?.getOrNull(nz)
+          if (neighbor?.isOpaque(face.opposite()) == true) {
+            actualOpaqueNeighbors.add(face)
           }
         }
       }
+
+      val sink =
+        QuadSink { quad, cullReq ->
+          requiredOpaqueNeighbors.clear()
+          QuadSink
+            .OpaqueFaceSink {
+              requiredOpaqueNeighbors.add(it)
+            }.cullReq()
+          setNeighborOpaqueFaces()
+          val shouldCull =
+            actualOpaqueNeighbors.containsAll(requiredOpaqueNeighbors)
+
+          if (!shouldCull) {
+            val offset = Length3(x.meters, y.meters, z.meters)
+            val v0 = quad.min + quad.v + offset
+            val v1 = quad.max + offset
+            val v2 = quad.min + offset
+            val v3 = quad.min + quad.u + offset
+            add(
+              listOf(
+                v0 to (0f to 1f),
+                v1 to (1f to 1f),
+                v2 to (0f to 0f),
+                v3 to (1f to 0f),
+              ),
+            )
+          }
+        }
+      for (plane in world) {
+        for (line in plane) {
+          for (block in line) {
+            with(block) {
+              sink.emitQuads()
+            }
+            z++
+          }
+          z = 0
+          y++
+        }
+        y = 0
+        x++
+      }
     }
-  val verticesDistinct =
-    vertices.flatten().toSet()
   val bytes = Buffer()
 
-  verticesDistinct.forEach { (vertex, uv) ->
+  val vertices = quads.flatten().toSet()
+  vertices.forEach { (vertex, uv) ->
     fun Length.inWholeMeters(): Int = inWholeMeters.toInt()
 
     fun Length.subMeterToFloat(): Float = (toDouble(LengthUnit.METER) - inWholeMeters).toFloat()
@@ -63,11 +105,11 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     bytes.writeFloatLe(uv.second)
   }
   val vertexData = bytes.readByteString()
-  vertices.forEach { (v0, v1, v2, v3) ->
-    val v0Index = verticesDistinct.indexOf(v0)
-    val v1Index = verticesDistinct.indexOf(v1)
-    val v2Index = verticesDistinct.indexOf(v2)
-    val v3Index = verticesDistinct.indexOf(v3)
+  quads.forEach { (v0, v1, v2, v3) ->
+    val v0Index = vertices.indexOf(v0)
+    val v1Index = vertices.indexOf(v1)
+    val v2Index = vertices.indexOf(v2)
+    val v3Index = vertices.indexOf(v3)
     bytes.writeIntLe(v0Index)
     bytes.writeIntLe(v1Index)
     bytes.writeIntLe(v2Index)

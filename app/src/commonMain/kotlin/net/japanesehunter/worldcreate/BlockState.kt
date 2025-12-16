@@ -3,21 +3,21 @@ package net.japanesehunter.worldcreate
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.Proportion
-import net.japanesehunter.math.down
 import net.japanesehunter.math.east
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.north
 import net.japanesehunter.math.south
-import net.japanesehunter.math.up
 import net.japanesehunter.math.west
 
 interface BlockState {
-  val quads: List<MaterialQuad>
+  fun QuadSink.emitQuads()
 
   fun isOpaque(face: BlockFace): Boolean
 
   data object Air : BlockState {
-    override val quads: List<MaterialQuad> = emptyList()
+    override fun QuadSink.emitQuads() {
+      // No quads for air
+    }
 
     override fun isOpaque(face: BlockFace): Boolean = false
   }
@@ -43,17 +43,24 @@ open class FullBlockState(
       bottom,
     )
 
-  override val quads: List<MaterialQuad> =
-    run {
+  override fun QuadSink.emitQuads() {
+    quads.forEach { (quad, face) ->
+      put(quad) {
+        requireFace(face)
+      }
+    }
+  }
 
+  private val quads =
+    run {
       fun quad(
         min: Point3,
-        normal: Direction3,
+        normal: BlockFace,
         tangent: Direction3,
         material: MaterialKey,
       ) = MaterialQuad(
         min = min,
-        normal = normal,
+        normal = normal.normal,
         tangent = tangent,
         sizeU = 1.meters,
         sizeV = 1.meters,
@@ -62,47 +69,47 @@ open class FullBlockState(
         aoLeftTop = Proportion.ONE,
         aoRightTop = Proportion.ONE,
         material = material,
-      )
+      ) to normal
       listOf(
         // UP
         quad(
           Point3(0.meters, 1.meters, 0.meters),
-          Direction3.up,
+          BlockFace.TOP,
           Direction3.east,
           top,
         ),
         // NORTH
         quad(
           Point3(1.meters, 1.meters, 0.meters),
-          Direction3.north,
+          BlockFace.NORTH,
           Direction3.west,
           north,
         ),
         // EAST
         quad(
           Point3(1.meters, 1.meters, 1.meters),
-          Direction3.east,
+          BlockFace.EAST,
           Direction3.north,
           east,
         ),
         // SOUTH
         quad(
           Point3(0.meters, 1.meters, 1.meters),
-          Direction3.south,
+          BlockFace.SOUTH,
           Direction3.east,
           south,
         ),
         // WEST
         quad(
           Point3(0.meters, 1.meters, 0.meters),
-          Direction3.west,
+          BlockFace.WEST,
           Direction3.south,
           west,
         ),
         // BOTTOM
         quad(
           Point3(1.meters, 0.meters, 0.meters),
-          Direction3.down,
+          BlockFace.BOTTOM,
           Direction3.west,
           bottom,
         ),

@@ -15,6 +15,7 @@ import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.y
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -66,6 +67,7 @@ fun main() =
           nearFar = NearFar(0.1.meters, 128.meters),
           aspect = canvasAspect,
         ).apply {
+          y = 2.meters
           autoFit()
         }
       val cameraHud = CameraHud()
