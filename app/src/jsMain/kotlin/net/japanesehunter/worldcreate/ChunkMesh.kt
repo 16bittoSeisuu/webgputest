@@ -56,8 +56,12 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
       val nx = x + face.normal.ux.toInt()
       val ny = y + face.normal.uy.toInt()
       val nz = z + face.normal.uz.toInt()
-      val neighbor = world.getOrNull(nx)?.getOrNull(ny)?.getOrNull(nz)
-      if (neighbor?.isOpaque(face.opposite()) == true) {
+      if (nx < 0 || ny < 0 || nz < 0) continue
+      if (nx >= world.size) continue
+      if (ny >= world[nx].size) continue
+      if (nz >= world[nx][ny].size) continue
+      val neighbor = world[nx][ny][nz]
+      if (neighbor.isOpaque(face.opposite())) {
         mask = mask or bit
       }
     }
