@@ -10,7 +10,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
 import net.japanesehunter.math.Color
-import net.japanesehunter.math.Direction16
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
@@ -64,6 +63,7 @@ import net.japanesehunter.worldcreate.CameraNavigator.Settings
 import net.japanesehunter.worldcreate.GreedyQuad
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.QuadShape
+import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.toGpuBuffer
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLCanvasElement
@@ -93,13 +93,13 @@ fun main() =
       val navigatorSettings = Settings()
       val navigator = CameraNavigator(currentCanvasElement(), camera, navigatorSettings)
       val controls = createNavigatorControls(navigatorSettings)
+      val cameraHud = CameraHud()
       onClose {
         controls.close()
         navigator.close()
       }
       webgpuContext {
         debugPrintLimits()
-        val cameraHud = createCameraDirectionHud()
         val cameraBuf = camera.toGpuBuffer().bind()
         val draw =
           buildDrawCommand(clearColor = { Color.blue }) {
@@ -368,48 +368,6 @@ private inline fun gpuCommand(action: GPUCommandEncoder.() -> Unit) {
   commandEncoder.action()
   device.queue.submit(arrayOf(commandEncoder.finish()))
 }
-
-private fun createCameraDirectionHud(): CameraDirectionHud {
-  val body = document.body ?: error("Document body is not available")
-  val container =
-    (document.getElementById("camera-direction") as? HTMLDivElement)
-      ?: (document.createElement("div") as HTMLDivElement).also {
-        it.id = "camera-direction"
-        body.appendChild(it)
-      }
-  container.style.apply {
-    position = "fixed"
-    top = "12px"
-    left = "12px"
-    padding = "0.35rem 0.65rem"
-    backgroundColor = "rgba(0, 0, 0, 0.75)"
-    color = "#FFF"
-    borderRadius = "0.35rem"
-    fontFamily = "monospace, system-ui"
-    fontSize = "0.85rem"
-    setProperty("pointer-events", "none")
-    zIndex = "1"
-  }
-  return CameraDirectionHud(container)
-}
-
-private class CameraDirectionHud(
-  private val container: HTMLDivElement,
-) {
-  fun update(direction: Direction16) {
-    val label = direction.displayName()
-    val text = "Direction: $label"
-    if (container.textContent == text) return
-    container.textContent = text
-  }
-}
-
-private fun Direction16.displayName(): String =
-  name
-    .split('_')
-    .joinToString(" ") { segment ->
-      segment.lowercase().replaceFirstChar(Char::titlecaseChar)
-    }
 
 private fun createNavigatorControls(settings: Settings): NavigatorControls {
   val body = document.body ?: error("Document body is not available")
