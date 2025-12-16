@@ -6,7 +6,6 @@ import kotlinx.io.readByteString
 import kotlinx.io.writeFloatLe
 import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
-import net.japanesehunter.math.Length
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableLength3
 import net.japanesehunter.math.Point3
@@ -117,16 +116,24 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
 
   val bytes = Buffer()
   vertices.forEach { (vertex, uv) ->
-    fun Length.inWholeMeters(): Int = inWholeMeters.toInt()
+    val mx = vertex.x.toDouble(LengthUnit.METER)
+    val my = vertex.y.toDouble(LengthUnit.METER)
+    val mz = vertex.z.toDouble(LengthUnit.METER)
 
-    fun Length.subMeterToFloat(): Float = (toDouble(LengthUnit.METER) - inWholeMeters).toFloat()
+    val wholeX = mx.toInt()
+    val wholeY = my.toInt()
+    val wholeZ = mz.toInt()
 
-    bytes.writeIntLe(vertex.x.inWholeMeters())
-    bytes.writeIntLe(vertex.y.inWholeMeters())
-    bytes.writeIntLe(vertex.z.inWholeMeters())
-    bytes.writeFloatLe(vertex.x.subMeterToFloat())
-    bytes.writeFloatLe(vertex.y.subMeterToFloat())
-    bytes.writeFloatLe(vertex.z.subMeterToFloat())
+    val subX = (mx - wholeX).toFloat()
+    val subY = (my - wholeY).toFloat()
+    val subZ = (mz - wholeZ).toFloat()
+
+    bytes.writeIntLe(wholeX)
+    bytes.writeIntLe(wholeY)
+    bytes.writeIntLe(wholeZ)
+    bytes.writeFloatLe(subX)
+    bytes.writeFloatLe(subY)
+    bytes.writeFloatLe(subZ)
     bytes.writeFloatLe(uv.first)
     bytes.writeFloatLe(uv.second)
   }
