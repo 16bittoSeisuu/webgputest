@@ -7,7 +7,6 @@ import kotlinx.io.writeFloatLe
 import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.LengthUnit
-import net.japanesehunter.math.Point3
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.GpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
@@ -31,16 +30,16 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   val vertexBytes = Buffer()
   val indexBytes = Buffer()
   var vertexCount = 0
-  val nanosPerMeter = LengthUnit.METER.nanometersPerUnit
-  val nanosToMeters = 1e-9
+  val nanosPerMeter = LengthUnit.METER.nanometersPerUnit.toInt()
+  val nanosToMeters = 1e-9f
 
   fun appendVertex(
     blockX: Int,
     blockY: Int,
     blockZ: Int,
-    localXNanometers: Long,
-    localYNanometers: Long,
-    localZNanometers: Long,
+    localXNanometers: Int,
+    localYNanometers: Int,
+    localZNanometers: Int,
     uv: Pair<Float, Float>,
   ): Int {
     var wholeX = blockX
@@ -51,36 +50,39 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     var subYNanometers = localYNanometers
     var subZNanometers = localZNanometers
 
-    while (subXNanometers >= nanosPerMeter) {
-      wholeX++
-      subXNanometers -= nanosPerMeter
-    }
-    while (subXNanometers < 0) {
-      wholeX--
-      subXNanometers += nanosPerMeter
-    }
-
-    while (subYNanometers >= nanosPerMeter) {
-      wholeY++
-      subYNanometers -= nanosPerMeter
-    }
-    while (subYNanometers < 0) {
-      wholeY--
-      subYNanometers += nanosPerMeter
+    if (subXNanometers >= nanosPerMeter) {
+      val carry = subXNanometers / nanosPerMeter
+      wholeX += carry
+      subXNanometers -= carry * nanosPerMeter
+    } else if (subXNanometers < 0) {
+      val carry = (-subXNanometers + (nanosPerMeter - 1)) / nanosPerMeter
+      wholeX -= carry
+      subXNanometers += carry * nanosPerMeter
     }
 
-    while (subZNanometers >= nanosPerMeter) {
-      wholeZ++
-      subZNanometers -= nanosPerMeter
-    }
-    while (subZNanometers < 0) {
-      wholeZ--
-      subZNanometers += nanosPerMeter
+    if (subYNanometers >= nanosPerMeter) {
+      val carry = subYNanometers / nanosPerMeter
+      wholeY += carry
+      subYNanometers -= carry * nanosPerMeter
+    } else if (subYNanometers < 0) {
+      val carry = (-subYNanometers + (nanosPerMeter - 1)) / nanosPerMeter
+      wholeY -= carry
+      subYNanometers += carry * nanosPerMeter
     }
 
-    val subX = (subXNanometers.toDouble() * nanosToMeters).toFloat()
-    val subY = (subYNanometers.toDouble() * nanosToMeters).toFloat()
-    val subZ = (subZNanometers.toDouble() * nanosToMeters).toFloat()
+    if (subZNanometers >= nanosPerMeter) {
+      val carry = subZNanometers / nanosPerMeter
+      wholeZ += carry
+      subZNanometers -= carry * nanosPerMeter
+    } else if (subZNanometers < 0) {
+      val carry = (-subZNanometers + (nanosPerMeter - 1)) / nanosPerMeter
+      wholeZ -= carry
+      subZNanometers += carry * nanosPerMeter
+    }
+
+    val subX = subXNanometers.toFloat() * nanosToMeters
+    val subY = subYNanometers.toFloat() * nanosToMeters
+    val subZ = subZNanometers.toFloat() * nanosToMeters
 
     vertexBytes.writeIntLe(wholeX)
     vertexBytes.writeIntLe(wholeY)
@@ -138,19 +140,19 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
 
       if (!shouldCull) {
         val min = quad.min
-        val minX = min.x.inWholeNanometers
-        val minY = min.y.inWholeNanometers
-        val minZ = min.z.inWholeNanometers
+        val minX = min.x.inWholeNanometers.toInt()
+        val minY = min.y.inWholeNanometers.toInt()
+        val minZ = min.z.inWholeNanometers.toInt()
 
         val u = quad.u
-        val uX = u.dx.inWholeNanometers
-        val uY = u.dy.inWholeNanometers
-        val uZ = u.dz.inWholeNanometers
+        val uX = u.dx.inWholeNanometers.toInt()
+        val uY = u.dy.inWholeNanometers.toInt()
+        val uZ = u.dz.inWholeNanometers.toInt()
 
         val v = quad.v
-        val vX = v.dx.inWholeNanometers
-        val vY = v.dy.inWholeNanometers
-        val vZ = v.dz.inWholeNanometers
+        val vX = v.dx.inWholeNanometers.toInt()
+        val vY = v.dy.inWholeNanometers.toInt()
+        val vZ = v.dz.inWholeNanometers.toInt()
 
         val x0 = minX + vX
         val y0 = minY + vY
