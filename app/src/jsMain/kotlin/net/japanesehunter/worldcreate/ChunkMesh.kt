@@ -7,10 +7,7 @@ import kotlinx.io.writeFloatLe
 import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.LengthUnit
-import net.japanesehunter.math.MutableLength3
 import net.japanesehunter.math.Point3
-import net.japanesehunter.math.meters
-import net.japanesehunter.math.plus
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.GpuBuffer
 import net.japanesehunter.webgpu.IndexGpuBuffer
@@ -34,22 +31,56 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   val vertexBytes = Buffer()
   val indexBytes = Buffer()
   var vertexCount = 0
+  val nanosPerMeter = LengthUnit.METER.nanometersPerUnit
+  val nanosToMeters = 1e-9
 
   fun appendVertex(
-    vertex: Point3,
+    blockX: Int,
+    blockY: Int,
+    blockZ: Int,
+    localXNanometers: Long,
+    localYNanometers: Long,
+    localZNanometers: Long,
     uv: Pair<Float, Float>,
   ): Int {
-    val mx = vertex.x.toDouble(LengthUnit.METER)
-    val my = vertex.y.toDouble(LengthUnit.METER)
-    val mz = vertex.z.toDouble(LengthUnit.METER)
+    var wholeX = blockX
+    var wholeY = blockY
+    var wholeZ = blockZ
 
-    val wholeX = mx.toInt()
-    val wholeY = my.toInt()
-    val wholeZ = mz.toInt()
+    var subXNanometers = localXNanometers
+    var subYNanometers = localYNanometers
+    var subZNanometers = localZNanometers
 
-    val subX = (mx - wholeX).toFloat()
-    val subY = (my - wholeY).toFloat()
-    val subZ = (mz - wholeZ).toFloat()
+    while (subXNanometers >= nanosPerMeter) {
+      wholeX++
+      subXNanometers -= nanosPerMeter
+    }
+    while (subXNanometers < 0) {
+      wholeX--
+      subXNanometers += nanosPerMeter
+    }
+
+    while (subYNanometers >= nanosPerMeter) {
+      wholeY++
+      subYNanometers -= nanosPerMeter
+    }
+    while (subYNanometers < 0) {
+      wholeY--
+      subYNanometers += nanosPerMeter
+    }
+
+    while (subZNanometers >= nanosPerMeter) {
+      wholeZ++
+      subZNanometers -= nanosPerMeter
+    }
+    while (subZNanometers < 0) {
+      wholeZ--
+      subZNanometers += nanosPerMeter
+    }
+
+    val subX = (subXNanometers.toDouble() * nanosToMeters).toFloat()
+    val subY = (subYNanometers.toDouble() * nanosToMeters).toFloat()
+    val subZ = (subZNanometers.toDouble() * nanosToMeters).toFloat()
 
     vertexBytes.writeIntLe(wholeX)
     vertexBytes.writeIntLe(wholeY)
@@ -94,7 +125,6 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     return mask
   }
 
-  val tmpLen = MutableLength3()
   val opaqueFaceSink =
     QuadSink.OpaqueFaceSink {
       requiredOpaqueMask = requiredOpaqueMask or faceBits[it.ordinal]
@@ -107,21 +137,41 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
       val shouldCull = (actualOpaqueMask and requiredOpaqueMask) == requiredOpaqueMask
 
       if (!shouldCull) {
-        val offset =
-          tmpLen.apply {
-            dx = x.meters
-            dy = y.meters
-            dz = z.meters
-          }
-        val v0 = quad.min + quad.v + offset
-        val v1 = quad.max + offset
-        val v2 = quad.min + offset
-        val v3 = quad.min + quad.u + offset
+        val min = quad.min
+        val minX = min.x.inWholeNanometers
+        val minY = min.y.inWholeNanometers
+        val minZ = min.z.inWholeNanometers
 
-        val i0 = appendVertex(v0, 0f to 1f)
-        val i1 = appendVertex(v1, 1f to 1f)
-        val i2 = appendVertex(v2, 0f to 0f)
-        val i3 = appendVertex(v3, 1f to 0f)
+        val u = quad.u
+        val uX = u.dx.inWholeNanometers
+        val uY = u.dy.inWholeNanometers
+        val uZ = u.dz.inWholeNanometers
+
+        val v = quad.v
+        val vX = v.dx.inWholeNanometers
+        val vY = v.dy.inWholeNanometers
+        val vZ = v.dz.inWholeNanometers
+
+        val x0 = minX + vX
+        val y0 = minY + vY
+        val z0 = minZ + vZ
+
+        val x1 = minX + uX + vX
+        val y1 = minY + uY + vY
+        val z1 = minZ + uZ + vZ
+
+        val x2 = minX
+        val y2 = minY
+        val z2 = minZ
+
+        val x3 = minX + uX
+        val y3 = minY + uY
+        val z3 = minZ + uZ
+
+        val i0 = appendVertex(x, y, z, x0, y0, z0, 0f to 1f)
+        val i1 = appendVertex(x, y, z, x1, y1, z1, 1f to 1f)
+        val i2 = appendVertex(x, y, z, x2, y2, z2, 0f to 0f)
+        val i3 = appendVertex(x, y, z, x3, y3, z3, 1f to 0f)
 
         indexBytes.writeIntLe(i0)
         indexBytes.writeIntLe(i1)
