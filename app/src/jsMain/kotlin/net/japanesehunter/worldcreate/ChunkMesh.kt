@@ -1,7 +1,6 @@
 package net.japanesehunter.worldcreate
 
 import arrow.fx.coroutines.ResourceScope
-import kotlinx.coroutines.yield
 import kotlinx.io.Buffer
 import kotlinx.io.readByteString
 import kotlinx.io.writeFloatLe
@@ -104,7 +103,6 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
         with(block) {
           sink.emitQuads()
         }
-        yield()
         z++
       }
       z = 0
@@ -128,7 +126,6 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     bytes.writeFloatLe(vertex.z.subMeterToFloat())
     bytes.writeFloatLe(uv.first)
     bytes.writeFloatLe(uv.second)
-    yield()
   }
   val vertexData = bytes.readByteString()
   indexList.forEach { index ->
