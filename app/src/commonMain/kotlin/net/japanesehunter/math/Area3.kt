@@ -258,7 +258,7 @@ fun Area3.dot(
 /**
  * Negates all components of this mutable area.
  */
-inline fun MutableArea3.negate() = map("Negation") { _, value -> -value }
+inline fun MutableArea3.negate() = map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutableArea3] with all components negated.
@@ -272,7 +272,7 @@ inline operator fun Area3.unaryMinus(): ImmutableArea3 =
  * Adds the corresponding components of [other] to this mutable area.
  */
 inline operator fun MutableArea3.plusAssign(other: Area3) {
-  map("Addition of $other") { index, value ->
+  map({ "Addition of $other" }) { index, value ->
     when (index) {
       0 -> value + other.ax
       1 -> value + other.ay
@@ -293,7 +293,7 @@ inline operator fun Area3.plus(other: Area3): ImmutableArea3 =
  * Subtracts the corresponding components of [other] from this mutable area.
  */
 inline operator fun MutableArea3.minusAssign(other: Area3) {
-  map("Subtraction of $other") { index, value ->
+  map({ "Subtraction of $other" }) { index, value ->
     when (index) {
       0 -> value - other.ax
       1 -> value - other.ay
@@ -314,7 +314,7 @@ inline operator fun Area3.minus(other: Area3): ImmutableArea3 =
  * Multiplies all components of this mutable area by the given scalar.
  * This operation mutates the original area.
  */
-inline operator fun MutableArea3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutableArea3.timesAssign(scalar: Double) = map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 
 /**
  * Returns a new [ImmutableArea3] with all components multiplied by the given scalar.
@@ -332,7 +332,7 @@ inline operator fun Area3.times(scalar: Double): ImmutableArea3 =
  */
 inline operator fun MutableArea3.divAssign(scalar: Double) {
   require(scalar != 0.0) { "Cannot divide an Area3 by 0.0" }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
@@ -359,7 +359,7 @@ inline operator fun Area3.div(scalar: Double): ImmutableArea3 =
  */
 @Suppress("UNUSED_PARAMETER")
 inline fun MutableArea3.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Area) -> Area,
 ) {
   mutate {

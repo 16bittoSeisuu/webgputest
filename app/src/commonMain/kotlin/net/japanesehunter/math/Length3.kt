@@ -297,7 +297,7 @@ inline fun MutableLength3.normalize(unit: LengthUnit = LengthUnit.METER) {
     val mag = magnitude.toDouble(unit)
     require(mag != 0.0) { "Cannot normalize a zero-length vector." }
     val inv = 1.0 / mag
-    map("Normalization") { _, value -> value * inv }
+    map({ "Normalization" }) { _, value -> value * inv }
   }
 }
 
@@ -399,7 +399,7 @@ fun Length3.crossLH(
  * After this operation, dx, dy, and dz become -dx, -dy, and -dz respectively.
  * This operation mutates the original distance.
  */
-inline fun MutableLength3.negate() = map("Negation") { _, value -> -value }
+inline fun MutableLength3.negate() = map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutableLength3] with all components negated.
@@ -419,7 +419,7 @@ inline operator fun Length3.unaryMinus(): ImmutableLength3 =
  * @param other The distance to add.
  */
 inline operator fun MutableLength3.plusAssign(other: Length3) =
-  map("Addition of $other") { index, value ->
+  map({ "Addition of $other" }) { index, value ->
     when (index) {
       0 -> value + other.dx
       1 -> value + other.dy
@@ -445,7 +445,7 @@ inline operator fun Length3.plus(other: Length3): ImmutableLength3 =
  * @param other The distance to subtract.
  */
 inline operator fun MutableLength3.minusAssign(other: Length3) =
-  map("Subtraction of $other") { index, value ->
+  map({ "Subtraction of $other" }) { index, value ->
     when (index) {
       0 -> value - other.dx
       1 -> value - other.dy
@@ -471,7 +471,7 @@ inline operator fun Length3.minus(other: Length3): ImmutableLength3 =
  * @param scalar The scalar to multiply by.
  */
 inline operator fun MutableLength3.timesAssign(scalar: Int) =
-  map("Multiplication by $scalar") { _, value ->
+  map({ "Multiplication by $scalar" }) { _, value ->
     value * scalar.toLong()
   }
 
@@ -493,7 +493,7 @@ inline operator fun Length3.times(scalar: Int): ImmutableLength3 =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutableLength3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutableLength3.timesAssign(scalar: Double) = map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 
 /**
  * Returns a new [ImmutableLength3] with all components multiplied by the given scalar.
@@ -516,7 +516,7 @@ inline operator fun Length3.times(scalar: Double): ImmutableLength3 =
  */
 inline operator fun MutableLength3.divAssign(scalar: Int) {
   require(scalar != 0) { "Cannot divide a Length3 by 0" }
-  map("Division by $scalar") { _, value -> value / scalar.toLong() }
+  map({ "Division by $scalar" }) { _, value -> value / scalar.toLong() }
 }
 
 /**
@@ -541,7 +541,7 @@ inline operator fun Length3.div(scalar: Int): ImmutableLength3 =
  */
 inline operator fun MutableLength3.divAssign(scalar: Double) {
   require(scalar != 0.0) { "Cannot divide a Length3 by 0.0" }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
@@ -570,7 +570,7 @@ inline operator fun Length3.div(scalar: Double): ImmutableLength3 =
  */
 @Suppress("UNUSED_PARAMETER")
 inline fun MutableLength3.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Length) -> Length,
 ) {
   mutate {

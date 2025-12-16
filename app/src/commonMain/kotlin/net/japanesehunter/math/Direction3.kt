@@ -314,7 +314,7 @@ inline infix fun Direction3.crossLH(other: Direction3): ImmutableDirection3 =
 /**
  * Negates all components of this mutable direction.
  */
-inline fun MutableDirection3.negate() = map("Negation") { _, value -> -value }
+inline fun MutableDirection3.negate() = map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutableDirection3] with all components negated.
@@ -328,14 +328,15 @@ inline operator fun Direction3.unaryMinus(): ImmutableDirection3 = Direction3.co
  * @param action Called in order for indices 0:ux, 1:uy, 2:uz.
  */
 inline fun MutableDirection3.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Double) -> Double,
 ) {
+  val actionNameValue = actionName?.invoke()
   mutate {
     val newUx = action(0, ux)
     val newUy = action(1, uy)
     val newUz = action(2, uz)
-    setNormalized(newUx, newUy, newUz, actionName)
+    setNormalized(newUx, newUy, newUz, actionNameValue)
   }
 }
 

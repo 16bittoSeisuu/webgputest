@@ -262,7 +262,7 @@ inline fun Quaternion.normalized(): ImmutableQuaternion =
  * Converts this quaternion to its conjugate in place. For unit quaternions this is equivalent to an inverse, but no
  * normalization is applied automatically.
  */
-inline fun MutableQuaternion.conjugate() = map("Conjugation") { index, value -> if (index < 3) -value else value }
+inline fun MutableQuaternion.conjugate() = map({ "Conjugation" }) { index, value -> if (index < 3) -value else value }
 
 /**
  * Returns a conjugated copy.
@@ -275,7 +275,7 @@ inline fun Quaternion.conjugated(): ImmutableQuaternion =
 /**
  * Negates all components in place.
  */
-inline fun MutableQuaternion.negate() = map("Negation") { _, value -> -value }
+inline fun MutableQuaternion.negate() = map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a copy with all components negated.
@@ -289,7 +289,7 @@ inline operator fun Quaternion.unaryMinus(): ImmutableQuaternion =
  * Adds another quaternion component-wise in place. No normalization is performed.
  */
 inline operator fun MutableQuaternion.plusAssign(other: Quaternion) =
-  map("Addition of $other") { index, value ->
+  map({ "Addition of $other" }) { index, value ->
     when (index) {
       0 -> value + other.x
       1 -> value + other.y
@@ -310,7 +310,7 @@ inline operator fun Quaternion.plus(other: Quaternion): ImmutableQuaternion =
  * Subtracts another quaternion component-wise in place. No normalization is performed.
  */
 inline operator fun MutableQuaternion.minusAssign(other: Quaternion) =
-  map("Subtraction of $other") { index, value ->
+  map({ "Subtraction of $other" }) { index, value ->
     when (index) {
       0 -> value - other.x
       1 -> value - other.y
@@ -332,7 +332,7 @@ inline operator fun Quaternion.minus(other: Quaternion): ImmutableQuaternion =
  */
 inline operator fun MutableQuaternion.timesAssign(scalar: Double) {
   require(scalar.isFinite()) { "Cannot scale a quaternion by a non-finite value: $scalar" }
-  map("Multiplication by $scalar") { _, value -> value * scalar }
+  map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 }
 
 /**
@@ -348,7 +348,7 @@ inline operator fun Quaternion.times(scalar: Double): ImmutableQuaternion =
  */
 inline operator fun MutableQuaternion.divAssign(scalar: Double) {
   require(scalar.isFinite() && scalar != 0.0) { "Cannot divide a quaternion by $scalar." }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
@@ -572,14 +572,15 @@ fun Quaternion.Companion.lookingAlong(
  * updated quaternions from leaking NaN or infinite values.
  */
 inline fun MutableQuaternion.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Double) -> Double,
 ) {
+  val actionNameValue = actionName?.invoke()
   mutate {
-    val newX = ensureFiniteComponent(action(0, x), "x", actionName)
-    val newY = ensureFiniteComponent(action(1, y), "y", actionName)
-    val newZ = ensureFiniteComponent(action(2, z), "z", actionName)
-    val newW = ensureFiniteComponent(action(3, w), "w", actionName)
+    val newX = ensureFiniteComponent(action(0, x), "x", actionNameValue)
+    val newY = ensureFiniteComponent(action(1, y), "y", actionNameValue)
+    val newZ = ensureFiniteComponent(action(2, z), "z", actionNameValue)
+    val newW = ensureFiniteComponent(action(3, w), "w", actionNameValue)
     x = newX
     y = newY
     z = newZ

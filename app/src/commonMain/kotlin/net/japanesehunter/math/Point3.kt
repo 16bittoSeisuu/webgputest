@@ -336,7 +336,7 @@ inline val Point3.isZero: Boolean
  * After this operation, x, y, and z become -x, -y, and -z respectively.
  * This operation mutates the original point.
  */
-inline fun MutablePoint3.negate() = map("Negation") { _, value -> -value }
+inline fun MutablePoint3.negate() = map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutablePoint3] with all coordinates negated.
@@ -355,7 +355,7 @@ inline operator fun Point3.unaryMinus(): ImmutablePoint3 =
  * @param distance The displacement to apply to this point.
  */
 inline operator fun MutablePoint3.plusAssign(distance: Length3) =
-  map("Addition of $distance") { index, value ->
+  map({ "Addition of $distance" }) { index, value ->
     when (index) {
       0 -> value + distance.dx
       1 -> value + distance.dy
@@ -380,7 +380,7 @@ inline operator fun Point3.plus(distance: Length3): ImmutablePoint3 =
  * @param distance The displacement to subtract.
  */
 inline operator fun MutablePoint3.minusAssign(distance: Length3) =
-  map("Subtraction of $distance") { index, value ->
+  map({ "Subtraction of $distance" }) { index, value ->
     when (index) {
       0 -> value - distance.dx
       1 -> value - distance.dy
@@ -419,7 +419,7 @@ inline operator fun Point3.minus(other: Point3): ImmutableLength3 =
  * @param scalar The scalar to multiply by.
  */
 inline operator fun MutablePoint3.timesAssign(scalar: Int) =
-  map("Multiplication by $scalar") { _, value ->
+  map({ "Multiplication by $scalar" }) { _, value ->
     value * scalar.toLong()
   }
 
@@ -441,7 +441,7 @@ inline operator fun Point3.times(scalar: Int): ImmutablePoint3 =
  *
  * @param scalar The scalar to multiply by.
  */
-inline operator fun MutablePoint3.timesAssign(scalar: Double) = map("Multiplication by $scalar") { _, value -> value * scalar }
+inline operator fun MutablePoint3.timesAssign(scalar: Double) = map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 
 /**
  * Returns a new [ImmutablePoint3] with all coordinates multiplied by the given scalar.
@@ -464,7 +464,7 @@ inline operator fun Point3.times(scalar: Double): ImmutablePoint3 =
  */
 inline operator fun MutablePoint3.divAssign(scalar: Int) {
   require(scalar != 0) { "Cannot divide a Point3 by 0" }
-  map("Division by $scalar") { _, value -> value / scalar.toLong() }
+  map({ "Division by $scalar" }) { _, value -> value / scalar.toLong() }
 }
 
 /**
@@ -489,7 +489,7 @@ inline operator fun Point3.div(scalar: Int): ImmutablePoint3 =
  */
 inline operator fun MutablePoint3.divAssign(scalar: Double) {
   require(scalar != 0.0) { "Cannot divide a Point3 by 0.0" }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
@@ -533,7 +533,7 @@ inline val Point3.distanceFromZero: Length get() = this distanceTo Point3.zero
  */
 @Suppress("UNUSED_PARAMETER")
 inline fun MutablePoint3.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Length) -> Length,
 ) {
   mutate {

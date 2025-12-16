@@ -211,7 +211,7 @@ inline val Scale3.isZero: Boolean
  */
 inline operator fun MutableScale3.timesAssign(scalar: Double) {
   require(scalar.isFinite()) { "Cannot scale Scale3 by a non-finite value: $scalar" }
-  map("Multiplication by $scalar") { _, value -> value * scalar }
+  map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 }
 
 /**
@@ -227,7 +227,7 @@ inline operator fun Scale3.times(scalar: Double): ImmutableScale3 =
  */
 inline operator fun MutableScale3.divAssign(scalar: Double) {
   require(scalar.isFinite() && scalar != 0.0) { "Cannot divide Scale3 by $scalar." }
-  map("Division by $scalar") { _, value -> value / scalar }
+  map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
@@ -242,7 +242,7 @@ inline operator fun Scale3.div(scalar: Double): ImmutableScale3 =
  * Multiplies this mutable scale component-wise by [other].
  */
 inline operator fun MutableScale3.timesAssign(other: Scale3) =
-  map("Component-wise multiplication by $other") { index, value ->
+  map({ "Component-wise multiplication by $other" }) { index, value ->
     when (index) {
       0 -> value * other.sx
       1 -> value * other.sy
@@ -262,7 +262,7 @@ inline operator fun Scale3.times(other: Scale3): ImmutableScale3 =
  * Divides this mutable scale component-wise by [other]. Throws if any divisor is zero or non-finite.
  */
 inline operator fun MutableScale3.divAssign(other: Scale3) =
-  map("Component-wise division by $other") { index, value ->
+  map({ "Component-wise division by $other" }) { index, value ->
     val divisor =
       when (index) {
         0 -> ensureFiniteScaleComponent(other.sx, "sx")
@@ -321,13 +321,14 @@ inline fun Point3.scaledBy(scale: Scale3): ImmutablePoint3 = scale.scale(this)
  * partially updated vectors from leaking NaN or infinite values.
  */
 inline fun MutableScale3.map(
-  actionName: String? = null,
+  noinline actionName: (() -> String)? = null,
   crossinline action: (index: Int, value: Double) -> Double,
 ) {
+  val actionNameValue = actionName?.invoke()
   mutate {
-    val newSx = ensureFiniteScaleComponent(action(0, sx), "sx", actionName)
-    val newSy = ensureFiniteScaleComponent(action(1, sy), "sy", actionName)
-    val newSz = ensureFiniteScaleComponent(action(2, sz), "sz", actionName)
+    val newSx = ensureFiniteScaleComponent(action(0, sx), "sx", actionNameValue)
+    val newSy = ensureFiniteScaleComponent(action(1, sy), "sy", actionNameValue)
+    val newSz = ensureFiniteScaleComponent(action(2, sz), "sz", actionNameValue)
     sx = newSx
     sy = newSy
     sz = newSz
