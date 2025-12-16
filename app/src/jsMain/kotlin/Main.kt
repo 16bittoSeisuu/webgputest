@@ -358,9 +358,9 @@ private fun MovableCamera.autoFit(): AutoCloseable =
 private val chunk =
   run {
     val doge = FullBlockState(MaterialKey.vanilla("doge"))
-    List(World.CHUNK_LENGTH_BLOCKS * 2) {
+    List(World.CHUNK_LENGTH_BLOCKS * 16) {
       List(World.CHUNK_LENGTH_BLOCKS) {
-        List(World.CHUNK_LENGTH_BLOCKS * 2) {
+        List(World.CHUNK_LENGTH_BLOCKS * 16) {
           doge
         }
       }
