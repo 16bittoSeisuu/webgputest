@@ -45,34 +45,37 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   var x = 0
   var y = 0
   var z = 0
-  val requiredOpaqueNeighbors = mutableSetOf<BlockFace>()
-  val actualOpaqueNeighbors = mutableSetOf<BlockFace>()
+  var requiredOpaqueMask = 0
 
-  fun setNeighborOpaqueFaces(required: Set<BlockFace>) {
-    actualOpaqueNeighbors.clear()
-    for (face in required) {
+  fun faceMask(face: BlockFace): Int = 1 shl face.ordinal
+
+  fun computeNeighborOpaqueMask(requiredMask: Int): Int {
+    var mask = 0
+    for (face in BlockFace.entries) {
+      val bit = faceMask(face)
+      if (requiredMask and bit == 0) continue
       val nx = x + face.normal.ux.toInt()
       val ny = y + face.normal.uy.toInt()
       val nz = z + face.normal.uz.toInt()
       val neighbor = world.getOrNull(nx)?.getOrNull(ny)?.getOrNull(nz)
       if (neighbor?.isOpaque(face.opposite()) == true) {
-        actualOpaqueNeighbors.add(face)
+        mask = mask or bit
       }
     }
+    return mask
   }
 
   val tmpLen = MutableLength3()
   val opaqueFaceSink =
     QuadSink.OpaqueFaceSink {
-      requiredOpaqueNeighbors.add(it)
+      requiredOpaqueMask = requiredOpaqueMask or faceMask(it)
     }
   val sink =
     QuadSink { quad, cullReq ->
-      requiredOpaqueNeighbors.clear()
+      requiredOpaqueMask = 0
       opaqueFaceSink.cullReq()
-      setNeighborOpaqueFaces(requiredOpaqueNeighbors)
-      val shouldCull =
-        actualOpaqueNeighbors.containsAll(requiredOpaqueNeighbors)
+      val actualOpaqueMask = computeNeighborOpaqueMask(requiredOpaqueMask)
+      val shouldCull = (actualOpaqueMask and requiredOpaqueMask) == requiredOpaqueMask
 
       if (!shouldCull) {
         val offset =
