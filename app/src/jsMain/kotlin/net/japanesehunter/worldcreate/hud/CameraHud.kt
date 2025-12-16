@@ -37,12 +37,21 @@ class CameraHud internal constructor(
  * Creates a camera direction HUD attached to the document body.
  *
  * Inserts the HUD container when missing, reapplies overlay styles when the element already exists, and registers removal with the surrounding resource scope while mutating the DOM structure.
+ * @param x horizontal offset from the left edge in pixels.
+ * @param y vertical offset from the top edge in pixels.
+ * @param scale overlay scale factor.
+ *   range: scale > 0.0
  * @return HUD instance managing the overlay container.
  * @throws IllegalStateException when the document body is not available.
  */
 context(resource: ResourceScope)
-fun CameraHud(): CameraHud {
+fun CameraHud(
+  x: Double = 12.0,
+  y: Double = 12.0,
+  scale: Double = 1.0,
+): CameraHud {
   val body = document.body ?: error("Document body is not available")
+  require(scale > 0.0) { "Scale must be positive" }
   val container =
     (document.getElementById(CONTAINER_ID) as? HTMLDivElement)
       ?: (document.createElement("div") as HTMLDivElement).also { element ->
@@ -51,14 +60,16 @@ fun CameraHud(): CameraHud {
       }
   container.style.apply {
     position = "fixed"
-    top = "12px"
-    left = "12px"
+    top = "${y}px"
+    left = "${x}px"
     padding = "0.35rem 0.65rem"
     backgroundColor = "rgba(0, 0, 0, 0.75)"
     color = "#FFF"
     borderRadius = "0.35rem"
     fontFamily = "monospace, system-ui"
     fontSize = "0.85rem"
+    transformOrigin = "top left"
+    transform = "scale($scale)"
     setProperty("pointer-events", "none")
     zIndex = "1"
   }
