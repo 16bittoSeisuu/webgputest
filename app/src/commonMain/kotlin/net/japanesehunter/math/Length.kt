@@ -431,31 +431,31 @@ operator fun Double.times(distance: Length): Length = distance * this
  * Creates a [Length] from this [Int] value expressed in nanometers.
  */
 val Int.nanometers: Length
-  get() = toLong().nanometers
+  get() = Length(toLong())
 
 /**
  * Creates a [Length] from this [Int] value expressed in micrometers.
  */
 val Int.micrometers: Length
-  get() = toLong().micrometers
+  get() = Length(toLong() * NANOMETERS_PER_MICROMETER)
 
 /**
  * Creates a [Length] from this [Int] value expressed in millimeters.
  */
 val Int.millimeters: Length
-  get() = toLong().millimeters
+  get() = Length(toLong() * NANOMETERS_PER_MILLIMETER)
 
 /**
  * Creates a [Length] from this [Int] value expressed in centimeters.
  */
 val Int.centimeters: Length
-  get() = toLong().centimeters
+  get() = Length(toLong() * NANOMETERS_PER_CENTIMETER)
 
 /**
  * Creates a [Length] from this [Int] value expressed in meters.
  */
 val Int.meters: Length
-  get() = toLong().meters
+  get() = Length(toLong() * NANOMETERS_PER_METER)
 
 /**
  * Creates a [Length] from this [Int] value expressed in kilometers.
