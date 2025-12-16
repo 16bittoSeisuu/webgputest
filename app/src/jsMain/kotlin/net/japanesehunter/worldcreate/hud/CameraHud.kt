@@ -38,9 +38,15 @@ class CameraHud internal constructor(
  *
  * Inserts the HUD container when missing, reapplies overlay styles when the element already exists, and registers removal with the surrounding resource scope while mutating the DOM structure.
  * @param x horizontal offset from the left edge in pixels.
+ *   NaN: rejected
+ *   Infinity: rejected
  * @param y vertical offset from the top edge in pixels.
+ *   NaN: rejected
+ *   Infinity: rejected
  * @param scale overlay scale factor.
  *   range: scale > 0.0
+ *   NaN: rejected
+ *   Infinity: rejected
  * @return HUD instance managing the overlay container.
  * @throws IllegalStateException when the document body is not available.
  */
@@ -51,7 +57,9 @@ fun CameraHud(
   scale: Double = 1.0,
 ): CameraHud {
   val body = document.body ?: error("Document body is not available")
-  require(scale > 0.0) { "Scale must be positive" }
+  require(x.isFinite()) { "x must be finite" }
+  require(y.isFinite()) { "y must be finite" }
+  require(scale.isFinite() && scale > 0.0) { "Scale must be positive and finite" }
   val container =
     (document.getElementById(CONTAINER_ID) as? HTMLDivElement)
       ?: (document.createElement("div") as HTMLDivElement).also { element ->
