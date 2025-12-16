@@ -44,7 +44,6 @@ import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
-import net.japanesehunter.worldcreate.BlockState
 import net.japanesehunter.worldcreate.CameraNavigator
 import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
@@ -358,16 +357,11 @@ private fun MovableCamera.autoFit(): AutoCloseable =
 
 private val chunk =
   run {
-    val air = BlockState.Air
-    val dirt = FullBlockState(MaterialKey.vanilla("doge"))
-    List(World.CHUNK_LENGTH_BLOCKS) {
-      List(World.CHUNK_LENGTH_BLOCKS) { y ->
-        List(World.CHUNK_LENGTH_BLOCKS) {
-          if (y == 0) {
-            dirt
-          } else {
-            air
-          }
+    val doge = FullBlockState(MaterialKey.vanilla("doge"))
+    List(World.CHUNK_LENGTH_BLOCKS * 2) {
+      List(World.CHUNK_LENGTH_BLOCKS) {
+        List(World.CHUNK_LENGTH_BLOCKS * 2) {
+          doge
         }
       }
     }

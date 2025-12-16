@@ -1,14 +1,15 @@
 package net.japanesehunter.worldcreate
 
 import arrow.fx.coroutines.ResourceScope
+import kotlinx.coroutines.yield
 import kotlinx.io.Buffer
 import kotlinx.io.readByteString
 import kotlinx.io.writeFloatLe
 import kotlinx.io.writeIntLe
 import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.Length
-import net.japanesehunter.math.Length3
 import net.japanesehunter.math.LengthUnit
+import net.japanesehunter.math.MutableLength3
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.plus
 import net.japanesehunter.webgpu.BufferAllocator
@@ -32,9 +33,9 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
       val requiredOpaqueNeighbors = mutableSetOf<BlockFace>()
       val actualOpaqueNeighbors = mutableSetOf<BlockFace>()
 
-      fun setNeighborOpaqueFaces() {
+      fun setNeighborOpaqueFaces(required: Set<BlockFace>) {
         actualOpaqueNeighbors.clear()
-        for (face in BlockFace.entries) {
+        for (face in required) {
           val nx = x + face.normal.ux.toInt()
           val ny = y + face.normal.uy.toInt()
           val nz = z + face.normal.uz.toInt()
@@ -45,19 +46,26 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
         }
       }
 
+      val tmpLen = MutableLength3()
+      val opaqueFaceSink =
+        QuadSink.OpaqueFaceSink {
+          requiredOpaqueNeighbors.add(it)
+        }
       val sink =
         QuadSink { quad, cullReq ->
           requiredOpaqueNeighbors.clear()
-          QuadSink
-            .OpaqueFaceSink {
-              requiredOpaqueNeighbors.add(it)
-            }.cullReq()
-          setNeighborOpaqueFaces()
+          opaqueFaceSink.cullReq()
+          setNeighborOpaqueFaces(requiredOpaqueNeighbors)
           val shouldCull =
             actualOpaqueNeighbors.containsAll(requiredOpaqueNeighbors)
 
           if (!shouldCull) {
-            val offset = Length3(x.meters, y.meters, z.meters)
+            val offset =
+              tmpLen.apply {
+                dx = x.meters
+                dy = y.meters
+                dz = z.meters
+              }
             val v0 = quad.min + quad.v + offset
             val v1 = quad.max + offset
             val v2 = quad.min + offset
@@ -78,6 +86,7 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
             with(block) {
               sink.emitQuads()
             }
+            yield()
             z++
           }
           z = 0
@@ -103,6 +112,7 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     bytes.writeFloatLe(vertex.z.subMeterToFloat())
     bytes.writeFloatLe(uv.first)
     bytes.writeFloatLe(uv.second)
+    yield()
   }
   val vertexData = bytes.readByteString()
   quads.forEach { (v0, v1, v2, v3) ->
@@ -116,6 +126,7 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     bytes.writeIntLe(v1Index)
     bytes.writeIntLe(v3Index)
     bytes.writeIntLe(v2Index)
+    yield()
   }
   val indexData = bytes.readByteString()
 
