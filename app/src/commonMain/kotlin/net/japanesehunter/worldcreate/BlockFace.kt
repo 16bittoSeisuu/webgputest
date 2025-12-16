@@ -19,7 +19,8 @@ enum class BlockFace(
   BOTTOM(Direction3.down),
 }
 
-fun BlockFace.opposite(): BlockFace =
+@Suppress("NOTHING_TO_INLINE")
+inline fun BlockFace.opposite(): BlockFace =
   when (this) {
     BlockFace.TOP -> BlockFace.BOTTOM
     BlockFace.NORTH -> BlockFace.SOUTH
