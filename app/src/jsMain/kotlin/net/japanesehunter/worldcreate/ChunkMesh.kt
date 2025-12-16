@@ -19,7 +19,7 @@ import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
 
 context(alloc: BufferAllocator, resource: ResourceScope)
-suspend fun List<List<List<BlockState>>>.toGpuBuffer(): Pair<
+suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   VertexGpuBuffer,
   IndexGpuBuffer,
 > {

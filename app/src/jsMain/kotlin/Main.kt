@@ -12,15 +12,9 @@ import net.japanesehunter.math.Color
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
-import net.japanesehunter.math.Point3
 import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
-import net.japanesehunter.math.lookAt
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.x
-import net.japanesehunter.math.y
-import net.japanesehunter.math.z
-import net.japanesehunter.math.zero
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -58,6 +52,7 @@ import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
 import net.japanesehunter.worldcreate.navigator
 import net.japanesehunter.worldcreate.toGpuBuffer
+import net.japanesehunter.worldcreate.toMeshGpuBuffer
 import org.w3c.dom.ImageBitmap
 
 val end = Job()
@@ -71,10 +66,6 @@ fun main() =
           nearFar = NearFar(0.1.meters, 128.meters),
           aspect = canvasAspect,
         ).apply {
-          x = 2.meters
-          y = 2.meters
-          z = 2.meters
-          lookAt(Point3.zero)
           autoFit()
         }
       val cameraHud = CameraHud()
@@ -118,7 +109,7 @@ fun main() =
             val texture by textureBuffer
             val samp by createSampler()
 
-            val (vBuf, iBuf) = chunk.toGpuBuffer()
+            val (vBuf, iBuf) = chunk.toMeshGpuBuffer()
             vertex(iBuf) {
               val aBlockPos by vBuf
               val aLocalPos by vBuf
