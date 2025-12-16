@@ -10,6 +10,7 @@ import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.Length
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableLength3
+import net.japanesehunter.math.Point3
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.plus
 import net.japanesehunter.webgpu.BufferAllocator
@@ -25,80 +26,95 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   IndexGpuBuffer,
 > {
   val world = this
-  val quads =
-    buildList {
-      var x = 0
-      var y = 0
-      var z = 0
-      val requiredOpaqueNeighbors = mutableSetOf<BlockFace>()
-      val actualOpaqueNeighbors = mutableSetOf<BlockFace>()
+  val vertexIndices = LinkedHashMap<Pair<Point3, Pair<Float, Float>>, Int>()
+  val vertices = mutableListOf<Pair<Point3, Pair<Float, Float>>>()
+  val indexList = mutableListOf<Int>()
 
-      fun setNeighborOpaqueFaces(required: Set<BlockFace>) {
-        actualOpaqueNeighbors.clear()
-        for (face in required) {
-          val nx = x + face.normal.ux.toInt()
-          val ny = y + face.normal.uy.toInt()
-          val nz = z + face.normal.uz.toInt()
-          val neighbor = world.getOrNull(nx)?.getOrNull(ny)?.getOrNull(nz)
-          if (neighbor?.isOpaque(face.opposite()) == true) {
-            actualOpaqueNeighbors.add(face)
-          }
-        }
-      }
+  fun indexFor(
+    vertex: Point3,
+    uv: Pair<Float, Float>,
+  ): Int {
+    val key = vertex to uv
+    val existing = vertexIndices[key]
+    if (existing != null) return existing
+    val newIndex = vertices.size
+    vertexIndices[key] = newIndex
+    vertices.add(key)
+    return newIndex
+  }
 
-      val tmpLen = MutableLength3()
-      val opaqueFaceSink =
-        QuadSink.OpaqueFaceSink {
-          requiredOpaqueNeighbors.add(it)
-        }
-      val sink =
-        QuadSink { quad, cullReq ->
-          requiredOpaqueNeighbors.clear()
-          opaqueFaceSink.cullReq()
-          setNeighborOpaqueFaces(requiredOpaqueNeighbors)
-          val shouldCull =
-            actualOpaqueNeighbors.containsAll(requiredOpaqueNeighbors)
+  var x = 0
+  var y = 0
+  var z = 0
+  val requiredOpaqueNeighbors = mutableSetOf<BlockFace>()
+  val actualOpaqueNeighbors = mutableSetOf<BlockFace>()
 
-          if (!shouldCull) {
-            val offset =
-              tmpLen.apply {
-                dx = x.meters
-                dy = y.meters
-                dz = z.meters
-              }
-            val v0 = quad.min + quad.v + offset
-            val v1 = quad.max + offset
-            val v2 = quad.min + offset
-            val v3 = quad.min + quad.u + offset
-            add(
-              listOf(
-                v0 to (0f to 1f),
-                v1 to (1f to 1f),
-                v2 to (0f to 0f),
-                v3 to (1f to 0f),
-              ),
-            )
-          }
-        }
-      for (plane in world) {
-        for (line in plane) {
-          for (block in line) {
-            with(block) {
-              sink.emitQuads()
-            }
-            yield()
-            z++
-          }
-          z = 0
-          y++
-        }
-        y = 0
-        x++
+  fun setNeighborOpaqueFaces(required: Set<BlockFace>) {
+    actualOpaqueNeighbors.clear()
+    for (face in required) {
+      val nx = x + face.normal.ux.toInt()
+      val ny = y + face.normal.uy.toInt()
+      val nz = z + face.normal.uz.toInt()
+      val neighbor = world.getOrNull(nx)?.getOrNull(ny)?.getOrNull(nz)
+      if (neighbor?.isOpaque(face.opposite()) == true) {
+        actualOpaqueNeighbors.add(face)
       }
     }
-  val bytes = Buffer()
+  }
 
-  val vertices = quads.flatten().toSet()
+  val tmpLen = MutableLength3()
+  val opaqueFaceSink =
+    QuadSink.OpaqueFaceSink {
+      requiredOpaqueNeighbors.add(it)
+    }
+  val sink =
+    QuadSink { quad, cullReq ->
+      requiredOpaqueNeighbors.clear()
+      opaqueFaceSink.cullReq()
+      setNeighborOpaqueFaces(requiredOpaqueNeighbors)
+      val shouldCull =
+        actualOpaqueNeighbors.containsAll(requiredOpaqueNeighbors)
+
+      if (!shouldCull) {
+        val offset =
+          tmpLen.apply {
+            dx = x.meters
+            dy = y.meters
+            dz = z.meters
+          }
+        val v0 = quad.min + quad.v + offset
+        val v1 = quad.max + offset
+        val v2 = quad.min + offset
+        val v3 = quad.min + quad.u + offset
+        val i0 = indexFor(v0, 0f to 1f)
+        val i1 = indexFor(v1, 1f to 1f)
+        val i2 = indexFor(v2, 0f to 0f)
+        val i3 = indexFor(v3, 1f to 0f)
+        indexList.add(i0)
+        indexList.add(i1)
+        indexList.add(i2)
+        indexList.add(i1)
+        indexList.add(i3)
+        indexList.add(i2)
+      }
+    }
+  for (plane in world) {
+    for (line in plane) {
+      for (block in line) {
+        with(block) {
+          sink.emitQuads()
+        }
+        yield()
+        z++
+      }
+      z = 0
+      y++
+    }
+    y = 0
+    x++
+  }
+
+  val bytes = Buffer()
   vertices.forEach { (vertex, uv) ->
     fun Length.inWholeMeters(): Int = inWholeMeters.toInt()
 
@@ -115,18 +131,8 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
     yield()
   }
   val vertexData = bytes.readByteString()
-  quads.forEach { (v0, v1, v2, v3) ->
-    val v0Index = vertices.indexOf(v0)
-    val v1Index = vertices.indexOf(v1)
-    val v2Index = vertices.indexOf(v2)
-    val v3Index = vertices.indexOf(v3)
-    bytes.writeIntLe(v0Index)
-    bytes.writeIntLe(v1Index)
-    bytes.writeIntLe(v2Index)
-    bytes.writeIntLe(v1Index)
-    bytes.writeIntLe(v3Index)
-    bytes.writeIntLe(v2Index)
-    yield()
+  indexList.forEach { index ->
+    bytes.writeIntLe(index)
   }
   val indexData = bytes.readByteString()
 
