@@ -8,6 +8,7 @@
   context of the code is not obvious, such as with bitwise operations
   or when a protocol is defined.
 - Make sure to write KDocs.
+- When treating a Double as a finite value, always validate it with isFinite.
 
 ## KDoc Rules
 
