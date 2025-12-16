@@ -24,6 +24,13 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   IndexGpuBuffer,
 > {
   val world = this
+  val faces = BlockFace.entries
+  val faceOffsetsX = IntArray(faces.size) { i -> faces[i].normal.ux.toInt() }
+  val faceOffsetsY = IntArray(faces.size) { i -> faces[i].normal.uy.toInt() }
+  val faceOffsetsZ = IntArray(faces.size) { i -> faces[i].normal.uz.toInt() }
+  val faceOpposites = Array(faces.size) { i -> faces[i].opposite() }
+  val faceBits = IntArray(faces.size) { i -> 1 shl i }
+
   val vertexBytes = Buffer()
   val indexBytes = Buffer()
   var vertexCount = 0
@@ -61,22 +68,26 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   var z = 0
   var requiredOpaqueMask = 0
 
-  fun faceMask(face: BlockFace): Int = 1 shl face.ordinal
-
   fun computeNeighborOpaqueMask(requiredMask: Int): Int {
+    if (requiredMask == 0) return 0
     var mask = 0
-    for (face in BlockFace.entries) {
-      val bit = faceMask(face)
+    val worldSizeX = world.size
+    val x0 = x
+    val y0 = y
+    val z0 = z
+    for (i in faces.indices) {
+      val bit = faceBits[i]
       if (requiredMask and bit == 0) continue
-      val nx = x + face.normal.ux.toInt()
-      val ny = y + face.normal.uy.toInt()
-      val nz = z + face.normal.uz.toInt()
-      if (nx < 0 || ny < 0 || nz < 0) continue
-      if (nx >= world.size) continue
-      if (ny >= world[nx].size) continue
-      if (nz >= world[nx][ny].size) continue
-      val neighbor = world[nx][ny][nz]
-      if (neighbor.isOpaque(face.opposite())) {
+      val nx = x0 + faceOffsetsX[i]
+      val ny = y0 + faceOffsetsY[i]
+      val nz = z0 + faceOffsetsZ[i]
+      if (nx < 0 || nx >= worldSizeX) continue
+      val plane = world[nx]
+      if (ny < 0 || ny >= plane.size) continue
+      val line = plane[ny]
+      if (nz < 0 || nz >= line.size) continue
+      val neighbor = line[nz]
+      if (neighbor.isOpaque(faceOpposites[i])) {
         mask = mask or bit
       }
     }
@@ -86,7 +97,7 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   val tmpLen = MutableLength3()
   val opaqueFaceSink =
     QuadSink.OpaqueFaceSink {
-      requiredOpaqueMask = requiredOpaqueMask or faceMask(it)
+      requiredOpaqueMask = requiredOpaqueMask or faceBits[it.ordinal]
     }
   val sink =
     QuadSink { quad, cullReq ->
@@ -107,18 +118,17 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
         val v2 = quad.min + offset
         val v3 = quad.min + quad.u + offset
 
-        val base = vertexCount
-        appendVertex(v0, 0f to 1f)
-        appendVertex(v1, 1f to 1f)
-        appendVertex(v2, 0f to 0f)
-        appendVertex(v3, 1f to 0f)
+        val i0 = appendVertex(v0, 0f to 1f)
+        val i1 = appendVertex(v1, 1f to 1f)
+        val i2 = appendVertex(v2, 0f to 0f)
+        val i3 = appendVertex(v3, 1f to 0f)
 
-        indexBytes.writeIntLe(base)
-        indexBytes.writeIntLe(base + 1)
-        indexBytes.writeIntLe(base + 2)
-        indexBytes.writeIntLe(base + 1)
-        indexBytes.writeIntLe(base + 3)
-        indexBytes.writeIntLe(base + 2)
+        indexBytes.writeIntLe(i0)
+        indexBytes.writeIntLe(i1)
+        indexBytes.writeIntLe(i2)
+        indexBytes.writeIntLe(i1)
+        indexBytes.writeIntLe(i3)
+        indexBytes.writeIntLe(i2)
       }
     }
   for (plane in world) {
