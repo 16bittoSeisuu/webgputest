@@ -113,8 +113,10 @@ class PlayerController internal constructor(
     var backwardKey: String = "KeyS",
     var leftKey: String = "KeyA",
     var rightKey: String = "KeyD",
+    var jumpKey: String = "Space",
     var mouseSensitivityDegPerDot: Double = 0.15,
     var horizontalSpeedMetersPerSecond: Double = 4.0,
+    var jumpVelocity: Length = 9.meters,
     var eyeHeight: Length = 1.62.meters,
     var maxPitch: Angle = 89.0.degrees,
   ) {
@@ -124,6 +126,9 @@ class PlayerController internal constructor(
       }
       require(horizontalSpeedMetersPerSecond.isFinite() && horizontalSpeedMetersPerSecond >= 0.0) {
         "horizontalSpeedMetersPerSecond must be finite and non-negative: $horizontalSpeedMetersPerSecond"
+      }
+      require(jumpVelocity.toDouble(LengthUnit.METER).isFinite() && jumpVelocity.toDouble(LengthUnit.METER) >= 0.0) {
+        "jumpVelocity must be finite and non-negative: $jumpVelocity"
       }
       require(eyeHeight.toDouble(LengthUnit.METER).isFinite()) {
         "eyeHeight must be finite: $eyeHeight"
@@ -150,7 +155,11 @@ class PlayerController internal constructor(
   private val keyDownListener: (Event) -> Unit =
     fun(event: Event) {
       val keyEvent = event as? KeyboardEvent ?: return
-      if (keyEvent.code in navKeys()) {
+      if (keyEvent.code == settings.jumpKey) {
+        if (player.isGrounded) {
+          player.velocity.vy = settings.jumpVelocity
+        }
+      } else if (keyEvent.code in navKeys()) {
         activeKeys.add(keyEvent.code)
       }
     }

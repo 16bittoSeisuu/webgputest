@@ -45,6 +45,12 @@ interface Player {
   val boundingBox: Aabb
 
   /**
+   * Whether the player is currently standing on solid ground.
+   * Updated by the physics system after each tick based on collision resolution.
+   */
+  val isGrounded: Boolean
+
+  /**
    * Closes the player and unsubscribes from any event sources.
    */
   fun close()
@@ -68,7 +74,7 @@ fun Player(
   blockAccess: BlockAccess,
   initialPosition: Point3 = Point3.zero,
   size: Length3 = Length3(dx = 0.6.meters, dy = 1.8.meters, dz = 0.6.meters),
-  gravity: Length = (-20).meters,
+  gravity: Length = (-32).meters,
 ): Player = PhysicsPlayer(tickSource, blockAccess, initialPosition, Length3.copyOf(size), gravity)
 
 private class PhysicsPlayer(
@@ -81,11 +87,13 @@ private class PhysicsPlayer(
   private val mutablePosition: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
   override val velocity: MutableVelocity3 = MutableVelocity3()
   private val mutableBoundingBox: MutableAabb = computeBoundingBox(initialPosition, size)
+  private var groundedState: Boolean = false
 
   private val subscription: EventSubscription = tickSource.subscribe { delta -> tick(delta) }
 
   override val position: Point3 get() = mutablePosition
   override val boundingBox: Aabb get() = mutableBoundingBox
+  override val isGrounded: Boolean get() = groundedState
 
   override fun close() {
     subscription.close()
@@ -94,6 +102,8 @@ private class PhysicsPlayer(
   private fun tick(delta: Duration) {
     val dt = delta.inWholeNanoseconds / 1_000_000_000.0
     if (!dt.isFinite() || dt <= 0.0) return
+
+    groundedState = false
 
     velocity.vy += gravity * dt
 
@@ -131,6 +141,9 @@ private class PhysicsPlayer(
       if (resolved != delta) {
         applyMovement(axis, resolved)
         stopVelocity(axis)
+        if (axis == Axis.Y && delta.isNegative) {
+          groundedState = true
+        }
         return
       }
     }
