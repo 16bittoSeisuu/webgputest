@@ -99,6 +99,3 @@ class FixedStepTickSource internal constructor(
     }
   }
 }
-
-private typealias TickSource = EventSource<Duration>
-private typealias TickSink = EventSink<Duration>
