@@ -1,5 +1,9 @@
 package net.japanesehunter.worldcreate.world
 
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+
 /**
  * Represents a producer of events delivered to subscribed sinks.
  *
@@ -41,3 +45,17 @@ fun interface EventSubscription : AutoCloseable {
    */
   override fun close()
 }
+
+/**
+ * Converts this event source into a cold [Flow].
+ *
+ * The returned flow subscribes on collection start and cancels the subscription when the collector stops.
+ * Events emitted after cancellation are ignored.
+ *
+ * @return A flow that emits every event from this source until collection is cancelled.
+ */
+fun <T> EventSource<T>.asFlow(): Flow<T> =
+  callbackFlow {
+    val subscription = subscribe { event -> trySend(event) }
+    awaitClose { subscription.close() }
+  }
