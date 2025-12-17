@@ -19,9 +19,6 @@ import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.x
-import net.japanesehunter.math.y
-import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -51,14 +48,13 @@ import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
 import net.japanesehunter.worldcreate.BlockState
-import net.japanesehunter.worldcreate.CameraNavigator
 import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
+import net.japanesehunter.worldcreate.PlayerController
 import net.japanesehunter.worldcreate.World
+import net.japanesehunter.worldcreate.controller
 import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.hud.CameraHud
-import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
-import net.japanesehunter.worldcreate.navigator
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
 import net.japanesehunter.worldcreate.world.BlockAccess
@@ -80,9 +76,6 @@ fun main() =
           autoFit()
         }
       val cameraHud = CameraHud()
-      val navigatorSettings = CameraNavigator.Settings()
-      val navigator = camera.navigator(navigatorSettings)
-      showNavigatorControlsHud(navigatorSettings)
 
       val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
       val blockAccess = ChunkBlockAccess(chunk)
@@ -97,6 +90,8 @@ fun main() =
               z = 20.meters,
             ),
         )
+      val controllerSettings = PlayerController.Settings()
+      val controller = camera.controller(player, controllerSettings)
       var lastFrameTime = window.performance.now()
 
       webgpuContext {
@@ -170,11 +165,7 @@ fun main() =
             lastFrameTime = currentTime
             tickSink.onEvent(frameDelta)
 
-            camera.x = player.position.x
-            camera.y = player.position.y + 1.6.meters
-            camera.z = player.position.z
-
-            navigator.update()
+            controller.update()
             cameraHud.update(camera.currentDirection16())
             cameraBuf.update()
 

@@ -1,21 +1,17 @@
 package net.japanesehunter.worldcreate.entity
 
 import net.japanesehunter.math.Aabb
-import net.japanesehunter.math.ImmutableAabb
 import net.japanesehunter.math.ImmutableLength3
-import net.japanesehunter.math.ImmutablePoint3
 import net.japanesehunter.math.Length
 import net.japanesehunter.math.Length3
 import net.japanesehunter.math.MutableAabb
-import net.japanesehunter.math.MutableLength3
 import net.japanesehunter.math.MutablePoint3
+import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.copyOf
-import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
-import net.japanesehunter.math.minusAssign
-import net.japanesehunter.math.plusAssign
-import net.japanesehunter.math.size
+import net.japanesehunter.math.overlaps
+import net.japanesehunter.math.times
 import net.japanesehunter.math.translatedBy
 import net.japanesehunter.math.zero
 import net.japanesehunter.worldcreate.world.BlockAccess
@@ -36,6 +32,12 @@ interface Player {
    * The position of the player in world space at the center bottom of the bounding box.
    */
   val position: Point3
+
+  /**
+   * The current velocity of the player expressed as distance per second.
+   * Modifying this value affects the player's movement in the next physics tick.
+   */
+  val velocity: MutableVelocity3
 
   /**
    * The axis-aligned bounding box representing the player's collision shape.
@@ -77,7 +79,7 @@ private class PhysicsPlayer(
   private val gravity: Length,
 ) : Player {
   private val mutablePosition: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
-  private val velocity: MutableLength3 = MutableLength3()
+  override val velocity: MutableVelocity3 = MutableVelocity3()
   private val mutableBoundingBox: MutableAabb = computeBoundingBox(initialPosition, size)
 
   private val subscription: EventSubscription = tickSource.subscribe { delta -> tick(delta) }
@@ -93,11 +95,12 @@ private class PhysicsPlayer(
     val dt = delta.inWholeNanoseconds / 1_000_000_000.0
     if (!dt.isFinite() || dt <= 0.0) return
 
-    velocity.dy += gravity * dt
+    velocity.vy += gravity * dt
 
-    moveAxis(Axis.Y, velocity.dy * dt)
-    moveAxis(Axis.X, velocity.dx * dt)
-    moveAxis(Axis.Z, velocity.dz * dt)
+    val displacement = velocity * delta
+    moveAxis(Axis.Y, displacement.dy)
+    moveAxis(Axis.X, displacement.dx)
+    moveAxis(Axis.Z, displacement.dz)
   }
 
   private fun moveAxis(
@@ -122,7 +125,7 @@ private class PhysicsPlayer(
     }
 
     for (collision in collisions) {
-      if (!targetBox.intersects(collision)) continue
+      if (!targetBox.overlaps(collision)) continue
 
       val resolved = resolveCollision(axis, delta, collision)
       if (resolved != delta) {
@@ -199,9 +202,9 @@ private class PhysicsPlayer(
 
   private fun stopVelocity(axis: Axis) {
     when (axis) {
-      Axis.X -> velocity.dx = Length.ZERO
-      Axis.Y -> velocity.dy = Length.ZERO
-      Axis.Z -> velocity.dz = Length.ZERO
+      Axis.X -> velocity.vx = Length.ZERO
+      Axis.Y -> velocity.vy = Length.ZERO
+      Axis.Z -> velocity.vz = Length.ZERO
     }
   }
 
