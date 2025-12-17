@@ -10,6 +10,21 @@
 - Make sure to write KDocs.
 - When treating a Double as a finite value, always validate it with isFinite.
 
+## Kotlin Language Notes
+
+In this project, Kotlin context receivers are not supported anymore.
+Using context receivers results in a compilation error.
+
+Use context parameters instead.
+The syntax is as follows.
+
+```kotlin
+context(name: Type)
+fun foo() {
+  name.doSomething()
+}
+```
+
 ## KDoc Rules
 
 KDoc is a top-down specification document, not an implementation note.
