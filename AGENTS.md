@@ -68,7 +68,7 @@ implementation.
 
 1. Opening summary
 
-- FOllow the same rules as interface summaries.
+- Follow the same rules as interface summaries.
 
 2. Primary constructor parameters
 
@@ -215,8 +215,8 @@ Try not to use parenthesis, colons in the response.
 Whenever you make changes, always run
 
 ```bash
-./gradlew check
-cd app/src && ktlint -F
+cd <project root> && ./gradlew check
+cd <project root>/app/src && ktlint -F
 ```
 
 ## git
