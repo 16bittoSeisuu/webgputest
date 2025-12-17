@@ -186,6 +186,74 @@ fun Aabb.intersects(other: Aabb): Boolean =
     min.z <= other.max.z &&
     max.z >= other.min.z
 
+/**
+ * Returns the component-wise size of this box.
+ */
+inline val Aabb.size: ImmutableLength3
+  get() = max - min
+
+/**
+ * Returns a box translated by [distance].
+ */
+inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
+  Aabb(
+    min = min + distance,
+    max = max + distance,
+  )
+
+/**
+ * Translates this mutable box by [distance].
+ */
+inline fun MutableAabb.translateBy(distance: Length3) {
+  mutate {
+    val newMin = min + distance
+    val newMax = max + distance
+    min = newMin
+    max = newMax
+  }
+}
+
+/**
+ * Returns a box expanded by [padding] in every direction.
+ */
+inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
+  expandedBy(
+    Length3(
+      dx = padding,
+      dy = padding,
+      dz = padding,
+    ),
+  )
+
+/**
+ * Returns a box expanded by [padding] in each axis direction.
+ */
+inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb =
+  Aabb(
+    min = min - padding,
+    max = max + padding,
+  )
+
+/**
+ * Returns a box that contains both this box and the box translated by [distance].
+ */
+fun Aabb.sweptBy(distance: Length3): ImmutableAabb {
+  val end = translatedBy(distance)
+
+  val minX = if (min.x <= end.min.x) min.x else end.min.x
+  val minY = if (min.y <= end.min.y) min.y else end.min.y
+  val minZ = if (min.z <= end.min.z) min.z else end.min.z
+
+  val maxX = if (max.x >= end.max.x) max.x else end.max.x
+  val maxY = if (max.y >= end.max.y) max.y else end.max.y
+  val maxZ = if (max.z >= end.max.z) max.z else end.max.z
+
+  return Aabb(
+    min = Point3(x = minX, y = minY, z = minZ),
+    max = Point3(x = maxX, y = maxY, z = maxZ),
+  )
+}
+
 // endregion
 
 // region implementations
