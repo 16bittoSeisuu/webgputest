@@ -8,14 +8,20 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.await
+import net.japanesehunter.math.Aabb
 import net.japanesehunter.math.Color
 import net.japanesehunter.math.Fov
+import net.japanesehunter.math.ImmutableAabb
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.NearFar
+import net.japanesehunter.math.Point3
 import net.japanesehunter.math.blue
 import net.japanesehunter.math.currentDirection16
+import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.x
 import net.japanesehunter.math.y
+import net.japanesehunter.math.z
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -44,16 +50,21 @@ import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
+import net.japanesehunter.worldcreate.BlockState
 import net.japanesehunter.worldcreate.CameraNavigator
 import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.World
+import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.showNavigatorControlsHud
 import net.japanesehunter.worldcreate.navigator
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
+import net.japanesehunter.worldcreate.world.BlockAccess
+import net.japanesehunter.worldcreate.world.createFixedStepTickSource
 import org.w3c.dom.ImageBitmap
+import kotlin.time.Duration.Companion.milliseconds
 
 val end = Job()
 
@@ -66,13 +77,28 @@ fun main() =
           nearFar = NearFar(0.1.meters, 128.meters),
           aspect = canvasAspect,
         ).apply {
-          y = 2.meters
           autoFit()
         }
       val cameraHud = CameraHud()
       val navigatorSettings = CameraNavigator.Settings()
       val navigator = camera.navigator(navigatorSettings)
       showNavigatorControlsHud(navigatorSettings)
+
+      val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
+      val blockAccess = ChunkBlockAccess(chunk)
+      val player =
+        Player(
+          tickSource = tickSource,
+          blockAccess = blockAccess,
+          initialPosition =
+            Point3(
+              x = 20.meters,
+              y = 20.meters,
+              z = 20.meters,
+            ),
+        )
+      var lastFrameTime = window.performance.now()
+
       webgpuContext {
         debugPrintLimits()
         val cameraBuf = camera.toGpuBuffer().bind()
@@ -139,6 +165,15 @@ fun main() =
 
         fun loop() {
           try {
+            val currentTime = window.performance.now()
+            val frameDelta = (currentTime - lastFrameTime).milliseconds
+            lastFrameTime = currentTime
+            tickSink.onEvent(frameDelta)
+
+            camera.x = player.position.x
+            camera.y = player.position.y + 1.6.meters
+            camera.z = player.position.z
+
             navigator.update()
             cameraHud.update(camera.currentDirection16())
             cameraBuf.update()
@@ -366,5 +401,45 @@ private val chunk =
       }
     }
   }
+
+private class ChunkBlockAccess(
+  private val chunk: List<List<List<BlockState>>>,
+) : BlockAccess {
+  private val sizeX = chunk.size
+  private val sizeY = if (chunk.isNotEmpty()) chunk[0].size else 0
+  private val sizeZ = if (sizeY > 0 && chunk[0].isNotEmpty()) chunk[0][0].size else 0
+
+  override fun getCollisions(region: Aabb): List<Aabb> {
+    val minBlockX = (region.min.x.inWholeMeters - 1).coerceIn(0L, sizeX.toLong() - 1).toInt()
+    val maxBlockX = (region.max.x.inWholeMeters + 1).coerceIn(0L, sizeX.toLong() - 1).toInt()
+    val minBlockY = (region.min.y.inWholeMeters - 1).coerceIn(0L, sizeY.toLong() - 1).toInt()
+    val maxBlockY = (region.max.y.inWholeMeters + 1).coerceIn(0L, sizeY.toLong() - 1).toInt()
+    val minBlockZ = (region.min.z.inWholeMeters - 1).coerceIn(0L, sizeZ.toLong() - 1).toInt()
+    val maxBlockZ = (region.max.z.inWholeMeters + 1).coerceIn(0L, sizeZ.toLong() - 1).toInt()
+
+    val collisions = mutableListOf<ImmutableAabb>()
+
+    for (x in minBlockX..maxBlockX) {
+      for (y in minBlockY..maxBlockY) {
+        for (z in minBlockZ..maxBlockZ) {
+          val block = chunk.getOrNull(x)?.getOrNull(y)?.getOrNull(z) ?: continue
+          if (block == BlockState.Air) continue
+
+          val blockBox =
+            Aabb(
+              min = Point3(x = x.meters, y = y.meters, z = z.meters),
+              max = Point3(x = (x + 1).meters, y = (y + 1).meters, z = (z + 1).meters),
+            )
+
+          if (region.intersects(blockBox)) {
+            collisions.add(blockBox)
+          }
+        }
+      }
+    }
+
+    return collisions
+  }
+}
 
 // endregion
