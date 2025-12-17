@@ -8,6 +8,10 @@ import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUTexture
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.navigator
+import net.japanesehunter.worldcreate.input.PointerLockEvent
+import net.japanesehunter.worldcreate.world.EventSink
+import net.japanesehunter.worldcreate.world.EventSource
+import net.japanesehunter.worldcreate.world.EventSubscription
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.Event
 
@@ -39,6 +43,30 @@ interface CanvasContext {
   fun getCurrentTexture(): GPUTexture
 
   fun configure(configuration: GPUCanvasConfiguration): AutoCloseable
+
+  /**
+   * Indicates whether the pointer is currently locked to this canvas.
+   */
+  val isPointerLocked: Boolean
+
+  /**
+   * Emits pointer lock state changes for this canvas.
+   *
+   * @return an event source that delivers pointer lock events to subscribed sinks.
+   */
+  fun pointerLockEvents(): EventSource<PointerLockEvent>
+
+  /**
+   * Requests pointer lock on this canvas.
+   *
+   * The request may fail silently if the browser denies it.
+   */
+  fun requestPointerLock()
+
+  /**
+   * Releases pointer lock if this canvas currently holds it.
+   */
+  fun exitPointerLock()
 }
 
 @PublishedApi
@@ -82,6 +110,32 @@ internal class CanvasContextImpl(
       ?.unsafeCast<GPUCanvasContext>()
       ?: throw UnsupportedBrowserException()
 
+  private val pointerLockSinks = mutableListOf<EventSink<PointerLockEvent>>()
+
+  private val pointerLockChangeHandler: (Event) -> Unit = {
+    val locked = document.asDynamic().pointerLockElement == canvasElement
+    val event = PointerLockEvent(locked)
+    pointerLockSinks.forEach { it.onEvent(event) }
+  }
+
+  private val pointerLockErrorHandler: (Event) -> Unit = {
+    val event = PointerLockEvent(false)
+    pointerLockSinks.forEach { it.onEvent(event) }
+  }
+
+  private val pointerLockEventSource =
+    object : EventSource<PointerLockEvent> {
+      override fun subscribe(sink: EventSink<PointerLockEvent>): EventSubscription {
+        pointerLockSinks.add(sink)
+        return EventSubscription { pointerLockSinks.remove(sink) }
+      }
+    }
+
+  init {
+    document.addEventListener("pointerlockchange", pointerLockChangeHandler)
+    document.addEventListener("pointerlockerror", pointerLockErrorHandler)
+  }
+
   override val canvas: HTMLCanvasElement
     get() = canvasElement
 
@@ -113,7 +167,24 @@ internal class CanvasContextImpl(
     }
   }
 
+  override val isPointerLocked: Boolean
+    get() = document.asDynamic().pointerLockElement == canvasElement
+
+  override fun pointerLockEvents(): EventSource<PointerLockEvent> = pointerLockEventSource
+
+  override fun requestPointerLock() {
+    canvasElement.asDynamic().requestPointerLock()
+  }
+
+  override fun exitPointerLock() {
+    if (isPointerLocked) {
+      document.asDynamic().exitPointerLock()
+    }
+  }
+
   override fun close() {
+    document.removeEventListener("pointerlockchange", pointerLockChangeHandler)
+    document.removeEventListener("pointerlockerror", pointerLockErrorHandler)
     autoResize.forEach(AutoCloseable::close)
   }
 }
