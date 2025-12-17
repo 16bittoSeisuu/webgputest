@@ -82,6 +82,29 @@ class AabbTest :
       a.intersects(b) shouldBe false
     }
 
+    test("Aabb.overlaps returns false when only touching") {
+      val a = Aabb(min = p(0, 0, 0), max = p(1, 1, 1))
+      val b = Aabb(min = p(1, 0, 0), max = p(2, 1, 1))
+
+      a.overlaps(b) shouldBe false
+      b.overlaps(a) shouldBe false
+    }
+
+    test("Aabb.overlaps returns true when volumes intersect") {
+      val a = Aabb(min = p(0, 0, 0), max = p(2, 2, 2))
+      val b = Aabb(min = p(1, 1, 1), max = p(3, 3, 3))
+
+      a.overlaps(b) shouldBe true
+      b.overlaps(a) shouldBe true
+    }
+
+    test("Aabb.overlaps returns false when separated") {
+      val a = Aabb(min = p(0, 0, 0), max = p(1, 1, 1))
+      val b = Aabb(min = p(2, 0, 0), max = p(3, 1, 1))
+
+      a.overlaps(b) shouldBe false
+    }
+
     test("Aabb.size is non-negative and equals max - min") {
       val a = Aabb(min = p(5, 2, 1), max = p(1, 4, 3))
       a.size shouldBe d(4, 2, 2)

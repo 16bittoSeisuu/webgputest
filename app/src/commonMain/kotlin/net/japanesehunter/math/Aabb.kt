@@ -226,6 +226,25 @@ fun Aabb.intersects(other: Aabb): Boolean =
     max.z >= other.min.z
 
 /**
+ * Tests whether this box has a positive volume overlap with [other].
+ *
+ * Unlike [intersects], mere touching at a face, an edge, or a single point is not considered an overlap.
+ * This is useful for physics collision detection where touching surfaces should not block movement.
+ *
+ * This function has no side effects.
+ *
+ * @param other the box to test against.
+ * @return true when the boxes have a non-zero volume of intersection.
+ */
+fun Aabb.overlaps(other: Aabb): Boolean =
+  min.x < other.max.x &&
+    max.x > other.min.x &&
+    min.y < other.max.y &&
+    max.y > other.min.y &&
+    min.z < other.max.z &&
+    max.z > other.min.z
+
+/**
  * Computes the component-wise size of this box.
  *
  * This function has no side effects.
