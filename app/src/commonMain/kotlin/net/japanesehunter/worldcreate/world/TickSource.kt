@@ -36,11 +36,11 @@ fun interface TickHandler {
 /**
  * Represents a cancellable subscription to a tick source.
  */
-fun interface TickSubscription {
+fun interface TickSubscription : AutoCloseable {
   /**
    * Cancels the subscription.
    * After this method returns, the handler will no longer receive tick events.
    * Calling this multiple times has no effect.
    */
-  fun cancel()
+  override fun close()
 }
