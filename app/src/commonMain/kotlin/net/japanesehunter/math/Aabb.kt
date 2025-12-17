@@ -13,19 +13,28 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 // region interfaces
 
 /**
- * Represents an axis-aligned bounding box in 3D space.
+ * Represents an axis-aligned bounding box in three-dimensional space.
  *
- * The box is defined by two points.
- * Implementations guarantee that [min] is component-wise less than or equal to [max].
+ * The box is axis-aligned and is defined by two corners.
+ * Implementations guarantee that the stored bounds are normalized so the minimum corner is component-wise less than or
+ * equal to the maximum corner.
+ *
+ * Both boundaries are treated as inclusive.
+ *
+ * Implementations are required to be safe for concurrent reads.
  */
 sealed interface Aabb {
   /**
    * Represents the component-wise minimum corner of the box.
+   *
+   * The boundary is inclusive.
    */
   val min: Point3
 
   /**
    * Represents the component-wise maximum corner of the box.
+   *
+   * The boundary is inclusive.
    */
   val max: Point3
 
@@ -50,7 +59,8 @@ sealed interface Aabb {
 
 /**
  * Represents an immutable axis-aligned bounding box.
- * External implementations are forbidden to preserve value semantics.
+ *
+ * Instances are safe to share across threads.
  */
 sealed interface ImmutableAabb : Aabb
 
@@ -58,6 +68,8 @@ sealed interface ImmutableAabb : Aabb
  * Represents a mutable axis-aligned bounding box.
  *
  * Changes can be observed via [StateFlow] and [Observable.observe].
+ *
+ * Implementations are required to be thread-safe.
  */
 interface MutableAabb :
   Aabb,
@@ -90,7 +102,7 @@ interface MutableAabb :
 // region constants
 
 /**
- * The zero-sized AABB at the origin.
+ * Represents a zero-sized bounding box at the origin.
  */
 val Aabb.Companion.zero: ImmutableAabb get() = AABB_ZERO
 
@@ -99,16 +111,18 @@ val Aabb.Companion.zero: ImmutableAabb get() = AABB_ZERO
 // region factory functions
 
 /**
- * Creates an [Aabb] from two points.
+ * Creates an axis-aligned bounding box from two corners.
  *
  * The returned instance is always immutable.
- * It can be treated as [MutableAabb] only inside [mutator].
- * The final box is normalized so that [Aabb.min] is component-wise less than or equal to [Aabb.max].
+ * The produced bounds are normalized so the stored minimum corner is component-wise less than or equal to the stored
+ * maximum corner.
  *
- * @param min The first corner.
- * @param max The second corner.
- * @param mutator A scope for [MutableAabb] for initialization.
- * @return The frozen, immutable [ImmutableAabb].
+ * This function has no side effects.
+ *
+ * @param min the first corner.
+ * @param max the second corner.
+ * @param mutator a scope for initializing the bounds.
+ * @return the created bounding box.
  */
 @Suppress("FunctionName")
 fun Aabb(
@@ -139,8 +153,15 @@ fun Aabb(
 }
 
 /**
- * Creates an [ImmutableAabb] by copying an existing one.
- * If the original is already immutable and [mutator] is null, the same instance is returned.
+ * Creates an immutable bounding box by copying [copyFrom].
+ *
+ * When [copyFrom] is already immutable and [mutator] is null, the original instance is reused.
+ *
+ * This function has no side effects.
+ *
+ * @param copyFrom the instance to copy from.
+ * @param mutator a scope for initializing the bounds.
+ * @return the copied bounding box.
  */
 inline fun Aabb.Companion.copyOf(
   copyFrom: Aabb,
@@ -157,9 +178,15 @@ inline fun Aabb.Companion.copyOf(
   }
 
 /**
- * Creates a [MutableAabb] from two points.
+ * Creates a mutable bounding box from two corners.
  *
  * The created instance is normalized immediately.
+ *
+ * This function has no side effects.
+ *
+ * @param min the first corner.
+ * @param max the second corner.
+ * @return the created bounding box.
  */
 fun MutableAabb(
   min: Point3 = Point3.zero,
@@ -167,7 +194,12 @@ fun MutableAabb(
 ): MutableAabb = MutableAabbImpl(min = Point3.copyOf(min), max = Point3.copyOf(max)).also { it.normalizeInPlace() }
 
 /**
- * Creates a [MutableAabb] by copying an existing [Aabb].
+ * Creates a mutable bounding box by copying [copyFrom].
+ *
+ * This function has no side effects.
+ *
+ * @param copyFrom the instance to copy from.
+ * @return the copied bounding box.
  */
 fun MutableAabb.Companion.copyOf(copyFrom: Aabb): MutableAabb = MutableAabb(copyFrom.min, copyFrom.max)
 
@@ -176,7 +208,14 @@ fun MutableAabb.Companion.copyOf(copyFrom: Aabb): MutableAabb = MutableAabb(copy
 // region geometry
 
 /**
- * Returns `true` when this box overlaps [other].
+ * Tests whether this box intersects [other].
+ *
+ * Touching at a face, an edge, or a single point is treated as an intersection.
+ *
+ * This function has no side effects.
+ *
+ * @param other the box to test against.
+ * @return true when the boxes intersect.
  */
 fun Aabb.intersects(other: Aabb): Boolean =
   min.x <= other.max.x &&
@@ -187,13 +226,23 @@ fun Aabb.intersects(other: Aabb): Boolean =
     max.z >= other.min.z
 
 /**
- * Returns the component-wise size of this box.
+ * Computes the component-wise size of this box.
+ *
+ * This function has no side effects.
+ *
+ * @return the size as max minus min.
  */
 inline val Aabb.size: ImmutableLength3
   get() = max - min
 
 /**
- * Returns a box translated by [distance].
+ * Creates a box translated by [distance].
+ *
+ * This function has no side effects.
+ *
+ * @param distance the displacement to add to both corners.
+ * @return the translated box.
+ * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
 inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
   Aabb(
@@ -203,6 +252,11 @@ inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
 
 /**
  * Translates this mutable box by [distance].
+ *
+ * This function mutates the receiver.
+ *
+ * @param distance the displacement to add to both corners.
+ * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
 fun MutableAabb.translateBy(distance: Length3) {
   if (this is MutableAabbImpl) {
@@ -219,7 +273,16 @@ fun MutableAabb.translateBy(distance: Length3) {
 }
 
 /**
- * Returns a box expanded by [padding] in every direction.
+ * Creates a box expanded by [padding] in every direction.
+ *
+ * The padding must be non-negative.
+ *
+ * This function has no side effects.
+ *
+ * @param padding the amount of padding added to each side.
+ * @return the expanded box.
+ * @throws ArithmeticException arithmetic overflow in underlying length operations.
+ * @throws IllegalArgumentException when padding is negative.
  */
 inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
   expandedBy(
@@ -231,7 +294,16 @@ inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
   )
 
 /**
- * Returns a box expanded by [padding] in each axis direction.
+ * Creates a box expanded by [padding] in each axis direction.
+ *
+ * The padding must be non-negative.
+ *
+ * This function has no side effects.
+ *
+ * @param padding the per-axis padding added to each side.
+ * @return the expanded box.
+ * @throws ArithmeticException arithmetic overflow in underlying length operations.
+ * @throws IllegalArgumentException when any component of padding is negative.
  */
 inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb {
   require(!padding.dx.isNegative && !padding.dy.isNegative && !padding.dz.isNegative) {
@@ -244,7 +316,13 @@ inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb {
 }
 
 /**
- * Returns a box that contains both this box and the box translated by [distance].
+ * Creates a box that contains both this box and this box translated by [distance].
+ *
+ * This function has no side effects.
+ *
+ * @param distance the displacement used to compute the end position.
+ * @return the smallest box that contains both the start and end boxes.
+ * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
 fun Aabb.sweptBy(distance: Length3): ImmutableAabb {
   val end = translatedBy(distance)
