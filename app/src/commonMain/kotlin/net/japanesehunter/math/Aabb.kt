@@ -204,7 +204,12 @@ inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
 /**
  * Translates this mutable box by [distance].
  */
-inline fun MutableAabb.translateBy(distance: Length3) {
+fun MutableAabb.translateBy(distance: Length3) {
+  if (this is MutableAabbImpl) {
+    translateInPlace(distance)
+    return
+  }
+
   mutate {
     val newMin = min + distance
     val newMax = max + distance
@@ -228,11 +233,15 @@ inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
 /**
  * Returns a box expanded by [padding] in each axis direction.
  */
-inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb =
-  Aabb(
+inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb {
+  require(!padding.dx.isNegative && !padding.dy.isNegative && !padding.dz.isNegative) {
+    "Padding must be non-negative: $padding"
+  }
+  return Aabb(
     min = min - padding,
     max = max + padding,
   )
+}
 
 /**
  * Returns a box that contains both this box and the box translated by [distance].
@@ -359,6 +368,17 @@ private class MutableAabbImpl(
 
   override fun mutate(action: MutableAabb.() -> Unit) {
     lock.withLock { action(this) }
+  }
+
+  fun translateInPlace(distance: Length3) {
+    lock.withLock {
+      generation++
+      val currentMin = _minFlow.value
+      val currentMax = _maxFlow.value
+      val (normalizedMin, normalizedMax) = normalize(currentMin + distance, currentMax + distance)
+      _minFlow.value = normalizedMin
+      _maxFlow.value = normalizedMax
+    }
   }
 
   fun normalizeInPlace() {
