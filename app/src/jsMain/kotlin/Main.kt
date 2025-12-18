@@ -55,6 +55,7 @@ import net.japanesehunter.worldcreate.World
 import net.japanesehunter.worldcreate.controller
 import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.hud.CameraHud
+import net.japanesehunter.worldcreate.hud.PlayerHud
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
 import net.japanesehunter.worldcreate.world.BlockAccess
@@ -90,6 +91,7 @@ fun main() =
               z = 20.meters,
             ),
         )
+      val playerHud = PlayerHud(player)
       val controllerSettings = PlayerController.Settings()
       val controller = camera.controller(player, controllerSettings)
       var lastFrameTime = window.performance.now()
@@ -167,6 +169,7 @@ fun main() =
 
             controller.update()
             cameraHud.update(camera.currentDirection16())
+            playerHud.update()
             cameraBuf.update()
 
             gpuCommand {
