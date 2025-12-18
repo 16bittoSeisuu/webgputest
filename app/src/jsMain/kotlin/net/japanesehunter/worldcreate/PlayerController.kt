@@ -4,6 +4,8 @@ import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import kotlinx.browser.document
 import kotlinx.browser.window
+import net.japanesehunter.math.Acceleration
+import net.japanesehunter.math.AccelerationUnit.METER_PER_SECOND_SQUARED
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Direction3
@@ -12,11 +14,14 @@ import net.japanesehunter.math.Length3
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.Quaternion
+import net.japanesehunter.math.Speed
+import net.japanesehunter.math.SpeedUnit.METER_PER_SECOND
 import net.japanesehunter.math.degrees
 import net.japanesehunter.math.forward
 import net.japanesehunter.math.lookingAlong
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.metersPerSecond
+import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.rotate
 import net.japanesehunter.math.setPosition
 import net.japanesehunter.math.setRotation
@@ -116,8 +121,12 @@ class PlayerController internal constructor(
     var rightKey: String = "KeyD",
     var jumpKey: String = "Space",
     var mouseSensitivityDegPerDot: Double = 0.15,
-    var horizontalSpeed: net.japanesehunter.math.Speed = 4.0.metersPerSecond,
-    var jumpSpeed: net.japanesehunter.math.Speed = 9.0.metersPerSecond,
+    var horizontalSpeed: Speed = 5.metersPerSecond,
+    var groundAcceleration: Acceleration = 40.metersPerSecondSquared,
+    var groundDeceleration: Acceleration = 40.metersPerSecondSquared,
+    var airAcceleration: Acceleration = 10.metersPerSecondSquared,
+    var airDeceleration: Acceleration = 2.metersPerSecondSquared,
+    var jumpSpeed: Speed = 9.metersPerSecond,
     var eyeHeight: Length = 1.62.meters,
     var maxPitch: Angle = 89.0.degrees,
   ) {
@@ -214,6 +223,7 @@ class PlayerController internal constructor(
    */
   fun update() {
     val now = window.performance.now()
+    val dtMillis = now - lastTimestamp
     lastTimestamp = now
 
     if (!isPointerLocked()) return
@@ -228,7 +238,10 @@ class PlayerController internal constructor(
       applyRotation()
     }
 
-    updatePlayerVelocity()
+    val dtSeconds = (dtMillis / 1000.0).coerceIn(0.0, 0.1)
+    if (dtSeconds > 0.0) {
+      updatePlayerVelocity(dtSeconds)
+    }
 
     syncCameraPosition()
   }
@@ -280,7 +293,7 @@ class PlayerController internal constructor(
     )
   }
 
-  private fun updatePlayerVelocity() {
+  private fun updatePlayerVelocity(dt: Double) {
     val planarForward =
       Direction3(
         ux = sin(yaw),
@@ -294,41 +307,80 @@ class PlayerController internal constructor(
         uz = sin(yaw),
       )
 
-    var dx = 0.0
-    var dz = 0.0
+    var inputX = 0.0
+    var inputZ = 0.0
 
     if (settings.forwardKey in activeKeys) {
-      dx += planarForward.ux
-      dz += planarForward.uz
+      inputX += planarForward.ux
+      inputZ += planarForward.uz
     }
     if (settings.backwardKey in activeKeys) {
-      dx -= planarForward.ux
-      dz -= planarForward.uz
+      inputX -= planarForward.ux
+      inputZ -= planarForward.uz
     }
     if (settings.rightKey in activeKeys) {
-      dx += planarRight.ux
-      dz += planarRight.uz
+      inputX += planarRight.ux
+      inputZ += planarRight.uz
     }
     if (settings.leftKey in activeKeys) {
-      dx -= planarRight.ux
-      dz -= planarRight.uz
+      inputX -= planarRight.ux
+      inputZ -= planarRight.uz
     }
 
-    val horizontalLenSq = dx * dx + dz * dz
-    if (horizontalLenSq > 0.0 && !settings.horizontalSpeed.isZero) {
-      val invLen = 1.0 / sqrt(horizontalLenSq)
-      val speed = settings.horizontalSpeed
-      player.velocity.vx = speed * dx * invLen
-      player.velocity.vz = speed * dz * invLen
-    } else {
-      player.velocity.vx = net.japanesehunter.math.Speed.ZERO
-      player.velocity.vz = net.japanesehunter.math.Speed.ZERO
-    }
+    val currentVx = player.velocity.vx.toDouble(METER_PER_SECOND)
+    val currentVz = player.velocity.vz.toDouble(METER_PER_SECOND)
+
+    val accel =
+      if (player.isGrounded) settings.groundAcceleration else settings.airAcceleration
+    val decel =
+      if (player.isGrounded) settings.groundDeceleration else settings.airDeceleration
+    val accelRate = accel.toDouble(METER_PER_SECOND_SQUARED)
+    val decelRate = decel.toDouble(METER_PER_SECOND_SQUARED)
+    val maxSpeed = settings.horizontalSpeed.toDouble(METER_PER_SECOND)
+
+    val inputLenSq = inputX * inputX + inputZ * inputZ
+    val hasInput = inputLenSq > 0.0
+
+    val (newVx, newVz) =
+      if (hasInput) {
+        val invLen = 1.0 / sqrt(inputLenSq)
+        val dirX = inputX * invLen
+        val dirZ = inputZ * invLen
+        val targetVx = dirX * maxSpeed
+        val targetVz = dirZ * maxSpeed
+
+        val diffX = targetVx - currentVx
+        val diffZ = targetVz - currentVz
+        val diffLen = sqrt(diffX * diffX + diffZ * diffZ)
+
+        if (diffLen > 0.0) {
+          val maxChange = accelRate * dt
+          val change = minOf(diffLen, maxChange)
+          val newX = currentVx + (diffX / diffLen) * change
+          val newZ = currentVz + (diffZ / diffLen) * change
+          newX to newZ
+        } else {
+          currentVx to currentVz
+        }
+      } else {
+        val currentSpeed = sqrt(currentVx * currentVx + currentVz * currentVz)
+        if (currentSpeed > 0.0) {
+          val maxDrop = decelRate * dt
+          val newSpeed = maxOf(0.0, currentSpeed - maxDrop)
+          val scale = newSpeed / currentSpeed
+          (currentVx * scale) to (currentVz * scale)
+        } else {
+          0.0 to 0.0
+        }
+      }
+
+    player.velocity.vx = newVx.metersPerSecond
+    player.velocity.vz = newVz.metersPerSecond
   }
 
   private fun clearVelocity() {
-    player.velocity.vx = net.japanesehunter.math.Speed.ZERO
-    player.velocity.vz = net.japanesehunter.math.Speed.ZERO
+    player.velocity.vx = Speed.ZERO
+    player.velocity.vz = Speed.ZERO
   }
 
   private fun isPointerLocked(): Boolean = document.asDynamic().pointerLockElement == canvas
