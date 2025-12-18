@@ -69,6 +69,13 @@ interface Player {
  * @param initialPosition the starting position of the player.
  * @param size the dimensions of the player's bounding box.
  * @param gravity the gravitational acceleration applied each second.
+ * @param drag the air resistance coefficient applied to velocity each second.
+ *
+ *   range: drag >= 0.0
+ *
+ *   NaN: treated as invalid and rejected
+ *
+ *   Infinity: treated as invalid and rejected
  * @return the created player.
  */
 fun Player(
@@ -77,7 +84,8 @@ fun Player(
   initialPosition: Point3 = Point3.zero,
   size: Length3 = Length3(dx = 0.6.meters, dy = 1.8.meters, dz = 0.6.meters),
   gravity: Acceleration = (-32.0).metersPerSecondSquared,
-): Player = PhysicsPlayer(tickSource, blockAccess, initialPosition, Length3.copyOf(size), gravity)
+  drag: Double = 0.4,
+): Player = PhysicsPlayer(tickSource, blockAccess, initialPosition, Length3.copyOf(size), gravity, drag)
 
 private class PhysicsPlayer(
   tickSource: TickSource,
@@ -85,7 +93,12 @@ private class PhysicsPlayer(
   initialPosition: Point3,
   private val size: ImmutableLength3,
   private val gravity: Acceleration,
+  private val drag: Double,
 ) : Player {
+  init {
+    require(drag.isFinite() && drag >= 0.0) { "drag must be finite and non-negative: $drag" }
+  }
+
   private val mutablePosition: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
   override val velocity: MutableVelocity3 = MutableVelocity3()
   private val mutableBoundingBox: MutableAabb = computeBoundingBox(initialPosition, size)
@@ -107,6 +120,14 @@ private class PhysicsPlayer(
     groundedState = false
 
     velocity.vy += gravity * delta
+
+    if (drag > 0.0) {
+      val dt = delta.inWholeNanoseconds / 1_000_000_000.0
+      val factor = kotlin.math.exp(-drag * dt)
+      velocity.vx *= factor
+      velocity.vy *= factor
+      velocity.vz *= factor
+    }
 
     val displacement = velocity * delta
     moveAxis(Axis.Y, displacement.dy)
