@@ -26,10 +26,18 @@ class PlayerHud internal constructor(
   fun update() {
     val pos = player.position
     val vel = player.velocity
+
+    val x = pos.x.toString(unit = null, decimals = 2)
+    val y = pos.y.toString(unit = null, decimals = 2)
+    val z = pos.z.toString(unit = null, decimals = 2)
+    val vx = vel.vx.toString(unit = null, decimals = 2)
+    val vy = vel.vy.toString(unit = null, decimals = 2)
+    val vz = vel.vz.toString(unit = null, decimals = 2)
+
     val text =
       buildString {
-        append("pos:<br>${pos.x}<br>${pos.y}<br>${pos.z}<br><br>")
-        append("vel:<br>${vel.vx}<br>${vel.vy}<br>${vel.vz}<br>")
+        append("<strong>Position:</strong><br>X: $x<br>Y: $y<br>Z: $z<br><br>")
+        append("<strong>Velocity:</strong><br>X: $vx<br>Y: $vy<br>Z: $vz<br>")
       }
 
     if (container.innerHTML == text) return
