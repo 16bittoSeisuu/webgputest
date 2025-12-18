@@ -1,6 +1,7 @@
 package net.japanesehunter.math
 
 import net.japanesehunter.math.Acceleration.Companion.from
+import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 
@@ -213,6 +214,32 @@ value class Acceleration internal constructor(
   override fun toString(): String {
     val value = toDouble(AccelerationUnit.METER_PER_SECOND_SQUARED)
     return "$value ${AccelerationUnit.METER_PER_SECOND_SQUARED.symbol}"
+  }
+
+  /**
+   * Formats this acceleration as a string with the specified unit and decimal places.
+   *
+   * @param unit The unit to display the value in.
+   *
+   *   null: uses meters per second squared
+   * @param decimals The number of decimal places.
+   *
+   *   null: uses unlimited precision
+   *   range: decimals >= 0
+   * @param signMode The sign display mode.
+   * @return A formatted string representation.
+   */
+  fun toString(
+    unit: AccelerationUnit?,
+    decimals: Int? = 2,
+    signMode: SignMode = SignMode.Always,
+  ): String {
+    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
+    val resolvedUnit = unit ?: AccelerationUnit.METER_PER_SECOND_SQUARED
+    val isNegative = nanometersPerSecondSquared < 0
+    val absValue = abs(toDouble(resolvedUnit))
+    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    return "${signMode.prefix(isNegative)}$formatted ${resolvedUnit.symbol}"
   }
 
   companion object {

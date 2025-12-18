@@ -297,6 +297,45 @@ value class Length internal constructor(
     }
   }
 
+  /**
+   * Formats this length as a string with the specified unit and decimal places.
+   *
+   * @param unit The unit to display the value in.
+   *
+   *   null: automatically selects the most appropriate unit based on magnitude
+   * @param decimals The number of decimal places.
+   *
+   *   null: uses unlimited precision
+   *   range: decimals >= 0
+   * @param signMode The sign display mode.
+   * @return A formatted string representation.
+   */
+  fun toString(
+    unit: LengthUnit?,
+    decimals: Int? = 2,
+    signMode: SignMode = SignMode.Always,
+  ): String {
+    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
+    val resolvedUnit = resolveUnit(unit)
+    val isNegative = nanometers < 0
+    val absValue = abs(toDouble(resolvedUnit))
+    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    return "${signMode.prefix(isNegative)}$formatted${resolvedUnit.symbol}"
+  }
+
+  private fun resolveUnit(unit: LengthUnit?): LengthUnit {
+    if (unit != null) return unit
+    val absNanometers = absoluteNanometers(nanometers)
+    return when {
+      absNanometers >= NANOMETERS_PER_KILOMETER -> LengthUnit.KILOMETER
+      absNanometers >= NANOMETERS_PER_METER -> LengthUnit.METER
+      absNanometers >= NANOMETERS_PER_CENTIMETER -> LengthUnit.CENTIMETER
+      absNanometers >= NANOMETERS_PER_MILLIMETER -> LengthUnit.MILLIMETER
+      absNanometers >= NANOMETERS_PER_MICROMETER -> LengthUnit.MICROMETER
+      else -> LengthUnit.NANOMETER
+    }
+  }
+
   companion object {
     /**
      * A distance of zero nanometers.

@@ -271,6 +271,45 @@ value class Area internal constructor(
     }
   }
 
+  /**
+   * Formats this area as a string with the specified unit and decimal places.
+   *
+   * @param unit The unit to display the value in.
+   *
+   *   null: automatically selects the most appropriate unit based on magnitude
+   * @param decimals The number of decimal places.
+   *
+   *   null: uses unlimited precision
+   *   range: decimals >= 0
+   * @param signMode The sign display mode.
+   * @return A formatted string representation.
+   */
+  fun toString(
+    unit: AreaUnit?,
+    decimals: Int? = 2,
+    signMode: SignMode = SignMode.Always,
+  ): String {
+    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
+    val resolvedUnit = resolveUnit(unit)
+    val isNegative = squareNanometers < 0
+    val absValue = abs(toDouble(resolvedUnit))
+    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    return "${signMode.prefix(isNegative)}$formatted${resolvedUnit.symbol}"
+  }
+
+  private fun resolveUnit(unit: AreaUnit?): AreaUnit {
+    if (unit != null) return unit
+    val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
+    return when {
+      absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER && SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> AreaUnit.SQUARE_KILOMETER
+      absSquareNanometers >= SQUARE_NANOMETERS_PER_METER -> AreaUnit.SQUARE_METER
+      absSquareNanometers >= SQUARE_NANOMETERS_PER_CENTIMETER -> AreaUnit.SQUARE_CENTIMETER
+      absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> AreaUnit.SQUARE_MILLIMETER
+      absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER -> AreaUnit.SQUARE_MICROMETER
+      else -> AreaUnit.SQUARE_NANOMETER
+    }
+  }
+
   companion object {
     /**
      * An area of zero square nanometers.

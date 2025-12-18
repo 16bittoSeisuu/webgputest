@@ -250,6 +250,43 @@ value class Angle internal constructor(
     return "$formatted ${unit.symbol}"
   }
 
+  /**
+   * Formats this angle as a string with the specified unit and decimal places.
+   *
+   * @param unit The unit to display the value in.
+   *
+   *   null: automatically selects the most appropriate unit based on magnitude
+   * @param decimals The number of decimal places.
+   *
+   *   null: uses unlimited precision
+   *   range: decimals >= 0
+   * @param signMode The sign display mode.
+   * @return A formatted string representation.
+   */
+  fun toString(
+    unit: AngleUnit?,
+    decimals: Int? = 2,
+    signMode: SignMode = SignMode.Always,
+  ): String {
+    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
+    val resolvedUnit = resolveUnit(unit)
+    val isNegative = nanoradians < 0
+    val absValue = abs(toDouble(resolvedUnit))
+    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    return "${signMode.prefix(isNegative)}$formatted ${resolvedUnit.symbol}"
+  }
+
+  private fun resolveUnit(unit: AngleUnit?): AngleUnit {
+    if (unit != null) return unit
+    val absValue = abs(nanoradians)
+    return when {
+      absValue >= NANORADIANS_PER_RADIAN -> AngleUnit.RADIAN
+      absValue >= NANORADIANS_PER_MILLIRADIAN -> AngleUnit.MILLIRADIAN
+      absValue >= NANORADIANS_PER_MICRORADIAN -> AngleUnit.MICRORADIAN
+      else -> AngleUnit.NANORADIAN
+    }
+  }
+
   companion object {
     /**
      * An angle of zero radians.

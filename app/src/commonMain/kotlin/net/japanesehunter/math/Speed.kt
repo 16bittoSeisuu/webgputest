@@ -1,6 +1,7 @@
 package net.japanesehunter.math
 
 import net.japanesehunter.math.Speed.Companion.from
+import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 
@@ -219,6 +220,32 @@ value class Speed internal constructor(
   override fun toString(): String {
     val value = toDouble(SpeedUnit.METER_PER_SECOND)
     return "$value ${SpeedUnit.METER_PER_SECOND.symbol}"
+  }
+
+  /**
+   * Formats this speed as a string with the specified unit and decimal places.
+   *
+   * @param unit The unit to display the value in.
+   *
+   *   null: uses meters per second
+   * @param decimals The number of decimal places.
+   *
+   *   null: uses unlimited precision
+   *   range: decimals >= 0
+   * @param signMode The sign display mode.
+   * @return A formatted string representation.
+   */
+  fun toString(
+    unit: SpeedUnit?,
+    decimals: Int? = 2,
+    signMode: SignMode = SignMode.Always,
+  ): String {
+    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
+    val resolvedUnit = unit ?: SpeedUnit.METER_PER_SECOND
+    val isNegative = nanometersPerSecond < 0
+    val absValue = abs(toDouble(resolvedUnit))
+    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    return "${signMode.prefix(isNegative)}$formatted ${resolvedUnit.symbol}"
   }
 
   companion object {
