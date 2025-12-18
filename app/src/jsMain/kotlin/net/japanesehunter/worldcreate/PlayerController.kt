@@ -16,6 +16,7 @@ import net.japanesehunter.math.degrees
 import net.japanesehunter.math.forward
 import net.japanesehunter.math.lookingAlong
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.metersPerSecond
 import net.japanesehunter.math.rotate
 import net.japanesehunter.math.setPosition
 import net.japanesehunter.math.setRotation
@@ -115,20 +116,14 @@ class PlayerController internal constructor(
     var rightKey: String = "KeyD",
     var jumpKey: String = "Space",
     var mouseSensitivityDegPerDot: Double = 0.15,
-    var horizontalSpeedMetersPerSecond: Double = 4.0,
-    var jumpVelocity: Length = 9.meters,
+    var horizontalSpeed: net.japanesehunter.math.Speed = 4.0.metersPerSecond,
+    var jumpSpeed: net.japanesehunter.math.Speed = 9.0.metersPerSecond,
     var eyeHeight: Length = 1.62.meters,
     var maxPitch: Angle = 89.0.degrees,
   ) {
     init {
       require(mouseSensitivityDegPerDot.isFinite() && mouseSensitivityDegPerDot >= 0.0) {
         "mouseSensitivityDegPerDot must be finite and non-negative: $mouseSensitivityDegPerDot"
-      }
-      require(horizontalSpeedMetersPerSecond.isFinite() && horizontalSpeedMetersPerSecond >= 0.0) {
-        "horizontalSpeedMetersPerSecond must be finite and non-negative: $horizontalSpeedMetersPerSecond"
-      }
-      require(jumpVelocity.toDouble(LengthUnit.METER).isFinite() && jumpVelocity.toDouble(LengthUnit.METER) >= 0.0) {
-        "jumpVelocity must be finite and non-negative: $jumpVelocity"
       }
       require(eyeHeight.toDouble(LengthUnit.METER).isFinite()) {
         "eyeHeight must be finite: $eyeHeight"
@@ -157,7 +152,7 @@ class PlayerController internal constructor(
       val keyEvent = event as? KeyboardEvent ?: return
       if (keyEvent.code == settings.jumpKey) {
         if (player.isGrounded) {
-          player.velocity.vy = settings.jumpVelocity
+          player.velocity.vy = settings.jumpSpeed
         }
       } else if (keyEvent.code in navKeys()) {
         activeKeys.add(keyEvent.code)
@@ -320,20 +315,20 @@ class PlayerController internal constructor(
     }
 
     val horizontalLenSq = dx * dx + dz * dz
-    if (horizontalLenSq > 0.0 && settings.horizontalSpeedMetersPerSecond > 0.0) {
+    if (horizontalLenSq > 0.0 && !settings.horizontalSpeed.isZero) {
       val invLen = 1.0 / sqrt(horizontalLenSq)
-      val speed = settings.horizontalSpeedMetersPerSecond.meters
+      val speed = settings.horizontalSpeed
       player.velocity.vx = speed * dx * invLen
       player.velocity.vz = speed * dz * invLen
     } else {
-      player.velocity.vx = Length.ZERO
-      player.velocity.vz = Length.ZERO
+      player.velocity.vx = net.japanesehunter.math.Speed.ZERO
+      player.velocity.vz = net.japanesehunter.math.Speed.ZERO
     }
   }
 
   private fun clearVelocity() {
-    player.velocity.vx = Length.ZERO
-    player.velocity.vz = Length.ZERO
+    player.velocity.vx = net.japanesehunter.math.Speed.ZERO
+    player.velocity.vz = net.japanesehunter.math.Speed.ZERO
   }
 
   private fun isPointerLocked(): Boolean = document.asDynamic().pointerLockElement == canvas

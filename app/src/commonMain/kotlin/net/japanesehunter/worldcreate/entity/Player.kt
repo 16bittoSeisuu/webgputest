@@ -4,10 +4,13 @@ import net.japanesehunter.math.Aabb
 import net.japanesehunter.math.ImmutableLength3
 import net.japanesehunter.math.Length
 import net.japanesehunter.math.Length3
+import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableAabb
 import net.japanesehunter.math.MutablePoint3
 import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.Speed
+import net.japanesehunter.math.SpeedUnit
 import net.japanesehunter.math.copyOf
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.overlaps
@@ -105,7 +108,8 @@ private class PhysicsPlayer(
 
     groundedState = false
 
-    velocity.vy += gravity * dt
+    val v = gravity * dt
+    velocity.vy += Speed.from(v.toDouble(LengthUnit.METER), SpeedUnit.METER_PER_SECOND)
 
     val displacement = velocity * delta
     moveAxis(Axis.Y, displacement.dy)
@@ -215,9 +219,9 @@ private class PhysicsPlayer(
 
   private fun stopVelocity(axis: Axis) {
     when (axis) {
-      Axis.X -> velocity.vx = Length.ZERO
-      Axis.Y -> velocity.vy = Length.ZERO
-      Axis.Z -> velocity.vz = Length.ZERO
+      Axis.X -> velocity.vx = net.japanesehunter.math.Speed.ZERO
+      Axis.Y -> velocity.vy = net.japanesehunter.math.Speed.ZERO
+      Axis.Z -> velocity.vz = net.japanesehunter.math.Speed.ZERO
     }
   }
 

@@ -8,25 +8,25 @@ import kotlin.time.Duration.Companion.seconds
 class Velocity3Test :
   FunSpec({
     test("Velocity3.zero is the zero vector") {
-      Velocity3.zero shouldBe Velocity3(vx = Length.ZERO, vy = Length.ZERO, vz = Length.ZERO)
+      Velocity3.zero shouldBe Velocity3(vx = Speed.ZERO, vy = Speed.ZERO, vz = Speed.ZERO)
     }
 
     test("Velocity3 plus and minus are component-wise") {
-      val a = Velocity3(vx = 1.meters, vy = 2.meters, vz = 3.meters)
-      val b = Velocity3(vx = (-4).meters, vy = 5.meters, vz = 0.meters)
+      val a = Velocity3(vx = 1.metersPerSecond, vy = 2.metersPerSecond, vz = 3.metersPerSecond)
+      val b = Velocity3(vx = (-4).metersPerSecond, vy = 5.metersPerSecond, vz = 0.metersPerSecond)
 
-      a + b shouldBe Velocity3(vx = (-3).meters, vy = 7.meters, vz = 3.meters)
-      a - b shouldBe Velocity3(vx = 5.meters, vy = (-3).meters, vz = 3.meters)
+      a + b shouldBe Velocity3(vx = (-3).metersPerSecond, vy = 7.metersPerSecond, vz = 3.metersPerSecond)
+      a - b shouldBe Velocity3(vx = 5.metersPerSecond, vy = (-3).metersPerSecond, vz = 3.metersPerSecond)
     }
 
     test("Velocity3 times Duration yields displacement") {
-      val v = Velocity3(vx = 2.meters, vy = (-1).meters, vz = 0.meters)
+      val v = Velocity3(vx = 2.metersPerSecond, vy = (-1).metersPerSecond, vz = 0.metersPerSecond)
 
       v * 500.milliseconds shouldBe Length3(dx = 1.meters, dy = (-0.5).meters, dz = 0.meters)
     }
 
     test("Velocity3 times Duration composes") {
-      val v = Velocity3(vx = 3.meters, vy = 0.meters, vz = (-2).meters)
+      val v = Velocity3(vx = 3.metersPerSecond, vy = 0.metersPerSecond, vz = (-2).metersPerSecond)
       val t1 = 0.25.seconds
       val t2 = 0.75.seconds
 

@@ -15,7 +15,7 @@ import kotlin.time.Duration
 
 /**
  * Represents a velocity in 3D space.
- * The components are stored as distances per second.
+ * The components are stored as speed values.
  * This struct may be mutable. If so, then `is MutableVelocity3 == true`.
  *
  * Implementations guarantee that [vx], [vy], and [vz] are interpreted as components of a single velocity vector.
@@ -27,19 +27,19 @@ import kotlin.time.Duration
  */
 sealed interface Velocity3 {
   /**
-   * The velocity along the x-axis expressed as a distance per second.
+   * The velocity along the x-axis.
    */
-  val vx: Length
+  val vx: Speed
 
   /**
-   * The velocity along the y-axis expressed as a distance per second.
+   * The velocity along the y-axis.
    */
-  val vy: Length
+  val vy: Speed
 
   /**
-   * The velocity along the z-axis expressed as a distance per second.
+   * The velocity along the z-axis.
    */
-  val vz: Length
+  val vz: Speed
 
   /**
    * Component operator for destructuring declarations.
@@ -83,24 +83,24 @@ sealed interface ImmutableVelocity3 : Velocity3
 interface MutableVelocity3 :
   Velocity3,
   Observable {
-  override var vx: Length
-  override var vy: Length
-  override var vz: Length
+  override var vx: Speed
+  override var vy: Speed
+  override var vz: Speed
 
   /**
    * A [StateFlow] that emits the current x-axis velocity.
    */
-  val vxFlow: StateFlow<Length>
+  val vxFlow: StateFlow<Speed>
 
   /**
    * A [StateFlow] that emits the current y-axis velocity.
    */
-  val vyFlow: StateFlow<Length>
+  val vyFlow: StateFlow<Speed>
 
   /**
    * A [StateFlow] that emits the current z-axis velocity.
    */
-  val vzFlow: StateFlow<Length>
+  val vzFlow: StateFlow<Speed>
 
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
@@ -132,17 +132,17 @@ val Velocity3.Companion.zero: ImmutableVelocity3 get() = VELOCITY3_ZERO
  * Even if you use `as MutableVelocity3` after freezing, the value cannot be
  * changed and will result in an error.
  *
- * @param vx The x-axis velocity expressed as a distance per second.
- * @param vy The y-axis velocity expressed as a distance per second.
- * @param vz The z-axis velocity expressed as a distance per second.
+ * @param vx The x-axis velocity.
+ * @param vy The y-axis velocity.
+ * @param vz The z-axis velocity.
  * @param mutator A scope for [MutableVelocity3] for initialization.
  * @return The frozen, immutable velocity.
  */
 @Suppress("FunctionName")
 fun Velocity3(
-  vx: Length = Length.ZERO,
-  vy: Length = Length.ZERO,
-  vz: Length = Length.ZERO,
+  vx: Speed = Speed.ZERO,
+  vy: Speed = Speed.ZERO,
+  vz: Speed = Speed.ZERO,
   mutator: (MutableVelocity3.() -> Unit)? = null,
 ): ImmutableVelocity3 {
   if (mutator == null) {
@@ -183,15 +183,15 @@ inline fun Velocity3.Companion.copyOf(
 /**
  * Creates a [MutableVelocity3] by specifying each component in three-dimensional space.
  *
- * @param vx The x-axis velocity expressed as a distance per second.
- * @param vy The y-axis velocity expressed as a distance per second.
- * @param vz The z-axis velocity expressed as a distance per second.
+ * @param vx The x-axis velocity.
+ * @param vy The y-axis velocity.
+ * @param vz The z-axis velocity.
  * @return The created mutable velocity.
  */
 fun MutableVelocity3(
-  vx: Length = Length.ZERO,
-  vy: Length = Length.ZERO,
-  vz: Length = Length.ZERO,
+  vx: Speed = Speed.ZERO,
+  vy: Speed = Speed.ZERO,
+  vz: Speed = Speed.ZERO,
 ): MutableVelocity3 = MutableVelocity3Impl(vx, vy, vz)
 
 /**
@@ -329,12 +329,10 @@ operator fun Velocity3.div(divisor: Double): ImmutableVelocity3 =
  */
 operator fun Velocity3.times(duration: Duration): ImmutableLength3 {
   require(duration.isFinite()) { "Duration must be finite: $duration" }
-  val seconds = duration.inWholeNanoseconds.toDouble() / 1_000_000_000.0
-  require(seconds.isFinite()) { "Duration conversion must be finite: $duration" }
   return Length3(
-    dx = vx * seconds,
-    dy = vy * seconds,
-    dz = vz * seconds,
+    dx = vx * duration,
+    dy = vy * duration,
+    dz = vz * duration,
   )
 }
 
@@ -342,14 +340,14 @@ operator fun Velocity3.times(duration: Duration): ImmutableLength3 {
 
 // region implementations
 
-private val VELOCITY3_ZERO: ImmutableVelocity3 = ImmutableVelocity3Impl(Length.ZERO, Length.ZERO, Length.ZERO)
+private val VELOCITY3_ZERO: ImmutableVelocity3 = ImmutableVelocity3Impl(Speed.ZERO, Speed.ZERO, Speed.ZERO)
 
 private data class ImmutableVelocity3Impl(
-  override var vx: Length,
-  override var vy: Length,
-  override var vz: Length,
+  override var vx: Speed,
+  override var vy: Speed,
+  override var vz: Speed,
 ) : ImmutableVelocity3 {
-  override fun toString(): String = "Velocity3(vx=$vx/s, vy=$vy/s, vz=$vz/s)"
+  override fun toString(): String = "Velocity3(vx=$vx, vy=$vy, vz=$vz)"
 
   override fun equals(other: Any?): Boolean =
     when {
@@ -364,46 +362,46 @@ private data class ImmutableVelocity3Impl(
 private value class Velocity3MutableWrapper(
   private val impl: ImmutableVelocity3Impl,
 ) : MutableVelocity3 {
-  override var vx: Length
+  override var vx: Speed
     get() = impl.vx
     set(value) {
       impl.vx = value
     }
 
-  override var vy: Length
+  override var vy: Speed
     get() = impl.vy
     set(value) {
       impl.vy = value
     }
 
-  override var vz: Length
+  override var vz: Speed
     get() = impl.vz
     set(value) {
       impl.vz = value
     }
 
-  override val vxFlow: StateFlow<Length>
+  override val vxFlow: StateFlow<Speed>
     get() = throw UnsupportedOperationException()
-  override val vyFlow: StateFlow<Length>
+  override val vyFlow: StateFlow<Speed>
     get() = throw UnsupportedOperationException()
-  override val vzFlow: StateFlow<Length>
+  override val vzFlow: StateFlow<Speed>
     get() = throw UnsupportedOperationException()
 
   override fun observe(): ObserveTicket = throw UnsupportedOperationException()
 }
 
 private class MutableVelocity3Impl(
-  vx: Length,
-  vy: Length,
-  vz: Length,
+  vx: Speed,
+  vy: Speed,
+  vz: Speed,
 ) : MutableVelocity3 {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _vxFlow: MutableStateFlow<Length> = MutableStateFlow(vx)
-  private val _vyFlow: MutableStateFlow<Length> = MutableStateFlow(vy)
-  private val _vzFlow: MutableStateFlow<Length> = MutableStateFlow(vz)
+  private val _vxFlow: MutableStateFlow<Speed> = MutableStateFlow(vx)
+  private val _vyFlow: MutableStateFlow<Speed> = MutableStateFlow(vy)
+  private val _vzFlow: MutableStateFlow<Speed> = MutableStateFlow(vz)
 
-  override var vx: Length
+  override var vx: Speed
     get() = lock.withLock { _vxFlow.value }
     set(value) {
       lock.withLock {
@@ -412,7 +410,7 @@ private class MutableVelocity3Impl(
       }
     }
 
-  override var vy: Length
+  override var vy: Speed
     get() = lock.withLock { _vyFlow.value }
     set(value) {
       lock.withLock {
@@ -421,7 +419,7 @@ private class MutableVelocity3Impl(
       }
     }
 
-  override var vz: Length
+  override var vz: Speed
     get() = lock.withLock { _vzFlow.value }
     set(value) {
       lock.withLock {
@@ -430,15 +428,15 @@ private class MutableVelocity3Impl(
       }
     }
 
-  override val vxFlow: StateFlow<Length> get() = _vxFlow.asStateFlow()
-  override val vyFlow: StateFlow<Length> get() = _vyFlow.asStateFlow()
-  override val vzFlow: StateFlow<Length> get() = _vzFlow.asStateFlow()
+  override val vxFlow: StateFlow<Speed> get() = _vxFlow.asStateFlow()
+  override val vyFlow: StateFlow<Speed> get() = _vyFlow.asStateFlow()
+  override val vzFlow: StateFlow<Speed> get() = _vzFlow.asStateFlow()
 
   override fun mutate(action: MutableVelocity3.() -> Unit) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Velocity3(vx=$vx/s, vy=$vy/s, vz=$vz/s)"
+  override fun toString(): String = "Velocity3(vx=$vx, vy=$vy, vz=$vz/)"
 
   override fun equals(other: Any?): Boolean =
     when {
@@ -486,9 +484,9 @@ private class MutableVelocity3Impl(
 }
 
 private fun componentsHash(
-  vx: Length,
-  vy: Length,
-  vz: Length,
+  vx: Speed,
+  vy: Speed,
+  vz: Speed,
 ): Int {
   var result = vx.hashCode()
   result = 31 * result + vy.hashCode()
