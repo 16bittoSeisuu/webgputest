@@ -1,18 +1,17 @@
 package net.japanesehunter.worldcreate.entity
 
 import net.japanesehunter.math.Aabb
+import net.japanesehunter.math.Acceleration
 import net.japanesehunter.math.ImmutableLength3
 import net.japanesehunter.math.Length
 import net.japanesehunter.math.Length3
-import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableAabb
 import net.japanesehunter.math.MutablePoint3
 import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.Point3
-import net.japanesehunter.math.Speed
-import net.japanesehunter.math.SpeedUnit
 import net.japanesehunter.math.copyOf
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.overlaps
 import net.japanesehunter.math.times
 import net.japanesehunter.math.translatedBy
@@ -77,7 +76,7 @@ fun Player(
   blockAccess: BlockAccess,
   initialPosition: Point3 = Point3.zero,
   size: Length3 = Length3(dx = 0.6.meters, dy = 1.8.meters, dz = 0.6.meters),
-  gravity: Length = (-32).meters,
+  gravity: Acceleration = (-32.0).metersPerSecondSquared,
 ): Player = PhysicsPlayer(tickSource, blockAccess, initialPosition, Length3.copyOf(size), gravity)
 
 private class PhysicsPlayer(
@@ -85,7 +84,7 @@ private class PhysicsPlayer(
   private val blockAccess: BlockAccess,
   initialPosition: Point3,
   private val size: ImmutableLength3,
-  private val gravity: Length,
+  private val gravity: Acceleration,
 ) : Player {
   private val mutablePosition: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
   override val velocity: MutableVelocity3 = MutableVelocity3()
@@ -103,13 +102,11 @@ private class PhysicsPlayer(
   }
 
   private fun tick(delta: Duration) {
-    val dt = delta.inWholeNanoseconds / 1_000_000_000.0
-    if (!dt.isFinite() || dt <= 0.0) return
+    if (!delta.isFinite() || delta.isNegative()) return
 
     groundedState = false
 
-    val v = gravity * dt
-    velocity.vy += Speed.from(v.toDouble(LengthUnit.METER), SpeedUnit.METER_PER_SECOND)
+    velocity.vy += gravity * delta
 
     val displacement = velocity * delta
     moveAxis(Axis.Y, displacement.dy)
