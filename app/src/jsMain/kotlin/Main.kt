@@ -169,7 +169,7 @@ fun main() =
               lastFrameTime = currentTime
               tickSink.onEvent(frameDelta)
 
-              controller.update()
+              controller.update(frameDelta)
               cameraHud.update(camera.currentDirection16())
               playerHud.update()
               cameraBuf.update()

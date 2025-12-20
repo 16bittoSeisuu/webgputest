@@ -38,8 +38,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import kotlin.time.ComparableTimeMark
-import kotlin.time.TimeSource
+import kotlin.time.Duration
 
 /**
  * Installs a first-person controller that maps mouse and keyboard input to player velocity and
@@ -82,7 +81,6 @@ fun MovableCamera.controller(
  * @param camera target camera whose rotation is controlled by mouse movement.
  * @param player target player whose horizontal velocity is controlled by keyboard input.
  * @param settings mutable controller bindings and motion parameters.
- * @param timeSource the time source for measuring frame deltas.
  */
 class PlayerController internal constructor(
   private val pointerLock: PointerLock,
@@ -90,7 +88,6 @@ class PlayerController internal constructor(
   private val camera: MovableCamera,
   private val player: Player,
   private val settings: Settings = Settings(),
-  private val timeSource: TimeSource.WithComparableMarks = TimeSource.Monotonic,
 ) : AutoCloseable {
   /**
    * Holds mutable input bindings and movement parameters for the player controller.
@@ -163,10 +160,8 @@ class PlayerController internal constructor(
   private val activeKeys = mutableSetOf<String>()
   private var yaw: Double
   private var pitch: Double
-  private var lastMark: ComparableTimeMark = timeSource.markNow()
   private var mouseDeltaX = 0.0
   private var mouseDeltaY = 0.0
-  private var lastUnlockMark: ComparableTimeMark = lastMark
   private var closed = false
 
   private val inputSubscription: EventSubscription
@@ -183,7 +178,7 @@ class PlayerController internal constructor(
           is KeyDown -> handleKeyDown(event.code)
           is KeyUp -> handleKeyUp(event.code)
           is MouseMove -> handleMouseMove(event.deltaX, event.deltaY)
-          is MouseDown -> requestPointerLock()
+          is MouseDown -> pointerLock.requestPointerLock()
           else -> Unit
         }
       }
@@ -191,7 +186,6 @@ class PlayerController internal constructor(
     pointerLockSubscription =
       pointerLock.pointerLockEvents().subscribe { event ->
         if (!event.locked) {
-          lastUnlockMark = timeSource.markNow()
           activeKeys.clear()
           clearVelocity()
           logger.debug { "Pointer lock released" }
@@ -207,12 +201,10 @@ class PlayerController internal constructor(
    * Returns immediately when pointer lock is not active.
    * Updates the camera rotation and player velocity based on input, then synchronizes the camera
    * position to the player.
+   *
+   * @param dt the time elapsed since the last update.
    */
-  fun update() {
-    val now = timeSource.markNow()
-    val dtMillis = (now - lastMark).inWholeMilliseconds
-    lastMark = now
-
+  fun update(dt: Duration) {
     if (!pointerLock.isPointerLocked) return
 
     if (mouseDeltaX != 0.0 || mouseDeltaY != 0.0) {
@@ -225,25 +217,16 @@ class PlayerController internal constructor(
       applyRotation()
     }
 
-    val dtSeconds = (dtMillis / 1000.0).coerceIn(0.0, 0.1)
+    val dtSeconds =
+      dt.inWholeMilliseconds
+        .toDouble()
+        .div(1000.0)
+        .coerceIn(0.0, 0.1)
     if (dtSeconds > 0.0) {
       updatePlayerVelocity(dtSeconds)
     }
 
     syncCameraPosition()
-  }
-
-  /**
-   * Requests pointer lock if available and the cooldown period has elapsed.
-   *
-   * Pointer lock is not requested within 2 seconds of the last unlock to avoid browser rejection.
-   */
-  fun requestPointerLock() {
-    val now = timeSource.markNow()
-    if ((now - lastUnlockMark).inWholeMilliseconds < 2000L) {
-      return
-    }
-    pointerLock.requestPointerLock()
   }
 
   override fun close() {
