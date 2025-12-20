@@ -30,10 +30,13 @@ interface PointerLock {
   /**
    * Requests pointer lock acquisition.
    *
-   * The request may fail silently if the platform denies it or if user interaction requirements
-   * are not satisfied.
+   * Returns false if the request is suppressed due to cooldown or other internal constraints.
+   * Returns true if the request was forwarded to the platform, though the platform may still
+   * reject it asynchronously.
+   *
+   * @return true if the request was sent, false if suppressed.
    */
-  fun requestPointerLock()
+  fun requestPointerLock(): Boolean
 
   /**
    * Releases pointer lock if currently held.

@@ -15,16 +15,21 @@ import net.japanesehunter.worldcreate.world.EventSource
 import net.japanesehunter.worldcreate.world.EventSubscription
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.events.Event
+import kotlin.time.ComparableTimeMark
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 inline fun <R> canvasContext(
   id: String = "main",
   createOnMissing: Boolean = true,
+  timeSource: TimeSource.WithComparableMarks = TimeSource.Monotonic,
   action: context(CanvasContext) () -> R,
 ): R =
   CanvasContextImpl(
     id,
     createOnMissing,
     navigator.gpu ?: throw UnsupportedBrowserException(),
+    timeSource,
   ).use {
     context(
       it,
@@ -51,6 +56,7 @@ internal class CanvasContextImpl(
   id: String,
   createOnMissing: Boolean,
   private val gpu: GPU,
+  private val timeSource: TimeSource.WithComparableMarks,
 ) : CanvasContext,
   AutoCloseable {
   private val canvasElement: HTMLCanvasElement =
@@ -88,9 +94,13 @@ internal class CanvasContextImpl(
       ?: throw UnsupportedBrowserException()
 
   private val pointerLockSinks = mutableListOf<EventSink<PointerLockEvent>>()
+  private var lastUnlockMark: ComparableTimeMark = timeSource.markNow()
 
   private val pointerLockChangeHandler: (Event) -> Unit = {
     val locked = document.asDynamic().pointerLockElement == canvasElement
+    if (!locked) {
+      lastUnlockMark = timeSource.markNow()
+    }
     val event = PointerLockEvent(locked)
     pointerLockSinks.forEach { it.onEvent(event) }
   }
@@ -149,8 +159,12 @@ internal class CanvasContextImpl(
 
   override fun pointerLockEvents(): EventSource<PointerLockEvent> = pointerLockEventSource
 
-  override fun requestPointerLock() {
+  override fun requestPointerLock(): Boolean {
+    if (lastUnlockMark.elapsedNow() < POINTER_LOCK_COOLDOWN) {
+      return false
+    }
     canvasElement.asDynamic().requestPointerLock()
+    return true
   }
 
   override fun exitPointerLock() {
@@ -165,3 +179,5 @@ internal class CanvasContextImpl(
     autoResize.forEach(AutoCloseable::close)
   }
 }
+
+private val POINTER_LOCK_COOLDOWN = 2.seconds
