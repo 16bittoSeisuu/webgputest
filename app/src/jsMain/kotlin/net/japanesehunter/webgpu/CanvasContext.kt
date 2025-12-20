@@ -8,6 +8,7 @@ import net.japanesehunter.webgpu.interop.GPUCanvasContext
 import net.japanesehunter.webgpu.interop.GPUTexture
 import net.japanesehunter.webgpu.interop.GPUTextureFormat
 import net.japanesehunter.webgpu.interop.navigator
+import net.japanesehunter.worldcreate.input.PointerLock
 import net.japanesehunter.worldcreate.input.PointerLockEvent
 import net.japanesehunter.worldcreate.world.EventSink
 import net.japanesehunter.worldcreate.world.EventSource
@@ -31,7 +32,7 @@ inline fun <R> canvasContext(
     )
   }
 
-interface CanvasContext {
+interface CanvasContext : PointerLock {
   val width: Int
   val height: Int
 
@@ -43,30 +44,6 @@ interface CanvasContext {
   fun getCurrentTexture(): GPUTexture
 
   fun configure(configuration: GPUCanvasConfiguration): AutoCloseable
-
-  /**
-   * Indicates whether the pointer is currently locked to this canvas.
-   */
-  val isPointerLocked: Boolean
-
-  /**
-   * Emits pointer lock state changes for this canvas.
-   *
-   * @return an event source that delivers pointer lock events to subscribed sinks.
-   */
-  fun pointerLockEvents(): EventSource<PointerLockEvent>
-
-  /**
-   * Requests pointer lock on this canvas.
-   *
-   * The request may fail silently if the browser denies it.
-   */
-  fun requestPointerLock()
-
-  /**
-   * Releases pointer lock if this canvas currently holds it.
-   */
-  fun exitPointerLock()
 }
 
 @PublishedApi

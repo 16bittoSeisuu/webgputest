@@ -56,6 +56,7 @@ import net.japanesehunter.worldcreate.controller
 import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.PlayerHud
+import net.japanesehunter.worldcreate.input.inputContext
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
 import net.japanesehunter.worldcreate.world.BlockAccess
@@ -68,46 +69,47 @@ val end = Job()
 fun main() =
   application(loggerLevel = Level.DEBUG) {
     canvasContext {
-      val camera =
-        MovableCamera(
-          fov = Fov.fromDegrees(60.0),
-          nearFar = NearFar(0.1.meters, 128.meters),
-          aspect = canvasAspect,
-        ).apply {
-          autoFit()
-        }
-      val cameraHud = CameraHud()
+      inputContext {
+        val camera =
+          MovableCamera(
+            fov = Fov.fromDegrees(60.0),
+            nearFar = NearFar(0.1.meters, 128.meters),
+            aspect = canvasAspect,
+          ).apply {
+            autoFit()
+          }
+        val cameraHud = CameraHud()
 
-      val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
-      val blockAccess = ChunkBlockAccess(chunk)
-      val player =
-        Player(
-          tickSource = tickSource,
-          blockAccess = blockAccess,
-          initialPosition =
-            Point3(
-              x = 20.meters,
-              y = 20.meters,
-              z = 20.meters,
-            ),
-        )
-      val playerHud = PlayerHud(player)
-      val controllerSettings = PlayerController.Settings()
-      val controller = camera.controller(player, controllerSettings)
-      var lastFrameTime = window.performance.now()
+        val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
+        val blockAccess = ChunkBlockAccess(chunk)
+        val player =
+          Player(
+            tickSource = tickSource,
+            blockAccess = blockAccess,
+            initialPosition =
+              Point3(
+                x = 20.meters,
+                y = 20.meters,
+                z = 20.meters,
+              ),
+          )
+        val playerHud = PlayerHud(player)
+        val controllerSettings = PlayerController.Settings()
+        val controller = camera.controller(player, controllerSettings)
+        var lastFrameTime = window.performance.now()
 
-      webgpuContext {
-        debugPrintLimits()
-        val cameraBuf = camera.toGpuBuffer().bind()
-        val draw =
-          buildDrawCommand(clearColor = { Color.blue }) {
-            val textureBuffer =
-              createTexture(
-                "assets/vanilla/textures/doge.png",
-              ).await().createView()
+        webgpuContext {
+          debugPrintLimits()
+          val cameraBuf = camera.toGpuBuffer().bind()
+          val draw =
+            buildDrawCommand(clearColor = { Color.blue }) {
+              val textureBuffer =
+                createTexture(
+                  "assets/vanilla/textures/doge.png",
+                ).await().createView()
 
-            header {
-              """
+              header {
+                """
               struct CameraUniform {
                 projection: mat4x4f,
                 rotation: mat3x3f,
@@ -116,7 +118,7 @@ fun main() =
                 local_pos: vec3f,
                 pad1: f32,
               }
-              
+
               const uvs =
                 array<vec2f, 4>(
                   vec2f(0.0, 1.0),
@@ -125,20 +127,20 @@ fun main() =
                   vec2f(1.0, 0.0),
                 );
               """
-            }
+              }
 
-            val uv by vsOut("vec2f")
+              val uv by vsOut("vec2f")
 
-            val camera by cameraBuf.asUniform(type = "CameraUniform")
-            val texture by textureBuffer
-            val samp by createSampler()
+              val camera by cameraBuf.asUniform(type = "CameraUniform")
+              val texture by textureBuffer
+              val samp by createSampler()
 
-            val (vBuf, iBuf) = chunk.toMeshGpuBuffer()
-            vertex(iBuf) {
-              val aBlockPos by vBuf
-              val aLocalPos by vBuf
-              val aUv by vBuf
-              """
+              val (vBuf, iBuf) = chunk.toMeshGpuBuffer()
+              vertex(iBuf) {
+                val aBlockPos by vBuf
+                val aLocalPos by vBuf
+                val aUv by vBuf
+                """
               let relative_block_pos = vec3f($aBlockPos - $camera.block_pos);
               let relative_local_pos = $aLocalPos - $camera.local_pos;
               let relative_pos = relative_block_pos + relative_local_pos;
@@ -146,48 +148,49 @@ fun main() =
               $position = $camera.projection * vec4f(pos, 1.0);
               $uv = $aUv;
               """
-            }
-            fragment {
-              val out by canvas
-              """
-              
+              }
+              fragment {
+                val out by canvas
+                """
+
               let uv_interpolated = $uv;
               let base_color = textureSample($texture, $samp, uv_interpolated);
               let color = vec4f(base_color.rgb, base_color.a);
               $out = color;
               """
+              }
+            }
+          val done = Job()
+
+          fun loop() {
+            try {
+              val currentTime = window.performance.now()
+              val frameDelta = (currentTime - lastFrameTime).milliseconds
+              lastFrameTime = currentTime
+              tickSink.onEvent(frameDelta)
+
+              controller.update()
+              cameraHud.update(camera.currentDirection16())
+              playerHud.update()
+              cameraBuf.update()
+
+              gpuCommand {
+                draw.dispatch()
+              }
+
+              if (end.isCompleted) {
+                done.complete()
+                return
+              }
+              requestAnimationFrame { loop() }
+            } catch (e: Throwable) {
+              logger.error(e) { "Error in main loop" }
+              done.completeExceptionally(e)
             }
           }
-        val done = Job()
-
-        fun loop() {
-          try {
-            val currentTime = window.performance.now()
-            val frameDelta = (currentTime - lastFrameTime).milliseconds
-            lastFrameTime = currentTime
-            tickSink.onEvent(frameDelta)
-
-            controller.update()
-            cameraHud.update(camera.currentDirection16())
-            playerHud.update()
-            cameraBuf.update()
-
-            gpuCommand {
-              draw.dispatch()
-            }
-
-            if (end.isCompleted) {
-              done.complete()
-              return
-            }
-            requestAnimationFrame { loop() }
-          } catch (e: Throwable) {
-            logger.error(e) { "Error in main loop" }
-            done.completeExceptionally(e)
-          }
+          loop()
+          done.join()
         }
-        loop()
-        done.join()
       }
     }
   }
