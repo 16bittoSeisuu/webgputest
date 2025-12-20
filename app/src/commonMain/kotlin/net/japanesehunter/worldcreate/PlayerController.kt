@@ -3,7 +3,6 @@ package net.japanesehunter.worldcreate
 import arrow.fx.coroutines.ResourceScope
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import net.japanesehunter.math.Acceleration
-import net.japanesehunter.math.AccelerationUnit.METER_PER_SECOND_SQUARED
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Direction3
@@ -13,7 +12,7 @@ import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.Quaternion
 import net.japanesehunter.math.Speed
-import net.japanesehunter.math.SpeedUnit.METER_PER_SECOND
+import net.japanesehunter.math.SpeedUnit
 import net.japanesehunter.math.degrees
 import net.japanesehunter.math.forward
 import net.japanesehunter.math.lookingAlong
@@ -36,6 +35,7 @@ import kotlin.math.PI
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.time.Duration
@@ -203,8 +203,11 @@ class PlayerController internal constructor(
    * position to the player.
    *
    * @param dt the time elapsed since the last update.
+   *
+   *   range: dt > 0
    */
   fun update(dt: Duration) {
+    require(dt.isPositive()) { "dt must be positive: $dt" }
     if (!pointerLock.isPointerLocked) return
 
     if (mouseDeltaX != 0.0 || mouseDeltaY != 0.0) {
@@ -217,14 +220,7 @@ class PlayerController internal constructor(
       applyRotation()
     }
 
-    val dtSeconds =
-      dt.inWholeMilliseconds
-        .toDouble()
-        .div(1000.0)
-        .coerceIn(0.0, 0.1)
-    if (dtSeconds > 0.0) {
-      updatePlayerVelocity(dtSeconds)
-    }
+    updatePlayerVelocity(dt)
 
     syncCameraPosition()
   }
@@ -288,7 +284,7 @@ class PlayerController internal constructor(
     )
   }
 
-  private fun updatePlayerVelocity(dt: Double) {
+  private fun updatePlayerVelocity(dt: Duration) {
     val planarForward =
       Direction3(
         ux = sin(yaw),
@@ -322,16 +318,14 @@ class PlayerController internal constructor(
       inputZ -= planarRight.uz
     }
 
-    val currentVx = player.velocity.vx.toDouble(METER_PER_SECOND)
-    val currentVz = player.velocity.vz.toDouble(METER_PER_SECOND)
+    val currentVx = player.velocity.vx
+    val currentVz = player.velocity.vz
 
     val accel =
       if (player.isGrounded) settings.groundAcceleration else settings.airAcceleration
     val decel =
       if (player.isGrounded) settings.groundDeceleration else settings.airDeceleration
-    val accelRate = accel.toDouble(METER_PER_SECOND_SQUARED)
-    val decelRate = decel.toDouble(METER_PER_SECOND_SQUARED)
-    val maxSpeed = settings.horizontalSpeed.toDouble(METER_PER_SECOND)
+    val maxSpeed = settings.horizontalSpeed
 
     val inputLenSq = inputX * inputX + inputZ * inputZ
     val hasInput = inputLenSq > 0.0
@@ -341,36 +335,36 @@ class PlayerController internal constructor(
         val invLen = 1.0 / sqrt(inputLenSq)
         val dirX = inputX * invLen
         val dirZ = inputZ * invLen
-        val targetVx = dirX * maxSpeed
-        val targetVz = dirZ * maxSpeed
+        val targetVx = maxSpeed * dirX
+        val targetVz = maxSpeed * dirZ
 
         val diffX = targetVx - currentVx
         val diffZ = targetVz - currentVz
-        val diffLen = sqrt(diffX * diffX + diffZ * diffZ)
+        val diffLen = hypot(diffX, diffZ)
 
-        if (diffLen > 0.0) {
-          val maxChange = accelRate * dt
+        if (diffLen.isPositive) {
+          val maxChange = accel * dt
           val change = minOf(diffLen, maxChange)
-          val newX = currentVx + (diffX / diffLen) * change
-          val newZ = currentVz + (diffZ / diffLen) * change
+          val newX = currentVx + change * (diffX / diffLen)
+          val newZ = currentVz + change * (diffZ / diffLen)
           newX to newZ
         } else {
           currentVx to currentVz
         }
       } else {
-        val currentSpeed = sqrt(currentVx * currentVx + currentVz * currentVz)
-        if (currentSpeed > 0.0) {
-          val maxDrop = decelRate * dt
-          val newSpeed = maxOf(0.0, currentSpeed - maxDrop)
+        val currentSpeed = hypot(currentVx, currentVz)
+        if (currentSpeed.isPositive) {
+          val maxDrop = decel * dt
+          val newSpeed = maxOf(Speed.ZERO, currentSpeed - maxDrop)
           val scale = newSpeed / currentSpeed
           (currentVx * scale) to (currentVz * scale)
         } else {
-          0.0 to 0.0
+          Speed.ZERO to Speed.ZERO
         }
       }
 
-    player.velocity.vx = newVx.metersPerSecond
-    player.velocity.vz = newVz.metersPerSecond
+    player.velocity.vx = newVx
+    player.velocity.vz = newVz
   }
 
   private fun clearVelocity() {
@@ -388,3 +382,12 @@ class PlayerController internal constructor(
 }
 
 private val logger = logger("PlayerController")
+
+private fun hypot(
+  x: Speed,
+  y: Speed,
+): Speed =
+  hypot(
+    x.toDouble(SpeedUnit.METER_PER_SECOND),
+    y.toDouble(SpeedUnit.METER_PER_SECOND),
+  ).metersPerSecond
