@@ -2,30 +2,36 @@ package net.japanesehunter.worldcreate.hud
 
 import arrow.fx.coroutines.ResourceScope
 import kotlinx.browser.document
-import net.japanesehunter.worldcreate.entity.Player
+import net.japanesehunter.traits.EntityId
+import net.japanesehunter.traits.EntityRegistry
+import net.japanesehunter.traits.get
+import net.japanesehunter.worldcreate.trait.Position
+import net.japanesehunter.worldcreate.trait.Velocity
 import org.w3c.dom.HTMLDivElement
 
 /**
- * Represents a heads-up display that renders the player position and velocity in a fixed overlay.
+ * Represents a heads-up display that renders the entity position and velocity in a fixed overlay.
  *
  * The container remains attached to the document body with HUD styling while the instance is alive.
  * The class is not thread-safe and is intended for use on the browser main thread.
  *
  * @param container overlay element used to present the HUD content.
- * @param player the player whose state is displayed.
+ * @param registry the entity registry containing the entity.
+ * @param entity the entity whose state is displayed.
  */
 class PlayerHud internal constructor(
   private val container: HTMLDivElement,
-  private val player: Player,
+  private val registry: EntityRegistry,
+  private val entity: EntityId,
 ) : AutoCloseable {
   /**
-   * Updates the HUD text to show the current player position and velocity.
+   * Updates the HUD text to show the current entity position and velocity.
    *
    * Mutates the container innerHTML when the displayed values change.
    */
   fun update() {
-    val pos = player.position
-    val vel = player.velocity
+    val pos = registry.get<Position>(entity)?.value ?: return
+    val vel = registry.get<Velocity>(entity)?.value ?: return
 
     val x = pos.x.toString(unit = null, decimals = 2)
     val y = pos.y.toString(unit = null, decimals = 2)
@@ -55,7 +61,8 @@ class PlayerHud internal constructor(
  * Inserts the HUD container when missing, reapplies overlay styles when the element already exists,
  * and registers removal with the surrounding resource scope while mutating the DOM structure.
  *
- * @param player the player whose state is displayed.
+ * @param registry the entity registry containing the entity.
+ * @param entity the entity whose state is displayed.
  * @param x horizontal offset from the left edge in pixels.
  *
  *   NaN: rejected
@@ -76,9 +83,11 @@ class PlayerHud internal constructor(
  * @return HUD instance managing the overlay container.
  * @throws IllegalStateException when the document body is not available.
  */
+@Suppress("FunctionName")
 context(resource: ResourceScope)
 fun PlayerHud(
-  player: Player,
+  registry: EntityRegistry,
+  entity: EntityId,
   x: Double = 12.0,
   y: Double = 40.0,
   scale: Double = 1.0,
@@ -108,7 +117,7 @@ fun PlayerHud(
     setProperty("pointer-events", "none")
     zIndex = "1"
   }
-  return PlayerHud(container, player).also { hud ->
+  return PlayerHud(container, registry, entity).also { hud ->
     resource.onClose {
       hud.close()
     }

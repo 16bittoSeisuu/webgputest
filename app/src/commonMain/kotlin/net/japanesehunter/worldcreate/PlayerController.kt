@@ -6,7 +6,6 @@ import net.japanesehunter.math.Acceleration
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Direction3
-import net.japanesehunter.math.Quaternion
 import net.japanesehunter.math.Speed
 import net.japanesehunter.math.SpeedUnit
 import net.japanesehunter.math.degrees
@@ -16,13 +15,19 @@ import net.japanesehunter.math.metersPerSecond
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.rotate
 import net.japanesehunter.math.up
-import net.japanesehunter.worldcreate.entity.Player
+import net.japanesehunter.traits.EntityId
+import net.japanesehunter.traits.EntityRegistry
+import net.japanesehunter.traits.get
+import net.japanesehunter.traits.has
 import net.japanesehunter.worldcreate.input.InputContext
 import net.japanesehunter.worldcreate.input.KeyDown
 import net.japanesehunter.worldcreate.input.KeyUp
 import net.japanesehunter.worldcreate.input.MouseDown
 import net.japanesehunter.worldcreate.input.MouseMove
 import net.japanesehunter.worldcreate.input.PointerLock
+import net.japanesehunter.worldcreate.trait.Grounded
+import net.japanesehunter.worldcreate.trait.Rotation
+import net.japanesehunter.worldcreate.trait.Velocity
 import net.japanesehunter.worldcreate.world.EventSubscription
 import kotlin.math.PI
 import kotlin.math.asin
@@ -34,46 +39,59 @@ import kotlin.math.sqrt
 import kotlin.time.Duration
 
 /**
- * Installs a first-person controller that maps mouse and keyboard input to player velocity and
+ * Installs a first-person controller that maps mouse and keyboard input to entity velocity and
  * rotation.
  *
  * The controller uses the pointer lock for capturing the pointer and the input context for
  * event delivery. The returned controller stays active until closed through the resource scope
  * or manually.
  *
- * @param player the player whose velocity and rotation will be controlled.
+ * The entity must have [Velocity] and [Rotation] traits attached.
+ *
+ * @param registry the entity registry containing the entity.
+ * @param entity the entity whose velocity and rotation will be controlled.
  * @param settings controller input bindings and motion parameters.
  * @return the installed controller instance.
  */
 context(resource: ResourceScope, pointerLock: PointerLock, input: InputContext)
-fun Player.controller(settings: PlayerController.Settings = PlayerController.Settings()): PlayerController =
+fun playerController(
+  registry: EntityRegistry,
+  entity: EntityId,
+  settings: PlayerController.Settings = PlayerController.Settings(),
+): PlayerController =
   resource.install(
     PlayerController(
       pointerLock = pointerLock,
       input = input,
-      player = this,
+      registry = registry,
+      entity = entity,
       settings = settings,
     ),
   )
 
 /**
- * Provides pointer-locked first-person control for a player using keyboard and mouse input.
+ * Provides pointer-locked first-person control for an entity using keyboard and mouse input.
  *
  * The controller subscribes to input events through the injected [InputContext] and monitors
  * pointer lock state through the injected [PointerLock]. It keeps yaw and pitch within the
- * configured limits, applying rotation to the player and velocity updates on update.
+ * configured limits, applying rotation to the entity and velocity updates on update.
+ *
+ * The controlled entity must have [Velocity] and [Rotation] traits. The [Grounded] trait is
+ * checked to determine movement parameters and jump availability.
  *
  * Implementations are not thread-safe and must be accessed from a single thread.
  *
  * @param pointerLock the pointer lock provider for capturing and releasing the pointer.
  * @param input the input context providing keyboard and mouse events.
- * @param player target player whose rotation and velocity are controlled.
+ * @param registry the entity registry containing the controlled entity.
+ * @param entity target entity whose rotation and velocity are controlled.
  * @param settings mutable controller bindings and motion parameters.
  */
 class PlayerController internal constructor(
   private val pointerLock: PointerLock,
   private val input: InputContext,
-  private val player: Player,
+  private val registry: EntityRegistry,
+  private val entity: EntityId,
   private val settings: Settings = Settings(),
 ) : AutoCloseable {
   /**
@@ -146,7 +164,10 @@ class PlayerController internal constructor(
   private val pointerLockSubscription: EventSubscription
 
   init {
-    val initialForward = player.rotation.rotate(Direction3.forward)
+    val rotation =
+      registry.get<Rotation>(entity)
+        ?: error("Entity $entity must have Rotation trait")
+    val initialForward = rotation.value.rotate(Direction3.forward)
     yaw = atan2(initialForward.ux, -initialForward.uz)
     pitch = asin(initialForward.uy).coerceIn(-maxPitchRadians, maxPitchRadians)
 
@@ -212,8 +233,8 @@ class PlayerController internal constructor(
 
   private fun handleKeyDown(code: String) {
     if (code == settings.jumpKey) {
-      if (player.isGrounded) {
-        player.velocity.vy = settings.jumpSpeed
+      if (registry.has<Grounded>(entity)) {
+        registry.get<Velocity>(entity)?.value?.vy = settings.jumpSpeed
       }
     } else if (code in navKeys()) {
       activeKeys.add(code)
@@ -236,6 +257,7 @@ class PlayerController internal constructor(
   }
 
   private fun applyRotation() {
+    val rotation = registry.get<Rotation>(entity) ?: return
     val cosPitch = cos(pitch)
     val forward =
       Direction3(
@@ -243,7 +265,7 @@ class PlayerController internal constructor(
         uy = sin(pitch),
         uz = -cos(yaw) * cosPitch,
       )
-    player.rotation.lookAlong(forward, Direction3.up)
+    rotation.value.lookAlong(forward, Direction3.up)
   }
 
   private fun updatePlayerVelocity(dt: Duration) {
@@ -280,13 +302,16 @@ class PlayerController internal constructor(
       inputZ -= planarRight.uz
     }
 
-    val currentVx = player.velocity.vx
-    val currentVz = player.velocity.vz
+    val velocity = registry.get<Velocity>(entity) ?: return
+    val isGrounded = registry.has<Grounded>(entity)
+
+    val currentVx = velocity.value.vx
+    val currentVz = velocity.value.vz
 
     val accel =
-      if (player.isGrounded) settings.groundAcceleration else settings.airAcceleration
+      if (isGrounded) settings.groundAcceleration else settings.airAcceleration
     val decel =
-      if (player.isGrounded) settings.groundDeceleration else settings.airDeceleration
+      if (isGrounded) settings.groundDeceleration else settings.airDeceleration
     val maxSpeed = settings.horizontalSpeed
 
     val inputLenSq = inputX * inputX + inputZ * inputZ
@@ -325,13 +350,14 @@ class PlayerController internal constructor(
         }
       }
 
-    player.velocity.vx = newVx
-    player.velocity.vz = newVz
+    velocity.value.vx = newVx
+    velocity.value.vz = newVz
   }
 
   private fun clearVelocity() {
-    player.velocity.vx = Speed.ZERO
-    player.velocity.vz = Speed.ZERO
+    val velocity = registry.get<Velocity>(entity) ?: return
+    velocity.value.vx = Speed.ZERO
+    velocity.value.vz = Speed.ZERO
   }
 
   private fun navKeys(): Set<String> =

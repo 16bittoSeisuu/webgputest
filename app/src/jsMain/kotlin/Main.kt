@@ -13,12 +13,18 @@ import net.japanesehunter.math.Color
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.ImmutableAabb
 import net.japanesehunter.math.MovableCamera
+import net.japanesehunter.math.MutablePoint3
+import net.japanesehunter.math.MutableQuaternion
+import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.blue
+import net.japanesehunter.math.copyOf
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
+import net.japanesehunter.math.metersPerSecondSquared
+import net.japanesehunter.traits.SimpleEntityRegistry
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -52,14 +58,19 @@ import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.PlayerController
 import net.japanesehunter.worldcreate.World
-import net.japanesehunter.worldcreate.controller
-import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.entity.sync
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.PlayerHud
 import net.japanesehunter.worldcreate.input.inputContext
+import net.japanesehunter.worldcreate.playerController
+import net.japanesehunter.worldcreate.simulation.RigidbodySimulation
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
+import net.japanesehunter.worldcreate.trait.BoundingBox
+import net.japanesehunter.worldcreate.trait.Position
+import net.japanesehunter.worldcreate.trait.Rigidbody
+import net.japanesehunter.worldcreate.trait.Rotation
+import net.japanesehunter.worldcreate.trait.Velocity
 import net.japanesehunter.worldcreate.world.BlockAccess
 import net.japanesehunter.worldcreate.world.createFixedStepTickSource
 import org.w3c.dom.ImageBitmap
@@ -83,20 +94,33 @@ fun main() =
 
         val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
         val blockAccess = ChunkBlockAccess(chunk)
-        val player =
-          Player(
-            tickSource = tickSource,
-            blockAccess = blockAccess,
-            initialPosition =
-              Point3(
-                x = 20.meters,
-                y = 20.meters,
-                z = 20.meters,
-              ),
-          )
-        val playerHud = PlayerHud(player)
+        val registry = SimpleEntityRegistry()
+        val player = registry.create()
+        val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
+        registry.add(player, Position(MutablePoint3.copyOf(initialPosition)))
+        registry.add(player, Velocity(MutableVelocity3()))
+        registry.add(player, Rotation(MutableQuaternion()))
+        registry.add(
+          player,
+          BoundingBox(
+            Aabb(
+              min = Point3(-0.3.meters, 0.meters, -0.3.meters),
+              max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
+            ),
+          ),
+        )
+        registry.add(
+          player,
+          Rigidbody(
+            gravity = (-32).metersPerSecondSquared,
+            initialDrag = 0.4,
+          ),
+        )
+        RigidbodySimulation(tickSource, registry, blockAccess).bind()
+
+        val playerHud = PlayerHud(registry, player)
         val controllerSettings = PlayerController.Settings()
-        val controller = player.controller(controllerSettings)
+        val controller = playerController(registry, player, controllerSettings)
         val eyeHeight = 1.62.meters
         var lastFrameTime = window.performance.now()
 
@@ -172,7 +196,7 @@ fun main() =
               tickSink.onEvent(frameDelta)
 
               controller.update(frameDelta)
-              camera.sync(player, eyeHeight)
+              camera.sync(registry, player, eyeHeight)
               cameraHud.update(camera.currentDirection16())
               playerHud.update()
               cameraBuf.update()
