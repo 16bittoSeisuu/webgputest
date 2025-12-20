@@ -7,9 +7,12 @@ import net.japanesehunter.math.Length
 import net.japanesehunter.math.Length3
 import net.japanesehunter.math.MutableAabb
 import net.japanesehunter.math.MutablePoint3
+import net.japanesehunter.math.MutableQuaternion
 import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.Quaternion
 import net.japanesehunter.math.copyOf
+import net.japanesehunter.math.identity
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.overlaps
@@ -51,6 +54,12 @@ interface Player {
    * Updated by the physics system after each tick based on collision resolution.
    */
   val isGrounded: Boolean
+
+  /**
+   * The orientation of the player as a mutable rotation quaternion.
+   * Typically represents the direction the player is facing.
+   */
+  val rotation: MutableQuaternion
 
   /**
    * Closes the player and unsubscribes from any event sources.
@@ -109,6 +118,7 @@ private class PhysicsPlayer(
   override val position: Point3 get() = mutablePosition
   override val boundingBox: Aabb get() = mutableBoundingBox
   override val isGrounded: Boolean get() = groundedState
+  override val rotation: MutableQuaternion = MutableQuaternion()
 
   override fun close() {
     subscription.close()

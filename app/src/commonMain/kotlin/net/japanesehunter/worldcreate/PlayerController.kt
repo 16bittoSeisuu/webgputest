@@ -6,22 +6,15 @@ import net.japanesehunter.math.Acceleration
 import net.japanesehunter.math.Angle
 import net.japanesehunter.math.AngleUnit
 import net.japanesehunter.math.Direction3
-import net.japanesehunter.math.Length
-import net.japanesehunter.math.Length3
-import net.japanesehunter.math.LengthUnit
-import net.japanesehunter.math.MovableCamera
 import net.japanesehunter.math.Quaternion
 import net.japanesehunter.math.Speed
 import net.japanesehunter.math.SpeedUnit
 import net.japanesehunter.math.degrees
 import net.japanesehunter.math.forward
-import net.japanesehunter.math.lookingAlong
-import net.japanesehunter.math.meters
+import net.japanesehunter.math.lookAlong
 import net.japanesehunter.math.metersPerSecond
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.rotate
-import net.japanesehunter.math.setPosition
-import net.japanesehunter.math.setRotation
 import net.japanesehunter.math.up
 import net.japanesehunter.worldcreate.entity.Player
 import net.japanesehunter.worldcreate.input.InputContext
@@ -42,27 +35,23 @@ import kotlin.time.Duration
 
 /**
  * Installs a first-person controller that maps mouse and keyboard input to player velocity and
- * camera rotation.
+ * rotation.
  *
  * The controller uses the pointer lock for capturing the pointer and the input context for
  * event delivery. The returned controller stays active until closed through the resource scope
  * or manually.
  *
- * @param player the player whose velocity will be controlled.
+ * @param player the player whose velocity and rotation will be controlled.
  * @param settings controller input bindings and motion parameters.
  * @return the installed controller instance.
  */
 context(resource: ResourceScope, pointerLock: PointerLock, input: InputContext)
-fun MovableCamera.controller(
-  player: Player,
-  settings: PlayerController.Settings = PlayerController.Settings(),
-): PlayerController =
+fun Player.controller(settings: PlayerController.Settings = PlayerController.Settings()): PlayerController =
   resource.install(
     PlayerController(
       pointerLock = pointerLock,
       input = input,
-      camera = this,
-      player = player,
+      player = this,
       settings = settings,
     ),
   )
@@ -72,20 +61,18 @@ fun MovableCamera.controller(
  *
  * The controller subscribes to input events through the injected [InputContext] and monitors
  * pointer lock state through the injected [PointerLock]. It keeps yaw and pitch within the
- * configured limits, applying rotation to the camera and velocity to the player on update.
+ * configured limits, applying rotation to the player and velocity updates on update.
  *
  * Implementations are not thread-safe and must be accessed from a single thread.
  *
  * @param pointerLock the pointer lock provider for capturing and releasing the pointer.
  * @param input the input context providing keyboard and mouse events.
- * @param camera target camera whose rotation is controlled by mouse movement.
- * @param player target player whose horizontal velocity is controlled by keyboard input.
+ * @param player target player whose rotation and velocity are controlled.
  * @param settings mutable controller bindings and motion parameters.
  */
 class PlayerController internal constructor(
   private val pointerLock: PointerLock,
   private val input: InputContext,
-  private val camera: MovableCamera,
   private val player: Player,
   private val settings: Settings = Settings(),
 ) : AutoCloseable {
@@ -115,11 +102,6 @@ class PlayerController internal constructor(
    * @param airAcceleration acceleration rate when in air.
    * @param airDeceleration deceleration rate when in air with no input.
    * @param jumpSpeed initial vertical velocity when jumping.
-   * @param eyeHeight the vertical offset from player position to camera position.
-   *
-   *   NaN: treated as invalid and rejected
-   *
-   *   Infinity: treated as invalid and rejected
    * @param maxPitch maximum absolute pitch angle allowed before clamping.
    *
    *   range: 0 <= maxPitch <= 90 degrees
@@ -137,15 +119,11 @@ class PlayerController internal constructor(
     var airAcceleration: Acceleration = 10.metersPerSecondSquared,
     var airDeceleration: Acceleration = 2.metersPerSecondSquared,
     var jumpSpeed: Speed = 9.metersPerSecond,
-    var eyeHeight: Length = 1.62.meters,
     var maxPitch: Angle = 89.0.degrees,
   ) {
     init {
       require(mouseSensitivityDegPerDot.isFinite() && mouseSensitivityDegPerDot >= 0.0) {
         "mouseSensitivityDegPerDot must be finite and non-negative: $mouseSensitivityDegPerDot"
-      }
-      require(eyeHeight.toDouble(LengthUnit.METER).isFinite()) {
-        "eyeHeight must be finite: $eyeHeight"
       }
       val maxPitchRadians = maxPitch.toDouble(AngleUnit.RADIAN)
       require(maxPitchRadians in 0.0..(0.5 * PI)) {
@@ -168,7 +146,7 @@ class PlayerController internal constructor(
   private val pointerLockSubscription: EventSubscription
 
   init {
-    val initialForward = camera.transform.rotation.rotate(Direction3.forward)
+    val initialForward = player.rotation.rotate(Direction3.forward)
     yaw = atan2(initialForward.ux, -initialForward.uz)
     pitch = asin(initialForward.uy).coerceIn(-maxPitchRadians, maxPitchRadians)
 
@@ -199,8 +177,7 @@ class PlayerController internal constructor(
    * Advances controller state by applying accumulated mouse movement and active key input.
    *
    * Returns immediately when pointer lock is not active.
-   * Updates the camera rotation and player velocity based on input, then synchronizes the camera
-   * position to the player.
+   * Updates the player rotation and velocity based on input.
    *
    * @param dt the time elapsed since the last update.
    *
@@ -221,8 +198,6 @@ class PlayerController internal constructor(
     }
 
     updatePlayerVelocity(dt)
-
-    syncCameraPosition()
   }
 
   override fun close() {
@@ -268,20 +243,7 @@ class PlayerController internal constructor(
         uy = sin(pitch),
         uz = -cos(yaw) * cosPitch,
       )
-    val rotation = Quaternion.lookingAlong(forward, Direction3.up)
-    camera.setRotation(rotation)
-  }
-
-  private fun syncCameraPosition() {
-    val playerPos = player.position
-    val eyeOffset = settings.eyeHeight
-    camera.setPosition(
-      Length3(
-        dx = playerPos.x,
-        dy = playerPos.y + eyeOffset,
-        dz = playerPos.z,
-      ),
-    )
+    player.rotation.lookAlong(forward, Direction3.up)
   }
 
   private fun updatePlayerVelocity(dt: Duration) {

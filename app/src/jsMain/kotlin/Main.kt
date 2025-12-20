@@ -54,6 +54,7 @@ import net.japanesehunter.worldcreate.PlayerController
 import net.japanesehunter.worldcreate.World
 import net.japanesehunter.worldcreate.controller
 import net.japanesehunter.worldcreate.entity.Player
+import net.japanesehunter.worldcreate.entity.sync
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.PlayerHud
 import net.japanesehunter.worldcreate.input.inputContext
@@ -95,7 +96,8 @@ fun main() =
           )
         val playerHud = PlayerHud(player)
         val controllerSettings = PlayerController.Settings()
-        val controller = camera.controller(player, controllerSettings)
+        val controller = player.controller(controllerSettings)
+        val eyeHeight = 1.62.meters
         var lastFrameTime = window.performance.now()
 
         webgpuContext {
@@ -170,6 +172,7 @@ fun main() =
               tickSink.onEvent(frameDelta)
 
               controller.update(frameDelta)
+              camera.sync(player, eyeHeight)
               cameraHud.update(camera.currentDirection16())
               playerHud.update()
               cameraBuf.update()
