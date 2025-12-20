@@ -3,7 +3,7 @@
 package net.japanesehunter.webgpu
 
 import kotlinx.coroutines.await
-import net.japanesehunter.GpuVertexFormat
+import net.japanesehunter.webgpu.GpuVertexFormat
 import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
 import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUBindingResource

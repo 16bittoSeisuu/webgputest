@@ -1,10 +1,10 @@
 package net.japanesehunter.worldcreate
 
 import arrow.fx.coroutines.ResourceScope
-import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.GpuBuffer
+import net.japanesehunter.webgpu.GpuVertexFormat
 import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.interop.GPUBufferUsage

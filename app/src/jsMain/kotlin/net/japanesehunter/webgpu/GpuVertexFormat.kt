@@ -1,6 +1,6 @@
-@file:Suppress("ktlint:standard:enum-entry-name-case")
+@file:Suppress("ktlint:standard:enum-entry-name-case", "EnumEntryName")
 
-package net.japanesehunter
+package net.japanesehunter.webgpu
 
 import net.japanesehunter.webgpu.interop.GPUVertexFormat
 

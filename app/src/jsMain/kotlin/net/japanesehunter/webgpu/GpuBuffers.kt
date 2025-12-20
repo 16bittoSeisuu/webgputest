@@ -4,7 +4,6 @@ package net.japanesehunter.webgpu
 
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.resource
-import net.japanesehunter.GpuVertexFormat
 import net.japanesehunter.math.Camera
 import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.MutableMatrix4x4
@@ -13,6 +12,7 @@ import net.japanesehunter.math.setIdentity
 import net.japanesehunter.math.setTransform
 import net.japanesehunter.math.setViewProjRH
 import net.japanesehunter.math.toFloatArray
+import net.japanesehunter.webgpu.GpuVertexFormat
 import net.japanesehunter.webgpu.interop.GPUBufferBinding
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
