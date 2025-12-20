@@ -9,6 +9,7 @@
   or when a protocol is defined.
 - Make sure to write KDocs.
 - When treating a Double as a finite value, always validate it with isFinite.
+- Do not write `public` visibility modifier. In Kotlin, declarations are public by default.
 
 ## Kotlin Language Notes
 
