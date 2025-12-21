@@ -3,6 +3,17 @@ package net.japanesehunter.worldcreate.trait
 import net.japanesehunter.math.Aabb
 import net.japanesehunter.math.MutableAabb
 import net.japanesehunter.math.copyOf
+import net.japanesehunter.traits.TraitKey
+
+/**
+ * Represents a read-only view of entity collision shapes.
+ */
+interface BoundingBoxView {
+  /**
+   * The collision boxes in local coordinates.
+   */
+  val boxes: List<Aabb>
+}
 
 /**
  * The collision shapes of an entity defined as axis-aligned bounding boxes.
@@ -19,7 +30,7 @@ import net.japanesehunter.math.copyOf
  */
 class BoundingBox(
   vararg boxes: Aabb,
-) {
+) : BoundingBoxView {
   private val _boxes: MutableList<MutableAabb> = boxes.map { MutableAabb.copyOf(it) }.toMutableList()
 
   /**
@@ -27,7 +38,7 @@ class BoundingBox(
    *
    * This list is a read-only view. Use [add], [remove], and [clear] to modify the boxes.
    */
-  val boxes: List<MutableAabb> get() = _boxes
+  override val boxes: List<MutableAabb> get() = _boxes
 
   /**
    * Adds a collision box to this bounding box.
@@ -58,4 +69,6 @@ class BoundingBox(
   fun clear() {
     _boxes.clear()
   }
+
+  companion object : TraitKey<BoundingBoxView, BoundingBox> by TraitKey()
 }

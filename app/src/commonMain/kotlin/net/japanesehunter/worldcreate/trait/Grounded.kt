@@ -1,5 +1,7 @@
 package net.japanesehunter.worldcreate.trait
 
+import net.japanesehunter.traits.TraitKey
+
 /**
  * Marks an entity as currently in contact with solid ground.
  *
@@ -10,4 +12,4 @@ package net.japanesehunter.worldcreate.trait
  * An entity is grounded when its downward motion is blocked by collision
  * geometry below it.
  */
-data object Grounded
+data object Grounded : TraitKey<Grounded, Grounded> by TraitKey()
