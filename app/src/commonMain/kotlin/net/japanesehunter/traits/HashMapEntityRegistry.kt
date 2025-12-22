@@ -137,7 +137,7 @@ class HashMapEntityRegistry : EntityRegistry {
     override fun equals(other: Any?): Boolean {
       if (this === other) return true
       if (other !is EntityHandle) return false
-      if (this@HashMapEntityRegistry !== other.outer) return false
+      if (this.outer != other.outer) return false
       return id == other.id
     }
 
@@ -145,7 +145,7 @@ class HashMapEntityRegistry : EntityRegistry {
 
     override fun toString(): String = "Entity($id)"
 
-    private val EntityHandle.outer: HashMapEntityRegistry
+    private val outer: HashMapEntityRegistry
       get() = this@HashMapEntityRegistry
   }
 }
