@@ -11,12 +11,16 @@ import kotlin.reflect.KClass
  * This implementation is not thread-safe. External synchronization is required
  * when accessing from multiple threads.
  */
-class SimpleEntityRegistry : EntityRegistry {
+class SimpleEntityRegistry :
+  EntityRegistry,
+  IdBackedEntityStore {
   private var nextId: Int = 1
   private val aliveEntities: MutableSet<EntityId> = mutableSetOf()
   private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> = mutableMapOf()
 
-  override fun create(): EntityId {
+  override fun create(): EntityId = createId()
+
+  override fun createId(): EntityId {
     val id = EntityId(nextId++)
     aliveEntities.add(id)
     return id
@@ -28,44 +32,74 @@ class SimpleEntityRegistry : EntityRegistry {
   }
 
   override fun destroy(entity: EntityId) {
-    if (aliveEntities.remove(entity)) {
-      traitStores.values.forEach { it.remove(entity) }
+    destroyById(entity)
+  }
+
+  override fun destroyById(id: EntityId) {
+    if (aliveEntities.remove(id)) {
+      traitStores.values.forEach { it.remove(id) }
     }
   }
 
-  override fun exists(entity: EntityId): Boolean = entity in aliveEntities
+  override fun exists(entity: EntityId): Boolean = existsById(entity)
+
+  override fun existsById(id: EntityId): Boolean = id in aliveEntities
 
   override fun <T : Any> add(
     entity: EntityId,
     trait: T,
   ) {
-    require(entity in aliveEntities) { "Entity $entity does not exist" }
+    addById(entity, trait)
+  }
+
+  override fun <T : Any> addById(
+    id: EntityId,
+    trait: T,
+  ) {
+    require(id in aliveEntities) { "Entity $id does not exist" }
     val store = traitStores.getOrPut(trait::class) { mutableMapOf() }
-    store[entity] = trait
+    store[id] = trait
   }
 
   override fun <T : Any> get(
     entity: EntityId,
     type: KClass<T>,
+  ): T? = getById(entity, type)
+
+  override fun <T : Any> getById(
+    id: EntityId,
+    type: KClass<T>,
   ): T? {
     @Suppress("UNCHECKED_CAST")
-    return traitStores[type]?.get(entity) as T?
+    return traitStores[type]?.get(id) as T?
   }
 
   override fun <T : Any> remove(
     entity: EntityId,
     type: KClass<T>,
+  ): T? = removeById(entity, type)
+
+  override fun <T : Any> removeById(
+    id: EntityId,
+    type: KClass<T>,
   ): T? {
     @Suppress("UNCHECKED_CAST")
-    return traitStores[type]?.remove(entity) as T?
+    return traitStores[type]?.remove(id) as T?
   }
 
   override fun has(
     entity: EntityId,
     type: KClass<*>,
-  ): Boolean = traitStores[type]?.containsKey(entity) == true
+  ): Boolean = hasById(entity, type)
 
-  override fun query(vararg types: KClass<*>): Sequence<EntityId> {
+  override fun hasById(
+    id: EntityId,
+    type: KClass<*>,
+  ): Boolean = traitStores[type]?.containsKey(id) == true
+
+  override fun query(vararg types: KClass<*>): Sequence<EntityId> = queryIds(*types)
+
+  override fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
     if (types.isEmpty()) {
       return aliveEntities.asSequence()
     }
