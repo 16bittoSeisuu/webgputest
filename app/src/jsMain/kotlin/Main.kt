@@ -63,7 +63,7 @@ import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.PlayerHud
 import net.japanesehunter.worldcreate.input.inputContext
 import net.japanesehunter.worldcreate.playerController
-import net.japanesehunter.worldcreate.simulation.RigidbodySimulation
+import net.japanesehunter.worldcreate.simulation.rigidbodySimulation
 import net.japanesehunter.worldcreate.toGpuBuffer
 import net.japanesehunter.worldcreate.toMeshGpuBuffer
 import net.japanesehunter.worldcreate.trait.BoundingBox
@@ -116,7 +116,7 @@ fun main() =
             initialDrag = 0.4,
           ),
         )
-        RigidbodySimulation(tickSource, registry, blockAccess).bind()
+        tickSource.subscribe(rigidbodySimulation(registry, blockAccess))
 
         val playerHud = PlayerHud(registry, player)
         val controllerSettings = PlayerController.Settings()
