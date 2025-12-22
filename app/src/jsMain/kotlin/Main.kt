@@ -25,7 +25,6 @@ import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.traits.HashMapEntityRegistry
-import net.japanesehunter.traits.TraitUpdateEvent
 import net.japanesehunter.traits.subscribe
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
@@ -105,7 +104,7 @@ fun main() =
         player.add(
           BoundingBox(
             Aabb(
-              min = Point3(-0.3.meters, 0.meters, -0.3.meters),
+              min = Point3((-0.3).meters, 0.meters, (-0.3).meters),
               max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
             ),
           ),
