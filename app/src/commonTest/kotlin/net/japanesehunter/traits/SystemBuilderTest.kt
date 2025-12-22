@@ -44,14 +44,14 @@ class SystemBuilderTest :
 
       val observed = mutableListOf<Int>()
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
           forEach { _ ->
             observed.add(counter.count)
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       observed.toSet() shouldBe setOf(1, 2)
     }
@@ -66,7 +66,7 @@ class SystemBuilderTest :
 
       var callCount = 0
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
           val label by read(Label)
           forEach { _ ->
@@ -74,7 +74,7 @@ class SystemBuilderTest :
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       callCount shouldBe 1
     }
@@ -88,14 +88,14 @@ class SystemBuilderTest :
 
       val observed = mutableListOf<Int>()
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
           forEach { _ ->
             observed.add(counter.count)
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       observed.toSet() shouldBe setOf(10, 20)
     }
@@ -107,14 +107,14 @@ class SystemBuilderTest :
 
       var observed: Int? = null
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val value by read(WrappedIntKey)
           forEach { _ ->
             observed = value
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       observed shouldBe 42
     }
@@ -126,7 +126,7 @@ class SystemBuilderTest :
 
       var writtenValue: Counter? = null
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           var counter by write(Counter)
           forEach { _ ->
             writtenValue = counter
@@ -134,7 +134,7 @@ class SystemBuilderTest :
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       writtenValue?.count shouldBe 99
       registry.get(entity, Counter::class)?.count shouldBe 99
@@ -146,14 +146,14 @@ class SystemBuilderTest :
       registry.add(entity, Counter(1))
 
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           var counter by write(Counter)
           forEach { _ ->
             counter = Counter(100)
           }
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       registry.get(entity, Counter::class)?.count shouldBe 100
     }
@@ -165,14 +165,14 @@ class SystemBuilderTest :
 
       var receivedDt = 0.milliseconds
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
           forEach { dt ->
             receivedDt = dt
           }
         }
 
-      sink.onEvent(33.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 33.milliseconds))
 
       receivedDt shouldBe 33.milliseconds
     }
@@ -184,11 +184,11 @@ class SystemBuilderTest :
 
       var forEachExecuted = false
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
         }
 
-      sink.onEvent(16.milliseconds)
+      sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       forEachExecuted shouldBe false
     }
@@ -199,7 +199,7 @@ class SystemBuilderTest :
       registry.add(entity, Counter(0))
 
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           val counter by read(Counter)
           shouldThrow<IllegalStateException> {
             @Suppress("UNUSED_EXPRESSION")
@@ -214,7 +214,7 @@ class SystemBuilderTest :
       registry.add(entity, Counter(0))
 
       val sink =
-        buildSystem(registry) {
+        buildSystem {
           var counter by write(Counter)
           shouldThrow<IllegalStateException> {
             @Suppress("UNUSED_EXPRESSION")

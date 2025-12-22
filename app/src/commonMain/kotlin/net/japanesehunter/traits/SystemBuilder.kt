@@ -1,6 +1,5 @@
 package net.japanesehunter.traits
 
-import net.japanesehunter.worldcreate.world.TickSink
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KClass
@@ -14,11 +13,10 @@ import kotlin.time.Duration
  * define processing logic within [forEach]. The builder automatically generates
  * queries and resolves trait references for each matching entity during execution.
  */
-class SystemBuilder internal constructor(
-  private val registry: EntityRegistry,
-) {
+class SystemBuilder internal constructor() {
   private var forEachBlock: (EntityScope.(Duration) -> Unit)? = null
   private val requiredTraitTypes = mutableSetOf<KClass<*>>()
+  private var currentRegistry: EntityRegistry? = null
   private var currentEntity: EntityId? = null
 
   /**
@@ -33,6 +31,7 @@ class SystemBuilder internal constructor(
   fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
     requiredTraitTypes.add(key.writableType)
     return ReadOnlyProperty { _, _ ->
+      val registry = currentRegistry ?: error("read can only be accessed during forEach execution")
       val entity = currentEntity ?: error("read can only be accessed during forEach execution")
 
       @Suppress("UNCHECKED_CAST")
@@ -59,6 +58,7 @@ class SystemBuilder internal constructor(
         thisRef: Any?,
         property: KProperty<*>,
       ): W {
+        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
         @Suppress("UNCHECKED_CAST")
         return registry.get(entity, key.writableType as KClass<W>)
@@ -70,6 +70,7 @@ class SystemBuilder internal constructor(
         property: KProperty<*>,
         value: W,
       ) {
+        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
         @Suppress("UNCHECKED_CAST")
         registry.add(entity, value as Any)
@@ -90,17 +91,25 @@ class SystemBuilder internal constructor(
     forEachBlock = block
   }
 
-  internal fun execute(dt: Duration) {
+  internal fun execute(
+    registry: EntityRegistry,
+    dt: Duration,
+  ) {
     val block = forEachBlock ?: return
-    val entities = registry.query(*requiredTraitTypes.toTypedArray())
-    for (entity in entities) {
-      currentEntity = entity
-      try {
-        val scope = EntityScopeImpl(registry, entity)
-        scope.block(dt)
-      } finally {
-        currentEntity = null
+    try {
+      currentRegistry = registry
+      val entities = registry.query(*requiredTraitTypes.toTypedArray())
+      for (entity in entities) {
+        currentEntity = entity
+        try {
+          val scope = EntityScopeImpl(registry, entity)
+          scope.block(dt)
+        } finally {
+          currentEntity = null
+        }
       }
+    } finally {
+      currentRegistry = null
     }
   }
 }
@@ -108,20 +117,16 @@ class SystemBuilder internal constructor(
 /**
  * Builds a system that processes entities with declared trait requirements.
  *
- * The returned [TickSink] can be subscribed to a tick source to execute the
- * system's logic on each tick.
+ * The returned [TraitUpdateSink] can be subscribed to a tick source using the
+ * context-aware extension to execute the system's logic on each update.
  *
- * @param registry the entity registry to query and access traits from.
  * @param block the system builder configuration
- * @return the tick sink. null: never returns null
+ * @return the trait update sink. null: never returns null
  */
-fun buildSystem(
-  registry: EntityRegistry,
-  block: SystemBuilder.() -> Unit,
-): TickSink {
-  val builder = SystemBuilder(registry)
+fun buildSystem(block: SystemBuilder.() -> Unit): TraitUpdateSink {
+  val builder = SystemBuilder()
   builder.block()
-  return TickSink { dt ->
-    builder.execute(dt)
+  return TraitUpdateSink { event ->
+    builder.execute(event.registry, event.dt)
   }
 }

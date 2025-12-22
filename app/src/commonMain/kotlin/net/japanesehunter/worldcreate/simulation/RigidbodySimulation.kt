@@ -9,7 +9,7 @@ import net.japanesehunter.math.Speed
 import net.japanesehunter.math.overlaps
 import net.japanesehunter.math.times
 import net.japanesehunter.math.translatedBy
-import net.japanesehunter.traits.EntityRegistry
+import net.japanesehunter.traits.TraitUpdateSink
 import net.japanesehunter.traits.buildSystem
 import net.japanesehunter.worldcreate.trait.BoundingBox
 import net.japanesehunter.worldcreate.trait.Grounded
@@ -17,7 +17,6 @@ import net.japanesehunter.worldcreate.trait.Position
 import net.japanesehunter.worldcreate.trait.Rigidbody
 import net.japanesehunter.worldcreate.trait.Velocity
 import net.japanesehunter.worldcreate.world.BlockAccess
-import net.japanesehunter.worldcreate.world.TickSink
 
 /**
  * Creates a rigid body physics simulation that processes entities on each tick.
@@ -26,15 +25,11 @@ import net.japanesehunter.worldcreate.world.TickSink
  * collisions against the world geometry. Entities landing on solid ground receive
  * the [Grounded] trait. Entities becoming airborne have the trait removed.
  *
- * @param registry the entity registry containing entities to simulate.
  * @param blockAccess the provider of collision geometry.
- * @return the tick sink that executes the simulation logic.
+ * @return the trait update sink that executes the simulation logic.
  */
-fun rigidbodySimulation(
-  registry: EntityRegistry,
-  blockAccess: BlockAccess,
-): TickSink =
-  buildSystem(registry) {
+fun rigidbodySimulation(blockAccess: BlockAccess): TraitUpdateSink =
+  buildSystem {
     val position by write(Position)
     val velocity by write(Velocity)
     val rigidbody by read(Rigidbody)

@@ -25,6 +25,7 @@ import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.traits.SimpleEntityRegistry
+import net.japanesehunter.traits.subscribe
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
 import net.japanesehunter.webgpu.UnsupportedAdapterException
@@ -96,27 +97,29 @@ fun main() =
         val blockAccess = ChunkBlockAccess(chunk)
         val registry = SimpleEntityRegistry()
         val player = registry.create()
-        val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
-        registry.add(player, Position(MutablePoint3.copyOf(initialPosition)))
-        registry.add(player, Velocity(MutableVelocity3()))
-        registry.add(player, Rotation(MutableQuaternion()))
-        registry.add(
-          player,
-          BoundingBox(
-            Aabb(
-              min = Point3(-0.3.meters, 0.meters, -0.3.meters),
-              max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
+        with(registry) {
+          val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
+          add(player, Position(MutablePoint3.copyOf(initialPosition)))
+          add(player, Velocity(MutableVelocity3()))
+          add(player, Rotation(MutableQuaternion()))
+          add(
+            player,
+            BoundingBox(
+              Aabb(
+                min = Point3(-0.3.meters, 0.meters, -0.3.meters),
+                max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
+              ),
             ),
-          ),
-        )
-        registry.add(
-          player,
-          Rigidbody(
-            gravity = (-32).metersPerSecondSquared,
-            initialDrag = 0.4,
-          ),
-        )
-        tickSource.subscribe(rigidbodySimulation(registry, blockAccess))
+          )
+          add(
+            player,
+            Rigidbody(
+              gravity = (-32).metersPerSecondSquared,
+              initialDrag = 0.4,
+            ),
+          )
+          tickSource.subscribe(rigidbodySimulation(blockAccess))
+        }
 
         val playerHud = PlayerHud(registry, player)
         val controllerSettings = PlayerController.Settings()
