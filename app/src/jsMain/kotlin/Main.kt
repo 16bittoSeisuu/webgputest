@@ -24,7 +24,8 @@ import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.metersPerSecondSquared
-import net.japanesehunter.traits.SimpleEntityRegistry
+import net.japanesehunter.traits.HashMapEntityRegistry
+import net.japanesehunter.traits.TraitUpdateEvent
 import net.japanesehunter.traits.subscribe
 import net.japanesehunter.webgpu.BufferAllocator
 import net.japanesehunter.webgpu.CanvasContext
@@ -95,7 +96,7 @@ fun main() =
 
         val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
         val blockAccess = ChunkBlockAccess(chunk)
-        val registry = SimpleEntityRegistry()
+        val registry = HashMapEntityRegistry()
         val player = registry.createEntity()
         val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
         player.add(Position(MutablePoint3.copyOf(initialPosition)))

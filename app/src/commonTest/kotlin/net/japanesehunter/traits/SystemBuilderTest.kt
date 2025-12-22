@@ -34,7 +34,7 @@ private object WrappedIntKey : TraitKey<Int, WrappedInt> by TraitKey({ it.value 
 class SystemBuilderTest :
   FunSpec({
     test("forEach executes once per matching entity") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val e1 = registry.create()
       val e2 = registry.create()
       val e3 = registry.create()
@@ -57,7 +57,7 @@ class SystemBuilderTest :
     }
 
     test("forEach skips entities missing required traits") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val e1 = registry.create()
       val e2 = registry.create()
       registry.add(e1, Counter(1))
@@ -80,7 +80,7 @@ class SystemBuilderTest :
     }
 
     test("read returns correct value for each entity") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val e1 = registry.create()
       val e2 = registry.create()
       registry.add(e1, Counter(10))
@@ -101,7 +101,7 @@ class SystemBuilderTest :
     }
 
     test("read applies provideReadonlyView transformation") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, WrappedInt(42))
 
@@ -120,7 +120,7 @@ class SystemBuilderTest :
     }
 
     test("write getValue returns writable instance") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(5))
 
@@ -141,7 +141,7 @@ class SystemBuilderTest :
     }
 
     test("write setValue replaces trait in registry") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(1))
 
@@ -159,7 +159,7 @@ class SystemBuilderTest :
     }
 
     test("dt is passed to forEach block") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(0))
 
@@ -178,7 +178,7 @@ class SystemBuilderTest :
     }
 
     test("onEvent does nothing when no forEach is defined") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(0))
 
@@ -194,7 +194,7 @@ class SystemBuilderTest :
     }
 
     test("read outside forEach throws error") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(0))
 
@@ -209,7 +209,7 @@ class SystemBuilderTest :
     }
 
     test("write outside forEach throws error") {
-      val registry = SimpleEntityRegistry()
+      val registry = HashMapEntityRegistry()
       val entity = registry.create()
       registry.add(entity, Counter(0))
 

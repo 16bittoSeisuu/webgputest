@@ -3,7 +3,7 @@ package net.japanesehunter.traits
 import kotlin.reflect.KClass
 
 /**
- * A simple in-memory implementation of [EntityRegistry].
+ * A hash map-based in-memory implementation of [EntityRegistry].
  *
  * Stores entities and their traits using hash maps. Entity IDs are assigned
  * sequentially starting from 1. Destroyed entity IDs are not reused.
@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
  * This implementation is not thread-safe. External synchronization is required
  * when accessing from multiple threads.
  */
-class SimpleEntityRegistry :
+class HashMapEntityRegistry :
   EntityRegistry,
   IdBackedEntityStore {
   private var nextId: Int = 1
@@ -28,7 +28,7 @@ class SimpleEntityRegistry :
 
   override fun createEntity(): Entity {
     val id = create()
-    return EntityImpl(id, this)
+    return EntityHandle(id)
   }
 
   override fun destroy(entity: EntityId) {
@@ -115,69 +115,71 @@ class SimpleEntityRegistry :
     }
   }
 
-  override fun queryEntities(vararg types: KClass<*>): Sequence<Entity> = query(*types).map { id -> EntityImpl(id, this) }
-}
+  override fun queryEntities(vararg types: KClass<*>): Sequence<Entity> = query(*types).map { id -> EntityHandle(id) }
 
-/**
- * Default implementation of [Entity] backed by an [EntityRegistry].
- *
- * Holds a reference to the registry and its internal entity ID. All operations
- * delegate to the registry and verify that the entity is still alive before
- * proceeding.
- *
- * Two instances are considered equal if they refer to the same entity within
- * the same registry instance. The hash code is derived from the internal
- * entity identifier to ensure consistency with equals.
- *
- * This class is not thread-safe. External synchronization is required when
- * accessing from multiple threads.
- *
- * @param id the internal entity identifier.
- * @param registry the registry that owns this entity.
- */
-private class EntityImpl(
-  private val id: EntityId,
-  private val registry: EntityRegistry,
-) : Entity {
-  override val isAlive: Boolean
-    get() = registry.exists(id)
+  /**
+   * Entity handle implementation specific to [HashMapEntityRegistry].
+   *
+   * Holds a reference to the internal entity ID. All operations delegate to
+   * the enclosing registry and verify that the entity is still alive before
+   * proceeding.
+   *
+   * Two instances are considered equal if they refer to the same entity within
+   * the same registry instance. The hash code is derived from the internal
+   * entity identifier to ensure consistency with equals.
+   *
+   * This class is not thread-safe. External synchronization is required when
+   * accessing from multiple threads.
+   *
+   * @param id the internal entity identifier.
+   */
+  private inner class EntityHandle(
+    private val id: EntityId,
+  ) : Entity {
+    override val isAlive: Boolean
+      get() = exists(id)
 
-  override fun <T : Any> add(trait: T) {
-    checkAlive()
-    registry.add(id, trait)
+    override fun <T : Any> add(trait: T) {
+      checkAlive()
+      this@HashMapEntityRegistry.add(id, trait)
+    }
+
+    override fun <T : Any> get(type: KClass<T>): T? {
+      checkAlive()
+      return this@HashMapEntityRegistry.get(id, type)
+    }
+
+    override fun <T : Any> remove(type: KClass<T>): T? {
+      checkAlive()
+      return this@HashMapEntityRegistry.remove(id, type)
+    }
+
+    override fun has(type: KClass<*>): Boolean {
+      checkAlive()
+      return this@HashMapEntityRegistry.has(id, type)
+    }
+
+    override fun destroy() {
+      checkAlive()
+      this@HashMapEntityRegistry.destroy(id)
+    }
+
+    private fun checkAlive() {
+      check(isAlive) { "Entity has been destroyed" }
+    }
+
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (other !is EntityHandle) return false
+      if (this@HashMapEntityRegistry !== other.outer) return false
+      return id == other.id
+    }
+
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun toString(): String = "Entity($id)"
+
+    private val EntityHandle.outer: HashMapEntityRegistry
+      get() = this@HashMapEntityRegistry
   }
-
-  override fun <T : Any> get(type: KClass<T>): T? {
-    checkAlive()
-    return registry.get(id, type)
-  }
-
-  override fun <T : Any> remove(type: KClass<T>): T? {
-    checkAlive()
-    return registry.remove(id, type)
-  }
-
-  override fun has(type: KClass<*>): Boolean {
-    checkAlive()
-    return registry.has(id, type)
-  }
-
-  override fun destroy() {
-    checkAlive()
-    registry.destroy(id)
-  }
-
-  private fun checkAlive() {
-    check(isAlive) { "Entity has been destroyed" }
-  }
-
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other !is EntityImpl) return false
-    return id == other.id && registry === other.registry
-  }
-
-  override fun hashCode(): Int = id.hashCode()
-
-  override fun toString(): String = "Entity($id)"
 }
