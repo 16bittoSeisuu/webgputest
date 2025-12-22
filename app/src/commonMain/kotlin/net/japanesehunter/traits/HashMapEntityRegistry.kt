@@ -131,7 +131,7 @@ class HashMapEntityRegistry : EntityRegistry {
     }
 
     private fun checkAlive() {
-      check(isAlive) { "Entity has been destroyed" }
+      check(isAlive) { "$this has been destroyed" }
     }
 
     override fun equals(other: Any?): Boolean {
