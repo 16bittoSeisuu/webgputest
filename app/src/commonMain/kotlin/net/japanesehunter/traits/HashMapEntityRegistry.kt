@@ -11,9 +11,7 @@ import kotlin.reflect.KClass
  * This implementation is not thread-safe. External synchronization is required
  * when accessing from multiple threads.
  */
-class HashMapEntityRegistry :
-  EntityRegistry,
-  IdBackedEntityStore {
+class HashMapEntityRegistry : EntityRegistry {
   private var nextId: Int = 1
   private val aliveEntities: MutableSet<EntityId> = mutableSetOf()
   private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> = mutableMapOf()
@@ -21,7 +19,7 @@ class HashMapEntityRegistry :
   // Internal alias for backward compatibility
   internal fun create(): EntityId = createId()
 
-  override fun createId(): EntityId {
+  internal fun createId(): EntityId {
     val id = EntityId(nextId++)
     aliveEntities.add(id)
     return id
@@ -37,7 +35,7 @@ class HashMapEntityRegistry :
     destroyById(entity)
   }
 
-  override fun destroyById(id: EntityId) {
+  internal fun destroyById(id: EntityId) {
     if (aliveEntities.remove(id)) {
       traitStores.values.forEach { it.remove(id) }
     }
@@ -46,7 +44,7 @@ class HashMapEntityRegistry :
   // Internal alias for backward compatibility
   internal fun exists(entity: EntityId): Boolean = existsById(entity)
 
-  override fun existsById(id: EntityId): Boolean = id in aliveEntities
+  internal fun existsById(id: EntityId): Boolean = id in aliveEntities
 
   // Internal alias for backward compatibility
   internal fun <T : Any> add(
@@ -56,7 +54,7 @@ class HashMapEntityRegistry :
     addById(entity, trait)
   }
 
-  override fun <T : Any> addById(
+  internal fun <T : Any> addById(
     id: EntityId,
     trait: T,
   ) {
@@ -71,7 +69,7 @@ class HashMapEntityRegistry :
     type: KClass<T>,
   ): T? = getById(entity, type)
 
-  override fun <T : Any> getById(
+  internal fun <T : Any> getById(
     id: EntityId,
     type: KClass<T>,
   ): T? {
@@ -85,7 +83,7 @@ class HashMapEntityRegistry :
     type: KClass<T>,
   ): T? = removeById(entity, type)
 
-  override fun <T : Any> removeById(
+  internal fun <T : Any> removeById(
     id: EntityId,
     type: KClass<T>,
   ): T? {
@@ -99,7 +97,7 @@ class HashMapEntityRegistry :
     type: KClass<*>,
   ): Boolean = hasById(entity, type)
 
-  override fun hasById(
+  internal fun hasById(
     id: EntityId,
     type: KClass<*>,
   ): Boolean = traitStores[type]?.containsKey(id) == true
@@ -107,7 +105,7 @@ class HashMapEntityRegistry :
   // Internal alias for backward compatibility
   internal fun query(vararg types: KClass<*>): Sequence<EntityId> = queryIds(*types)
 
-  override fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
+  internal fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
     if (types.isEmpty()) {
       return aliveEntities.asSequence()
     }

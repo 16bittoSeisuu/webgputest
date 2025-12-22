@@ -12,6 +12,6 @@ package net.japanesehunter.traits
  *
  * @param value the underlying integer identifier.
  */
-value class EntityId internal constructor(
-  internal val value: Int,
+internal value class EntityId(
+  val value: Int,
 )
