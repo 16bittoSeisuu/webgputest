@@ -111,6 +111,11 @@ interface EntityRegistry {
   /**
    * Returns all entities that have all of the specified trait types.
    *
+   * The returned entity handles refer to entities that exist at the time of
+   * enumeration. Each handle follows the equality contract defined by [Entity],
+   * meaning that multiple calls to this method with the same query will return
+   * handles that are equal to each other for the same underlying entity.
+   *
    * @param types the trait types to match.
    * @return a sequence of entity handles that have all specified traits.
    */

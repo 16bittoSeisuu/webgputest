@@ -9,6 +9,10 @@ import kotlin.reflect.KClass
  * the entity. Once the entity is destroyed, all operations on this handle will
  * throw [IllegalStateException].
  *
+ * Entity instances follow value semantics for equality. Two entity handles are
+ * considered equal if they refer to the same entity within the same registry.
+ * This allows entity handles to be used as map keys or in sets reliably.
+ *
  * Implementations are not required to be thread-safe. Callers must provide
  * external synchronization when accessing from multiple threads.
  */
@@ -67,6 +71,37 @@ interface Entity {
    * [IllegalStateException].
    */
   fun destroy()
+
+  /**
+   * Determines whether this entity handle is equal to another object.
+   *
+   * Two entity handles are equal if they refer to the same entity within
+   * the same registry instance.
+   *
+   * @param other the object to compare with.
+   * @return true if the objects are equal, false otherwise.
+   */
+  override fun equals(other: Any?): Boolean
+
+  /**
+   * Returns a hash code value for this entity handle.
+   *
+   * The hash code is consistent with equals, ensuring that equal entity
+   * handles produce the same hash code.
+   *
+   * @return the hash code value.
+   */
+  override fun hashCode(): Int
+
+  /**
+   * Returns a string representation of this entity handle.
+   *
+   * The string typically includes information to identify the entity,
+   * such as its internal identifier.
+   *
+   * @return the string representation.
+   */
+  override fun toString(): String
 }
 
 /**

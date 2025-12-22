@@ -125,6 +125,10 @@ class SimpleEntityRegistry :
  * delegate to the registry and verify that the entity is still alive before
  * proceeding.
  *
+ * Two instances are considered equal if they refer to the same entity within
+ * the same registry instance. The hash code is derived from the internal
+ * entity identifier to ensure consistency with equals.
+ *
  * This class is not thread-safe. External synchronization is required when
  * accessing from multiple threads.
  *
