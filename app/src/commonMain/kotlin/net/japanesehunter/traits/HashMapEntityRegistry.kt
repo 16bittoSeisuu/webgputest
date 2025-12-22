@@ -16,9 +16,6 @@ class HashMapEntityRegistry : EntityRegistry {
   private val aliveEntities: MutableSet<EntityId> = mutableSetOf()
   private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> = mutableMapOf()
 
-  // Internal alias for backward compatibility
-  internal fun create(): EntityId = createId()
-
   internal fun createId(): EntityId {
     val id = EntityId(nextId++)
     aliveEntities.add(id)
@@ -26,13 +23,8 @@ class HashMapEntityRegistry : EntityRegistry {
   }
 
   override fun createEntity(): Entity {
-    val id = create()
+    val id = createId()
     return EntityHandle(id)
-  }
-
-  // Internal alias for backward compatibility
-  internal fun destroy(entity: EntityId) {
-    destroyById(entity)
   }
 
   internal fun destroyById(id: EntityId) {
@@ -41,18 +33,7 @@ class HashMapEntityRegistry : EntityRegistry {
     }
   }
 
-  // Internal alias for backward compatibility
-  internal fun exists(entity: EntityId): Boolean = existsById(entity)
-
   internal fun existsById(id: EntityId): Boolean = id in aliveEntities
-
-  // Internal alias for backward compatibility
-  internal fun <T : Any> add(
-    entity: EntityId,
-    trait: T,
-  ) {
-    addById(entity, trait)
-  }
 
   internal fun <T : Any> addById(
     id: EntityId,
@@ -63,12 +44,6 @@ class HashMapEntityRegistry : EntityRegistry {
     store[id] = trait
   }
 
-  // Internal alias for backward compatibility
-  internal fun <T : Any> get(
-    entity: EntityId,
-    type: KClass<T>,
-  ): T? = getById(entity, type)
-
   internal fun <T : Any> getById(
     id: EntityId,
     type: KClass<T>,
@@ -76,12 +51,6 @@ class HashMapEntityRegistry : EntityRegistry {
     @Suppress("UNCHECKED_CAST")
     return traitStores[type]?.get(id) as T?
   }
-
-  // Internal alias for backward compatibility
-  internal fun <T : Any> remove(
-    entity: EntityId,
-    type: KClass<T>,
-  ): T? = removeById(entity, type)
 
   internal fun <T : Any> removeById(
     id: EntityId,
@@ -91,19 +60,10 @@ class HashMapEntityRegistry : EntityRegistry {
     return traitStores[type]?.remove(id) as T?
   }
 
-  // Internal alias for backward compatibility
-  internal fun has(
-    entity: EntityId,
-    type: KClass<*>,
-  ): Boolean = hasById(entity, type)
-
   internal fun hasById(
     id: EntityId,
     type: KClass<*>,
   ): Boolean = traitStores[type]?.containsKey(id) == true
-
-  // Internal alias for backward compatibility
-  internal fun query(vararg types: KClass<*>): Sequence<EntityId> = queryIds(*types)
 
   internal fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
     if (types.isEmpty()) {
@@ -121,7 +81,7 @@ class HashMapEntityRegistry : EntityRegistry {
     }
   }
 
-  override fun queryEntities(vararg types: KClass<*>): Sequence<Entity> = query(*types).map { id -> EntityHandle(id) }
+  override fun query(vararg types: KClass<*>): Sequence<Entity> = queryIds(*types).map { id -> EntityHandle(id) }
 
   /**
    * Entity handle implementation specific to [HashMapEntityRegistry].
@@ -143,31 +103,31 @@ class HashMapEntityRegistry : EntityRegistry {
     private val id: EntityId,
   ) : Entity {
     override val isAlive: Boolean
-      get() = exists(id)
+      get() = existsById(id)
 
     override fun <T : Any> add(trait: T) {
       checkAlive()
-      this@HashMapEntityRegistry.add(id, trait)
+      this@HashMapEntityRegistry.addById(id, trait)
     }
 
     override fun <T : Any> get(type: KClass<T>): T? {
       checkAlive()
-      return this@HashMapEntityRegistry.get(id, type)
+      return this@HashMapEntityRegistry.getById(id, type)
     }
 
     override fun <T : Any> remove(type: KClass<T>): T? {
       checkAlive()
-      return this@HashMapEntityRegistry.remove(id, type)
+      return this@HashMapEntityRegistry.removeById(id, type)
     }
 
     override fun has(type: KClass<*>): Boolean {
       checkAlive()
-      return this@HashMapEntityRegistry.has(id, type)
+      return this@HashMapEntityRegistry.hasById(id, type)
     }
 
     override fun destroy() {
       checkAlive()
-      this@HashMapEntityRegistry.destroy(id)
+      this@HashMapEntityRegistry.destroyById(id)
     }
 
     private fun checkAlive() {
