@@ -16,7 +16,7 @@ import kotlin.time.Duration
 class SystemBuilder internal constructor() {
   private var forEachBlock: (EntityScope.(Duration) -> Unit)? = null
   private val requiredTraitTypes = mutableSetOf<KClass<*>>()
-  private var currentRegistry: EntityRegistry? = null
+  private var currentStore: IdBackedEntityStore? = null
   private var currentEntity: EntityId? = null
 
   /**
@@ -31,12 +31,12 @@ class SystemBuilder internal constructor() {
   fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
     requiredTraitTypes.add(key.writableType)
     return ReadOnlyProperty { _, _ ->
-      val registry = currentRegistry ?: error("read can only be accessed during forEach execution")
+      val store = currentStore ?: error("read can only be accessed during forEach execution")
       val entity = currentEntity ?: error("read can only be accessed during forEach execution")
 
       @Suppress("UNCHECKED_CAST")
       val trait =
-        registry.get(entity, key.writableType as KClass<W>)
+        store.getById(entity, key.writableType as KClass<W>)
           ?: error("Entity $entity missing required trait ${key.writableType}")
       key.provideReadonlyView(trait)
     }
@@ -58,10 +58,10 @@ class SystemBuilder internal constructor() {
         thisRef: Any?,
         property: KProperty<*>,
       ): W {
-        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
+        val store = currentStore ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
         @Suppress("UNCHECKED_CAST")
-        return registry.get(entity, key.writableType as KClass<W>)
+        return store.getById(entity, key.writableType as KClass<W>)
           ?: error("Entity $entity missing required trait ${key.writableType}")
       }
 
@@ -70,10 +70,10 @@ class SystemBuilder internal constructor() {
         property: KProperty<*>,
         value: W,
       ) {
-        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
+        val store = currentStore ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
         @Suppress("UNCHECKED_CAST")
-        registry.add(entity, value as Any)
+        store.addById(entity, value as Any)
       }
     }
   }
@@ -96,9 +96,13 @@ class SystemBuilder internal constructor() {
     dt: Duration,
   ) {
     val block = forEachBlock ?: return
+    // SystemBuilder requires access to internal IdBackedEntityStore API
+    require(registry is IdBackedEntityStore) {
+      "SystemBuilder requires an EntityRegistry that implements IdBackedEntityStore"
+    }
     try {
-      currentRegistry = registry
-      val entities = registry.query(*requiredTraitTypes.toTypedArray())
+      currentStore = registry
+      val entities = registry.queryIds(*requiredTraitTypes.toTypedArray())
       for (entity in entities) {
         currentEntity = entity
         try {
@@ -109,7 +113,7 @@ class SystemBuilder internal constructor() {
         }
       }
     } finally {
-      currentRegistry = null
+      currentStore = null
     }
   }
 }

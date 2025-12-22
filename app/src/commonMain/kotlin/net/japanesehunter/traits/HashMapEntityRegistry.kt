@@ -18,7 +18,8 @@ class HashMapEntityRegistry :
   private val aliveEntities: MutableSet<EntityId> = mutableSetOf()
   private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> = mutableMapOf()
 
-  override fun create(): EntityId = createId()
+  // Internal alias for backward compatibility
+  internal fun create(): EntityId = createId()
 
   override fun createId(): EntityId {
     val id = EntityId(nextId++)
@@ -31,7 +32,8 @@ class HashMapEntityRegistry :
     return EntityHandle(id)
   }
 
-  override fun destroy(entity: EntityId) {
+  // Internal alias for backward compatibility
+  internal fun destroy(entity: EntityId) {
     destroyById(entity)
   }
 
@@ -41,11 +43,13 @@ class HashMapEntityRegistry :
     }
   }
 
-  override fun exists(entity: EntityId): Boolean = existsById(entity)
+  // Internal alias for backward compatibility
+  internal fun exists(entity: EntityId): Boolean = existsById(entity)
 
   override fun existsById(id: EntityId): Boolean = id in aliveEntities
 
-  override fun <T : Any> add(
+  // Internal alias for backward compatibility
+  internal fun <T : Any> add(
     entity: EntityId,
     trait: T,
   ) {
@@ -61,7 +65,8 @@ class HashMapEntityRegistry :
     store[id] = trait
   }
 
-  override fun <T : Any> get(
+  // Internal alias for backward compatibility
+  internal fun <T : Any> get(
     entity: EntityId,
     type: KClass<T>,
   ): T? = getById(entity, type)
@@ -74,7 +79,8 @@ class HashMapEntityRegistry :
     return traitStores[type]?.get(id) as T?
   }
 
-  override fun <T : Any> remove(
+  // Internal alias for backward compatibility
+  internal fun <T : Any> remove(
     entity: EntityId,
     type: KClass<T>,
   ): T? = removeById(entity, type)
@@ -87,7 +93,8 @@ class HashMapEntityRegistry :
     return traitStores[type]?.remove(id) as T?
   }
 
-  override fun has(
+  // Internal alias for backward compatibility
+  internal fun has(
     entity: EntityId,
     type: KClass<*>,
   ): Boolean = hasById(entity, type)
@@ -97,7 +104,8 @@ class HashMapEntityRegistry :
     type: KClass<*>,
   ): Boolean = traitStores[type]?.containsKey(id) == true
 
-  override fun query(vararg types: KClass<*>): Sequence<EntityId> = queryIds(*types)
+  // Internal alias for backward compatibility
+  internal fun query(vararg types: KClass<*>): Sequence<EntityId> = queryIds(*types)
 
   override fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
     if (types.isEmpty()) {
