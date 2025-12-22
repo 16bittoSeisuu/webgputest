@@ -107,6 +107,14 @@ interface EntityRegistry {
    * @return a sequence of entity IDs that have all specified traits.
    */
   fun query(vararg types: KClass<*>): Sequence<EntityId>
+
+  /**
+   * Returns all entities that have all of the specified trait types.
+   *
+   * @param types the trait types to match.
+   * @return a sequence of entity handles that have all specified traits.
+   */
+  fun queryEntities(vararg types: KClass<*>): Sequence<Entity>
 }
 
 /**

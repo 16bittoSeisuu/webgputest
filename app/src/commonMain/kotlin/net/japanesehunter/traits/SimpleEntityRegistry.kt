@@ -80,6 +80,8 @@ class SimpleEntityRegistry : EntityRegistry {
       stores.all { entity in it }
     }
   }
+
+  override fun queryEntities(vararg types: KClass<*>): Sequence<Entity> = query(*types).map { id -> EntityImpl(id, this) }
 }
 
 /**
