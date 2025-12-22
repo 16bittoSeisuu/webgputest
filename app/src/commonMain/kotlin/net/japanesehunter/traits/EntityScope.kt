@@ -35,14 +35,11 @@ interface EntityScope {
 }
 
 internal class EntityScopeImpl(
-  private val registry: HashMapEntityRegistry,
-  private val entity: EntityId,
+  private val entity: Entity,
 ) : EntityScope {
-  override fun add(trait: Any) {
-    registry.addById(entity, trait)
-  }
+  override fun add(trait: Any) = entity.add(trait)
 
-  override fun <W : Any> remove(key: TraitKey<*, W>): W? = registry.removeById(entity, key.writableType)
+  override fun <W : Any> remove(key: TraitKey<*, W>): W? = entity.remove(key.writableType)
 
-  override fun has(key: TraitKey<*, *>): Boolean = registry.hasById(entity, key.writableType)
+  override fun has(key: TraitKey<*, *>): Boolean = entity.has(key.writableType)
 }

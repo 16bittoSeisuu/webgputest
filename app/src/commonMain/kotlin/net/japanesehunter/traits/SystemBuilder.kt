@@ -16,8 +16,7 @@ import kotlin.time.Duration
 class SystemBuilder internal constructor() {
   private var forEachBlock: (EntityScope.(Duration) -> Unit)? = null
   private val requiredTraitTypes = mutableSetOf<KClass<*>>()
-  private var currentRegistry: HashMapEntityRegistry? = null
-  private var currentEntity: EntityId? = null
+  private var currentEntity: Entity? = null
 
   /**
    * Declares a read-only trait requirement.
@@ -31,12 +30,10 @@ class SystemBuilder internal constructor() {
   fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
     requiredTraitTypes.add(key.writableType)
     return ReadOnlyProperty { _, _ ->
-      val registry = currentRegistry ?: error("read can only be accessed during forEach execution")
       val entity = currentEntity ?: error("read can only be accessed during forEach execution")
 
-      @Suppress("UNCHECKED_CAST")
       val trait =
-        registry.getById(entity, key.writableType as KClass<W>)
+        entity.get(key.writableType)
           ?: error("Entity $entity missing required trait ${key.writableType}")
       key.provideReadonlyView(trait)
     }
@@ -58,10 +55,8 @@ class SystemBuilder internal constructor() {
         thisRef: Any?,
         property: KProperty<*>,
       ): W {
-        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
-        @Suppress("UNCHECKED_CAST")
-        return registry.getById(entity, key.writableType as KClass<W>)
+        return entity.get(key.writableType)
           ?: error("Entity $entity missing required trait ${key.writableType}")
       }
 
@@ -70,10 +65,8 @@ class SystemBuilder internal constructor() {
         property: KProperty<*>,
         value: W,
       ) {
-        val registry = currentRegistry ?: error("write can only be accessed during forEach execution")
         val entity = currentEntity ?: error("write can only be accessed during forEach execution")
-        @Suppress("UNCHECKED_CAST")
-        registry.addById(entity, value as Any)
+        entity.add(value)
       }
     }
   }
@@ -96,24 +89,15 @@ class SystemBuilder internal constructor() {
     dt: Duration,
   ) {
     val block = forEachBlock ?: return
-    // SystemBuilder requires access to internal EntityId-based API
-    require(registry is HashMapEntityRegistry) {
-      "SystemBuilder requires HashMapEntityRegistry"
-    }
-    try {
-      currentRegistry = registry
-      val entities = registry.queryIds(*requiredTraitTypes.toTypedArray())
-      for (entity in entities) {
-        currentEntity = entity
-        try {
-          val scope = EntityScopeImpl(registry, entity)
-          scope.block(dt)
-        } finally {
-          currentEntity = null
-        }
+    val entities = registry.query(*requiredTraitTypes.toTypedArray())
+    for (entity in entities) {
+      currentEntity = entity
+      try {
+        val scope = EntityScopeImpl(entity)
+        scope.block(dt)
+      } finally {
+        currentEntity = null
       }
-    } finally {
-      currentRegistry = null
     }
   }
 }
