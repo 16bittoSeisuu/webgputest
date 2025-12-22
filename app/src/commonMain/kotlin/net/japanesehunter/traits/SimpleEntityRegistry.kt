@@ -22,6 +22,11 @@ class SimpleEntityRegistry : EntityRegistry {
     return id
   }
 
+  override fun createEntity(): Entity {
+    val id = create()
+    return EntityImpl(id, this)
+  }
+
   override fun destroy(entity: EntityId) {
     if (aliveEntities.remove(entity)) {
       traitStores.values.forEach { it.remove(entity) }
@@ -75,4 +80,64 @@ class SimpleEntityRegistry : EntityRegistry {
       stores.all { entity in it }
     }
   }
+}
+
+/**
+ * Default implementation of [Entity] backed by an [EntityRegistry].
+ *
+ * Holds a reference to the registry and its internal entity ID. All operations
+ * delegate to the registry and verify that the entity is still alive before
+ * proceeding.
+ *
+ * This class is not thread-safe. External synchronization is required when
+ * accessing from multiple threads.
+ *
+ * @param id the internal entity identifier.
+ * @param registry the registry that owns this entity.
+ */
+private class EntityImpl(
+  private val id: EntityId,
+  private val registry: EntityRegistry,
+) : Entity {
+  override val isAlive: Boolean
+    get() = registry.exists(id)
+
+  override fun <T : Any> add(trait: T) {
+    checkAlive()
+    registry.add(id, trait)
+  }
+
+  override fun <T : Any> get(type: KClass<T>): T? {
+    checkAlive()
+    return registry.get(id, type)
+  }
+
+  override fun <T : Any> remove(type: KClass<T>): T? {
+    checkAlive()
+    return registry.remove(id, type)
+  }
+
+  override fun has(type: KClass<*>): Boolean {
+    checkAlive()
+    return registry.has(id, type)
+  }
+
+  override fun destroy() {
+    checkAlive()
+    registry.destroy(id)
+  }
+
+  private fun checkAlive() {
+    check(isAlive) { "Entity has been destroyed" }
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other !is EntityImpl) return false
+    return id == other.id && registry === other.registry
+  }
+
+  override fun hashCode(): Int = id.hashCode()
+
+  override fun toString(): String = "Entity($id)"
 }

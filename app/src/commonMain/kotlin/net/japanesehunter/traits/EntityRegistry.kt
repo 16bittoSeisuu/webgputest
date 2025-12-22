@@ -21,6 +21,16 @@ interface EntityRegistry {
   fun create(): EntityId
 
   /**
+   * Creates a new entity and returns a high-level handle to it.
+   *
+   * The returned [Entity] handle provides direct access to trait operations
+   * without needing to reference the registry explicitly.
+   *
+   * @return a handle to the newly created entity.
+   */
+  fun createEntity(): Entity
+
+  /**
    * Destroys an entity and removes all of its associated traits.
    *
    * After destruction, the given [entity] ID becomes invalid and should
@@ -106,7 +116,7 @@ interface EntityRegistry {
  * @param entity the target entity.
  * @return the trait instance, or null if the entity does not have this trait.
  */
-inline fun <reified T : Any> EntityRegistry.get(entity: EntityId): T? = get(entity, T::class)
+internal inline fun <reified T : Any> EntityRegistry.get(entity: EntityId): T? = get(entity, T::class)
 
 /**
  * Removes a trait of the specified type from an entity.
@@ -115,7 +125,7 @@ inline fun <reified T : Any> EntityRegistry.get(entity: EntityId): T? = get(enti
  * @param entity the target entity.
  * @return the removed trait instance, or null if the entity did not have this trait.
  */
-inline fun <reified T : Any> EntityRegistry.remove(entity: EntityId): T? = remove(entity, T::class)
+internal inline fun <reified T : Any> EntityRegistry.remove(entity: EntityId): T? = remove(entity, T::class)
 
 /**
  * Checks whether an entity has a trait of the specified type.
@@ -124,4 +134,4 @@ inline fun <reified T : Any> EntityRegistry.remove(entity: EntityId): T? = remov
  * @param entity the target entity.
  * @return true if the entity has the trait, false otherwise.
  */
-inline fun <reified T : Any> EntityRegistry.has(entity: EntityId): Boolean = has(entity, T::class)
+internal inline fun <reified T : Any> EntityRegistry.has(entity: EntityId): Boolean = has(entity, T::class)

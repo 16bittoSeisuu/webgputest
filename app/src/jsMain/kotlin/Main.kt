@@ -96,34 +96,32 @@ fun main() =
         val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
         val blockAccess = ChunkBlockAccess(chunk)
         val registry = SimpleEntityRegistry()
-        val player = registry.create()
+        val player = registry.createEntity()
+        val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
+        player.add(Position(MutablePoint3.copyOf(initialPosition)))
+        player.add(Velocity(MutableVelocity3()))
+        player.add(Rotation(MutableQuaternion()))
+        player.add(
+          BoundingBox(
+            Aabb(
+              min = Point3(-0.3.meters, 0.meters, -0.3.meters),
+              max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
+            ),
+          ),
+        )
+        player.add(
+          Rigidbody(
+            gravity = (-32).metersPerSecondSquared,
+            initialDrag = 0.4,
+          ),
+        )
         with(registry) {
-          val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
-          add(player, Position(MutablePoint3.copyOf(initialPosition)))
-          add(player, Velocity(MutableVelocity3()))
-          add(player, Rotation(MutableQuaternion()))
-          add(
-            player,
-            BoundingBox(
-              Aabb(
-                min = Point3(-0.3.meters, 0.meters, -0.3.meters),
-                max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
-              ),
-            ),
-          )
-          add(
-            player,
-            Rigidbody(
-              gravity = (-32).metersPerSecondSquared,
-              initialDrag = 0.4,
-            ),
-          )
           tickSource.subscribe(rigidbodySimulation(blockAccess))
         }
 
-        val playerHud = PlayerHud(registry, player)
+        val playerHud = PlayerHud(player)
         val controllerSettings = PlayerController.Settings()
-        val controller = playerController(registry, player, controllerSettings)
+        val controller = playerController(player, controllerSettings)
         val eyeHeight = 1.62.meters
         var lastFrameTime = window.performance.now()
 
@@ -199,7 +197,7 @@ fun main() =
               tickSink.onEvent(frameDelta)
 
               controller.update(frameDelta)
-              camera.sync(registry, player, eyeHeight)
+              camera.sync(player, eyeHeight)
               cameraHud.update(camera.currentDirection16())
               playerHud.update()
               cameraBuf.update()

@@ -15,8 +15,7 @@ import net.japanesehunter.math.metersPerSecond
 import net.japanesehunter.math.metersPerSecondSquared
 import net.japanesehunter.math.rotate
 import net.japanesehunter.math.up
-import net.japanesehunter.traits.EntityId
-import net.japanesehunter.traits.EntityRegistry
+import net.japanesehunter.traits.Entity
 import net.japanesehunter.traits.get
 import net.japanesehunter.traits.has
 import net.japanesehunter.worldcreate.input.InputContext
@@ -48,22 +47,19 @@ import kotlin.time.Duration
  *
  * The entity must have [Velocity] and [Rotation] traits attached.
  *
- * @param registry the entity registry containing the entity.
  * @param entity the entity whose velocity and rotation will be controlled.
  * @param settings controller input bindings and motion parameters.
  * @return the installed controller instance.
  */
 context(resource: ResourceScope, pointerLock: PointerLock, input: InputContext)
 fun playerController(
-  registry: EntityRegistry,
-  entity: EntityId,
+  entity: Entity,
   settings: PlayerController.Settings = PlayerController.Settings(),
 ): PlayerController =
   resource.install(
     PlayerController(
       pointerLock = pointerLock,
       input = input,
-      registry = registry,
       entity = entity,
       settings = settings,
     ),
@@ -83,15 +79,13 @@ fun playerController(
  *
  * @param pointerLock the pointer lock provider for capturing and releasing the pointer.
  * @param input the input context providing keyboard and mouse events.
- * @param registry the entity registry containing the controlled entity.
  * @param entity target entity whose rotation and velocity are controlled.
  * @param settings mutable controller bindings and motion parameters.
  */
 class PlayerController internal constructor(
   private val pointerLock: PointerLock,
   private val input: InputContext,
-  private val registry: EntityRegistry,
-  private val entity: EntityId,
+  private val entity: Entity,
   private val settings: Settings = Settings(),
 ) : AutoCloseable {
   /**
@@ -165,8 +159,8 @@ class PlayerController internal constructor(
 
   init {
     val rotation =
-      registry.get<Rotation>(entity)
-        ?: error("Entity $entity must have Rotation trait")
+      entity.get<Rotation>()
+        ?: error("Entity must have Rotation trait")
     val initialForward = rotation.value.rotate(Direction3.forward)
     yaw = atan2(initialForward.ux, -initialForward.uz)
     pitch = asin(initialForward.uy).coerceIn(-maxPitchRadians, maxPitchRadians)
@@ -233,8 +227,8 @@ class PlayerController internal constructor(
 
   private fun handleKeyDown(code: String) {
     if (code == settings.jumpKey) {
-      if (registry.has<Grounded>(entity)) {
-        registry.get<Velocity>(entity)?.value?.vy = settings.jumpSpeed
+      if (entity.has<Grounded>()) {
+        entity.get<Velocity>()?.value?.vy = settings.jumpSpeed
       }
     } else if (code in navKeys()) {
       activeKeys.add(code)
@@ -257,7 +251,7 @@ class PlayerController internal constructor(
   }
 
   private fun applyRotation() {
-    val rotation = registry.get<Rotation>(entity) ?: return
+    val rotation = entity.get<Rotation>() ?: return
     val cosPitch = cos(pitch)
     val forward =
       Direction3(
@@ -302,8 +296,8 @@ class PlayerController internal constructor(
       inputZ -= planarRight.uz
     }
 
-    val velocity = registry.get<Velocity>(entity) ?: return
-    val isGrounded = registry.has<Grounded>(entity)
+    val velocity = entity.get<Velocity>() ?: return
+    val isGrounded = entity.has<Grounded>()
 
     val currentVx = velocity.value.vx
     val currentVz = velocity.value.vz
@@ -355,7 +349,7 @@ class PlayerController internal constructor(
   }
 
   private fun clearVelocity() {
-    val velocity = registry.get<Velocity>(entity) ?: return
+    val velocity = entity.get<Velocity>() ?: return
     velocity.value.vx = Speed.ZERO
     velocity.value.vz = Speed.ZERO
   }

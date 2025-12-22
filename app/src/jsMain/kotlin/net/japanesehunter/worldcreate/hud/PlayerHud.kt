@@ -2,8 +2,7 @@ package net.japanesehunter.worldcreate.hud
 
 import arrow.fx.coroutines.ResourceScope
 import kotlinx.browser.document
-import net.japanesehunter.traits.EntityId
-import net.japanesehunter.traits.EntityRegistry
+import net.japanesehunter.traits.Entity
 import net.japanesehunter.traits.get
 import net.japanesehunter.worldcreate.trait.Position
 import net.japanesehunter.worldcreate.trait.Velocity
@@ -16,13 +15,11 @@ import org.w3c.dom.HTMLDivElement
  * The class is not thread-safe and is intended for use on the browser main thread.
  *
  * @param container overlay element used to present the HUD content.
- * @param registry the entity registry containing the entity.
  * @param entity the entity whose state is displayed.
  */
 class PlayerHud internal constructor(
   private val container: HTMLDivElement,
-  private val registry: EntityRegistry,
-  private val entity: EntityId,
+  private val entity: Entity,
 ) : AutoCloseable {
   /**
    * Updates the HUD text to show the current entity position and velocity.
@@ -30,8 +27,8 @@ class PlayerHud internal constructor(
    * Mutates the container innerHTML when the displayed values change.
    */
   fun update() {
-    val pos = registry.get<Position>(entity)?.value ?: return
-    val vel = registry.get<Velocity>(entity)?.value ?: return
+    val pos = entity.get<Position>()?.value ?: return
+    val vel = entity.get<Velocity>()?.value ?: return
 
     val x = pos.x.toString(unit = null, decimals = 2)
     val y = pos.y.toString(unit = null, decimals = 2)
@@ -61,7 +58,6 @@ class PlayerHud internal constructor(
  * Inserts the HUD container when missing, reapplies overlay styles when the element already exists,
  * and registers removal with the surrounding resource scope while mutating the DOM structure.
  *
- * @param registry the entity registry containing the entity.
  * @param entity the entity whose state is displayed.
  * @param x horizontal offset from the left edge in pixels.
  *
@@ -86,8 +82,7 @@ class PlayerHud internal constructor(
 @Suppress("FunctionName")
 context(resource: ResourceScope)
 fun PlayerHud(
-  registry: EntityRegistry,
-  entity: EntityId,
+  entity: Entity,
   x: Double = 12.0,
   y: Double = 40.0,
   scale: Double = 1.0,
@@ -117,7 +112,7 @@ fun PlayerHud(
     setProperty("pointer-events", "none")
     zIndex = "1"
   }
-  return PlayerHud(container, registry, entity).also { hud ->
+  return PlayerHud(container, entity).also { hud ->
     resource.onClose {
       hud.close()
     }
