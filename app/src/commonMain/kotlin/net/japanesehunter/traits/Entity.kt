@@ -73,6 +73,16 @@ interface Entity {
   fun destroy()
 
   /**
+   * Operator overload to add a trait to this entity using the unary plus operator.
+   *
+   * This provides a more concise syntax for adding traits.
+   *
+   * @param T the type of the trait.
+   * @throws IllegalStateException if this entity has been destroyed.
+   */
+  operator fun <T : Any> T.unaryPlus(): Unit = add(this)
+
+  /**
    * Determines whether this entity handle is equal to another object.
    *
    * Two entity handles are equal if they refer to the same entity within

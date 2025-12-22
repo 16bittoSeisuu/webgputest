@@ -2,6 +2,8 @@ package net.japanesehunter.worldcreate.trait
 
 import net.japanesehunter.math.MutablePoint3
 import net.japanesehunter.math.Point3
+import net.japanesehunter.math.copyOf
+import net.japanesehunter.math.zero
 import net.japanesehunter.traits.TraitKey
 
 /**
@@ -20,8 +22,10 @@ interface PositionView {
  * For entities with a bounding box, this typically represents the center-bottom
  * point of their collision shape.
  */
-data class Position(
-  override val value: MutablePoint3,
+class Position(
+  initialPosition: Point3 = Point3.zero,
 ) : PositionView {
+  override val value: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
+
   companion object : TraitKey<PositionView, Position> by TraitKey()
 }

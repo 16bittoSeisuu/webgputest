@@ -2,6 +2,8 @@ package net.japanesehunter.worldcreate.trait
 
 import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.Velocity3
+import net.japanesehunter.math.copyOf
+import net.japanesehunter.math.zero
 import net.japanesehunter.traits.TraitKey
 
 /**
@@ -20,8 +22,10 @@ interface VelocityView {
  * Velocity is modified by physics simulation systems and directly affects the
  * entity's position in subsequent frames.
  */
-data class Velocity(
-  override val value: MutableVelocity3,
+class Velocity(
+  initialVelocity: Velocity3 = Velocity3.zero,
 ) : VelocityView {
+  override val value: MutableVelocity3 = MutableVelocity3.copyOf(initialVelocity)
+
   companion object : TraitKey<VelocityView, Velocity> by TraitKey()
 }

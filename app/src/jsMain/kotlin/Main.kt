@@ -13,13 +13,10 @@ import net.japanesehunter.math.Color
 import net.japanesehunter.math.Fov
 import net.japanesehunter.math.ImmutableAabb
 import net.japanesehunter.math.MovableCamera
-import net.japanesehunter.math.MutablePoint3
 import net.japanesehunter.math.MutableQuaternion
-import net.japanesehunter.math.MutableVelocity3
 import net.japanesehunter.math.NearFar
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.blue
-import net.japanesehunter.math.copyOf
 import net.japanesehunter.math.currentDirection16
 import net.japanesehunter.math.intersects
 import net.japanesehunter.math.meters
@@ -96,26 +93,30 @@ fun main() =
         val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
         val blockAccess = ChunkBlockAccess(chunk)
         val registry = HashMapEntityRegistry()
-        val player = registry.createEntity()
-        val initialPosition = Point3(x = 20.meters, y = 20.meters, z = 20.meters)
-        player.add(Position(MutablePoint3.copyOf(initialPosition)))
-        player.add(Velocity(MutableVelocity3()))
-        player.add(Rotation(MutableQuaternion()))
-        player.add(
-          BoundingBox(
-            Aabb(
-              min = Point3((-0.3).meters, 0.meters, (-0.3).meters),
-              max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
-            ),
-          ),
-        )
-        player.add(
-          Rigidbody(
-            gravity = (-32).metersPerSecondSquared,
-            initialDrag = 0.4,
-          ),
-        )
-        with(registry) {
+        val player =
+          registry.createEntity().apply {
+            val initialPosition =
+              Point3(
+                x = 20.meters,
+                y = 20.meters,
+                z = 20.meters,
+              )
+            val boundingBox =
+              Aabb(
+                min = Point3((-0.3).meters, 0.meters, (-0.3).meters),
+                max = Point3(0.3.meters, 1.8.meters, 0.3.meters),
+              )
+            +Position(initialPosition)
+            +Velocity()
+            +Rotation(MutableQuaternion())
+            +BoundingBox(boundingBox)
+            +Rigidbody(
+              gravity = (-32).metersPerSecondSquared,
+              initialDrag = 0.4,
+            )
+          }
+
+        context(registry) {
           tickSource.subscribe(rigidbodySimulation(blockAccess))
         }
 
