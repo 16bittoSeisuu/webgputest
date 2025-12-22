@@ -1,7 +1,5 @@
 package net.japanesehunter.traits
 
-import kotlin.reflect.KClass
-
 /**
  * Provides scoped access to the current entity during system iteration.
  *
