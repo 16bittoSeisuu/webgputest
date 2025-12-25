@@ -327,4 +327,260 @@ class QueryingEventSinkBuilderTest :
       exception shouldBe null
       posAfterBreak shouldBe Position(1.0, 0.0)
     }
+
+    // event and query binding execution matrix
+
+    test("event read missing skips onEach regardless of query") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      // center has NO Position
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+
+      var onEachCount = 0
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val entities = query().has(Position)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              // consume
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 0
+    }
+
+    test("event readOptional missing still executes onEach") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      // center has NO Name
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+
+      var onEachCount = 0
+      var observedName: Name? = Name("sentinel")
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val name by ProximityEvent::center.readOptional(Name)
+          val entities = query().has(Position)
+          onEach {
+            onEachCount++
+            observedName = name
+            for (entity in entities) {
+              // consume
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 1
+      observedName shouldBe null
+    }
+
+    test("event read present and query read missing throws") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Position(0.0, 0.0))
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+      // other has NO Name
+
+      var onEachCount = 0
+      var caughtException: IllegalStateException? = null
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val entities = query().has(Position)
+          val name by entities.read(Name)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              try {
+                @Suppress("UNUSED_VARIABLE")
+                val unused = name
+              } catch (e: IllegalStateException) {
+                caughtException = e
+              }
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 1
+      caughtException shouldNotBe null
+      caughtException!!.message shouldContain "iteration"
+    }
+
+    test("event read present and query readOptional missing returns null") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Position(0.0, 0.0))
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+      // other has NO Name
+
+      var onEachCount = 0
+      val observedNames = mutableListOf<Name?>()
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val entities = query().has(Position)
+          val name by entities.readOptional(Name)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              observedNames.add(name)
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 1
+      observedNames shouldContainExactlyInAnyOrder listOf(null, null)
+    }
+
+    test("both event and query bindings present resolves all") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Position(0.0, 0.0))
+      center.add(Name("center"))
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+      other.add(Name("other"))
+
+      var onEachCount = 0
+      val observed = mutableListOf<Triple<Position, Name, Name>>()
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val centerName by ProximityEvent::center.read(Name)
+          val entities = query().has(Position)
+          val otherName by entities.read(Name)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              observed.add(Triple(centerPos, centerName, otherName))
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 1
+      observed shouldContainExactlyInAnyOrder
+        listOf(
+          Triple(Position(0.0, 0.0), Name("center"), Name("center")),
+          Triple(Position(0.0, 0.0), Name("center"), Name("other")),
+        )
+    }
+
+    test("event readOptional present and query read missing throws") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Name("center"))
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+      // other has NO Name
+
+      var onEachCount = 0
+      var caughtException: IllegalStateException? = null
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerName by ProximityEvent::center.readOptional(Name)
+          val entities = query().has(Position)
+          val name by entities.read(Name)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              try {
+                @Suppress("UNUSED_VARIABLE")
+                val unused = name
+              } catch (e: IllegalStateException) {
+                caughtException = e
+              }
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 1
+      caughtException shouldNotBe null
+      caughtException!!.message shouldContain "iteration"
+    }
+
+    test("multiple event bindings with one missing skips onEach") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Position(0.0, 0.0))
+      // center has NO Name
+      val other = registry.createEntity()
+      other.add(Position(1.0, 2.0))
+      other.add(Name("other"))
+
+      var onEachCount = 0
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val centerName by ProximityEvent::center.read(Name) // This is missing
+          val entities = query().has(Position)
+          val otherName by entities.read(Name)
+          onEach {
+            onEachCount++
+            for (entity in entities) {
+              // consume
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      onEachCount shouldBe 0
+    }
+
+    test("multiple query bindings with one missing throws") {
+      val registry = HashMapEntityRegistry()
+      val center = registry.createEntity()
+      center.add(Position(0.0, 0.0))
+      val withBoth = registry.createEntity()
+      withBoth.add(Position(1.0, 2.0))
+      withBoth.add(Name("withBoth"))
+      val posOnly = registry.createEntity()
+      posOnly.add(Position(3.0, 4.0))
+      // posOnly has NO Name, center also has NO Name
+
+      val observed = mutableListOf<Pair<Position, Name>>()
+      var exceptionCount = 0
+      val sink =
+        buildQueryingEventSink<ProximityEvent> {
+          val centerPos by ProximityEvent::center.read(Position)
+          val entities = query().has(Position)
+          val pos by entities.read(Position)
+          val name by entities.read(Name)
+          onEach {
+            for (entity in entities) {
+              try {
+                observed.add(pos to name)
+              } catch (e: IllegalStateException) {
+                exceptionCount++
+              }
+            }
+          }
+        }(registry)
+
+      sink.onEvent(ProximityEvent(center, 10.0))
+
+      // Only withBoth has Name, so only that succeeds
+      observed shouldContainExactlyInAnyOrder listOf(Position(1.0, 2.0) to Name("withBoth"))
+      // Two entities (center and posOnly) throw exceptions
+      exceptionCount shouldBe 2
+    }
   })
