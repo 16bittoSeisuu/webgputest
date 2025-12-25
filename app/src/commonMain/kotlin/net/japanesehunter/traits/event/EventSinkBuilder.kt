@@ -124,6 +124,19 @@ interface QueryBuilder : Sequence<Entity> {
     key: TraitKey<R, W>,
     filter: ((R) -> Boolean)? = null,
   ): QueryBuilder
+
+  /**
+   * Creates a binding to read a trait from the current query result entity.
+   *
+   * The binding resolves to the trait value of whichever entity is being iterated
+   * in the onEach block. Access outside of iteration throws [IllegalStateException].
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key to read
+   * @return a property delegate that provides the trait value during iteration
+   */
+  fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
 }
 
 /**
@@ -347,6 +360,8 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
 internal class QueryBuilderImpl : QueryBuilder {
   val plan = QueryPlan()
   private var execution: QueryExecution? = null
+  private var currentEntity: Entity? = null
+  private val readBindings = mutableListOf<QueryReadBinding<*, *>>()
 
   override fun <R : Any, W : Any> has(
     key: TraitKey<R, W>,
@@ -356,13 +371,71 @@ internal class QueryBuilderImpl : QueryBuilder {
     return this
   }
 
+  override fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+    val binding = QueryReadBinding(key, this)
+    readBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedReadView ?: error("Query trait binding can only be accessed during iteration")
+    }
+  }
+
   override fun iterator(): Iterator<Entity> {
     val exec = execution ?: error("Query can only be accessed during onEach execution")
-    return exec.results.iterator()
+    return QueryIterator(exec.results.iterator(), this)
   }
 
   internal fun setExecution(execution: QueryExecution?) {
     this.execution = execution
+  }
+
+  internal fun setCurrentEntity(entity: Entity?) {
+    currentEntity = entity
+    if (entity != null) {
+      readBindings.forEach { it.resolve(entity) }
+    } else {
+      readBindings.forEach { it.clear() }
+    }
+  }
+}
+
+private class QueryIterator(
+  private val delegate: Iterator<Entity>,
+  private val builder: QueryBuilderImpl,
+) : Iterator<Entity> {
+  override fun hasNext(): Boolean {
+    val result = delegate.hasNext()
+    if (!result) {
+      builder.setCurrentEntity(null)
+    }
+    return result
+  }
+
+  override fun next(): Entity {
+    val entity = delegate.next()
+    builder.setCurrentEntity(entity)
+    return entity
+  }
+}
+
+private class QueryReadBinding<R : Any, W : Any>(
+  private val key: TraitKey<R, W>,
+  private val builder: QueryBuilderImpl,
+) {
+  var resolvedReadView: R? = null
+    private set
+
+  fun resolve(entity: Entity) {
+    val trait = entity.get(key.writableType)
+    resolvedReadView =
+      if (trait != null) {
+        key.provideReadonlyView(trait)
+      } else {
+        null
+      }
+  }
+
+  fun clear() {
+    resolvedReadView = null
   }
 }
 

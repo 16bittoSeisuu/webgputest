@@ -96,4 +96,35 @@ class QueryingEventSinkBuilderTest :
           Position(1.0, 1.0),
         )
     }
+
+    test("query read returns trait from query result entity") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      val e2 = registry.createEntity()
+      e1.add(Position(1.0, 2.0))
+      e1.add(Name("first"))
+      e2.add(Position(3.0, 4.0))
+      e2.add(Name("second"))
+
+      val observed = mutableListOf<Pair<Position, Name>>()
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities = query().has(Position).has(Name)
+          val pos by entities.read(Position)
+          val name by entities.read(Name)
+          onEach { event ->
+            for (entity in entities) {
+              observed.add(pos to name)
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      observed shouldContainExactlyInAnyOrder
+        listOf(
+          Position(1.0, 2.0) to Name("first"),
+          Position(3.0, 4.0) to Name("second"),
+        )
+    }
   })
