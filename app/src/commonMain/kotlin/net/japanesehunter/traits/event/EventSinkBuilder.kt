@@ -137,6 +137,19 @@ interface QueryBuilder : Sequence<Entity> {
    * @return a property delegate that provides the trait value during iteration
    */
   fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+
+  /**
+   * Creates an optional binding to read a trait from the current query result entity.
+   *
+   * The binding resolves to the trait value if present, or null if the entity
+   * does not have the trait. Access outside of iteration throws [IllegalStateException].
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key to read
+   * @return a property delegate that provides the trait value or null during iteration
+   */
+  fun <R : Any, W : Any> readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
 }
 
 /**
@@ -362,7 +375,7 @@ internal class QueryBuilderImpl : QueryBuilder {
   val requirements: QueryPlan = mutableListOf()
   private var execution: QueryExecution? = null
   private val iteratorStack = mutableListOf<QueryIterator>()
-  private val readBindings = mutableListOf<QueryReadBinding<*, *>>()
+  private val readBindings = mutableListOf<QueryBinding>()
 
   override fun <R : Any, W : Any> has(
     key: TraitKey<R, W>,
@@ -377,6 +390,17 @@ internal class QueryBuilderImpl : QueryBuilder {
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
       binding.resolvedReadView ?: error("Query trait binding can only be accessed during iteration")
+    }
+  }
+
+  override fun <R : Any, W : Any> readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+    val binding = QueryReadOptionalBinding(key)
+    readBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      if (!binding.isResolved) {
+        error("Query trait binding can only be accessed during iteration")
+      }
+      binding.resolvedReadView
     }
   }
 
@@ -448,13 +472,19 @@ internal class QueryIterator(
   }
 }
 
+private sealed interface QueryBinding {
+  fun resolve(entity: Entity)
+
+  fun clear()
+}
+
 private class QueryReadBinding<R : Any, W : Any>(
   private val key: TraitKey<R, W>,
-) {
+) : QueryBinding {
   var resolvedReadView: R? = null
     private set
 
-  fun resolve(entity: Entity) {
+  override fun resolve(entity: Entity) {
     val trait = entity.get(key.writableType)
     resolvedReadView =
       if (trait != null) {
@@ -464,8 +494,33 @@ private class QueryReadBinding<R : Any, W : Any>(
       }
   }
 
-  fun clear() {
+  override fun clear() {
     resolvedReadView = null
+  }
+}
+
+private class QueryReadOptionalBinding<R : Any, W : Any>(
+  private val key: TraitKey<R, W>,
+) : QueryBinding {
+  var resolvedReadView: R? = null
+    private set
+  var isResolved: Boolean = false
+    private set
+
+  override fun resolve(entity: Entity) {
+    val trait = entity.get(key.writableType)
+    resolvedReadView =
+      if (trait != null) {
+        key.provideReadonlyView(trait)
+      } else {
+        null
+      }
+    isResolved = true
+  }
+
+  override fun clear() {
+    resolvedReadView = null
+    isResolved = false
   }
 }
 

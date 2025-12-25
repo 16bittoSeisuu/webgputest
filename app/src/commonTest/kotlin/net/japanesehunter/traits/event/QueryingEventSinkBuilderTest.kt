@@ -232,6 +232,36 @@ class QueryingEventSinkBuilderTest :
       caughtException!!.message shouldContain "iteration"
     }
 
+    test("query readOptional returns value when trait exists and null when missing") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      val e2 = registry.createEntity()
+      e1.add(Position(1.0, 2.0))
+      e1.add(Name("has name"))
+      e2.add(Position(3.0, 4.0))
+
+      val observed = mutableListOf<Pair<Position, Name?>>()
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities = query().has(Position)
+          val pos by entities.read(Position)
+          val name by entities.readOptional(Name)
+          onEach {
+            for (entity in entities) {
+              observed.add(pos to name)
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      observed shouldContainExactlyInAnyOrder
+        listOf(
+          Position(1.0, 2.0) to Name("has name"),
+          Position(3.0, 4.0) to null,
+        )
+    }
+
     test("nested loop restores outer loop context") {
       val registry = HashMapEntityRegistry()
       val e1 = registry.createEntity()
