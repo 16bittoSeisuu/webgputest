@@ -114,7 +114,7 @@ class QueryingEventSinkBuilderTest :
           val entities = query().has(Position).has(Name)
           val pos by entities.read(Position)
           val name by entities.read(Name)
-          onEach { event ->
+          onEach {
             for (entity in entities) {
               observed.add(pos to name)
             }
@@ -148,7 +148,7 @@ class QueryingEventSinkBuilderTest :
           val entitiesWithName = query().has(Name)
           val pos by entitiesWithPosition.read(Position)
           val name by entitiesWithName.read(Name)
-          onEach { event ->
+          onEach {
             for (entity in entitiesWithPosition) {
               positionOnly.add(pos)
             }
@@ -216,10 +216,9 @@ class QueryingEventSinkBuilderTest :
         buildQueryingEventSink<TickEvent> {
           val entities = query().has(Position)
           val pos by entities.read(Position)
-          onEach { event ->
-            // Access outside of for loop should throw
+          onEach {
             try {
-              @Suppress("UNUSED_VARIABLE")
+              @Suppress("unused", "UNUSED_VARIABLE")
               val unused = pos
             } catch (e: IllegalStateException) {
               caughtException = e
@@ -231,5 +230,71 @@ class QueryingEventSinkBuilderTest :
 
       caughtException shouldNotBe null
       caughtException!!.message shouldContain "iteration"
+    }
+
+    test("nested loop restores outer loop context") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      val e2 = registry.createEntity()
+      e1.add(Position(1.0, 0.0))
+      e2.add(Position(2.0, 0.0))
+
+      val outerPositions = mutableListOf<Position>()
+
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities = query().has(Position)
+          val pos by entities.read(Position)
+          onEach { event ->
+            for (outer in entities) {
+              // Inner loop iterates same query
+              for (inner in entities) {
+                // do nothing
+              }
+              // After inner loop finishes, pos should refer to outer entity
+              outerPositions.add(pos)
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      outerPositions shouldContainExactlyInAnyOrder
+        listOf(
+          Position(1.0, 0.0),
+          Position(2.0, 0.0),
+        )
+    }
+
+    test("break from loop leaves context active but cleared on event end") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      e1.add(Position(1.0, 0.0))
+
+      var posAfterBreak: Position? = null
+      var exception: Exception? = null
+
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities = query().has(Position)
+          val pos by entities.read(Position)
+          onEach {
+            for (entity in entities) {
+              break // Break immediately
+            }
+            // Context remains active after break (expected behavior)
+            try {
+              posAfterBreak = pos
+            } catch (e: Exception) {
+              exception = e
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      // After break, context is still active (expected behavior)
+      exception shouldBe null
+      posAfterBreak shouldBe Position(1.0, 0.0)
     }
   })

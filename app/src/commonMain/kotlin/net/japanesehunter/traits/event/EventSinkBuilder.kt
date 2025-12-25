@@ -349,6 +349,7 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
       try {
         delegate.invokeHandler(event)
       } finally {
+        queries.forEach { it.clearAllState() }
         queryExecutions.forEach { it.clear() }
         delegate.clearBindings()
       }
@@ -360,7 +361,7 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
 internal class QueryBuilderImpl : QueryBuilder {
   val requirements: QueryPlan = mutableListOf()
   private var execution: QueryExecution? = null
-  private var currentEntity: Entity? = null
+  private val iteratorStack = mutableListOf<QueryIterator>()
   private val readBindings = mutableListOf<QueryReadBinding<*, *>>()
 
   override fun <R : Any, W : Any> has(
@@ -381,38 +382,68 @@ internal class QueryBuilderImpl : QueryBuilder {
 
   override fun iterator(): Iterator<Entity> {
     val exec = execution ?: error("Query can only be accessed during onEach execution")
-    return QueryIterator(exec.results.iterator(), this)
+    val iter = QueryIterator(exec.results.iterator(), this)
+    iteratorStack.add(iter)
+    return iter
   }
 
   internal fun setExecution(execution: QueryExecution?) {
     this.execution = execution
   }
 
-  internal fun setCurrentEntity(entity: Entity?) {
-    currentEntity = entity
-    if (entity != null) {
-      readBindings.forEach { it.resolve(entity) }
+  internal fun popIteratorsAbove(target: QueryIterator) {
+    while (iteratorStack.isNotEmpty() && iteratorStack.last() !== target) {
+      iteratorStack.removeLast()
+    }
+  }
+
+  internal fun popIterator(target: QueryIterator) {
+    if (iteratorStack.isNotEmpty() && iteratorStack.last() === target) {
+      iteratorStack.removeLast()
+    }
+    restoreOrClearBindings()
+  }
+
+  internal fun updateBindings(entity: Entity) {
+    readBindings.forEach { it.resolve(entity) }
+  }
+
+  internal fun clearAllState() {
+    iteratorStack.clear()
+    readBindings.forEach { it.clear() }
+  }
+
+  private fun restoreOrClearBindings() {
+    val parentIterator = iteratorStack.lastOrNull()
+    val parentEntity = parentIterator?.currentEntity
+    if (parentEntity != null) {
+      readBindings.forEach { it.resolve(parentEntity) }
     } else {
       readBindings.forEach { it.clear() }
     }
   }
 }
 
-private class QueryIterator(
+internal class QueryIterator(
   private val delegate: Iterator<Entity>,
   private val builder: QueryBuilderImpl,
 ) : Iterator<Entity> {
+  var currentEntity: Entity? = null
+    private set
+
   override fun hasNext(): Boolean {
     val result = delegate.hasNext()
     if (!result) {
-      builder.setCurrentEntity(null)
+      builder.popIterator(this)
     }
     return result
   }
 
   override fun next(): Entity {
+    builder.popIteratorsAbove(this)
     val entity = delegate.next()
-    builder.setCurrentEntity(entity)
+    currentEntity = entity
+    builder.updateBindings(entity)
     return entity
   }
 }
