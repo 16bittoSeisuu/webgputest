@@ -214,7 +214,7 @@ class QueryingEventSinkBuilderTest :
       var caughtException: IllegalStateException? = null
       val sink =
         buildQueryingEventSink<TickEvent> {
-          val entities = query().has(Position)
+          val entities = query()
           val pos by entities.read(Position)
           onEach {
             try {
@@ -243,7 +243,7 @@ class QueryingEventSinkBuilderTest :
       val observed = mutableListOf<Pair<Position, Name?>>()
       val sink =
         buildQueryingEventSink<TickEvent> {
-          val entities = query().has(Position)
+          val entities = query()
           val pos by entities.read(Position)
           val name by entities.readOptional(Name)
           onEach {
@@ -273,7 +273,7 @@ class QueryingEventSinkBuilderTest :
 
       val sink =
         buildQueryingEventSink<TickEvent> {
-          val entities = query().has(Position)
+          val entities = query()
           val pos by entities.read(Position)
           onEach { event ->
             for (outer in entities) {
@@ -306,7 +306,7 @@ class QueryingEventSinkBuilderTest :
 
       val sink =
         buildQueryingEventSink<TickEvent> {
-          val entities = query().has(Position)
+          val entities = query()
           val pos by entities.read(Position)
           onEach {
             for (entity in entities) {
@@ -562,7 +562,7 @@ class QueryingEventSinkBuilderTest :
       val sink =
         buildQueryingEventSink<ProximityEvent> {
           val centerPos by ProximityEvent::center.read(Position)
-          val entities = query().has(Position)
+          val entities = query()
           val pos by entities.read(Position)
           val name by entities.read(Name)
           onEach {
