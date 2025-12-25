@@ -1,6 +1,7 @@
 package net.japanesehunter.traits.event
 
 import net.japanesehunter.traits.Entity
+import net.japanesehunter.traits.EntityQuery
 import net.japanesehunter.traits.TraitKey
 import net.japanesehunter.worldcreate.world.EventSink
 import kotlin.properties.ReadOnlyProperty
@@ -81,6 +82,51 @@ interface EventSinkBuilder<out Ev> {
 }
 
 /**
+ * Builds an [EventSink] with entity query support for declarative trait binding resolution.
+ *
+ * This builder extends [EventSinkBuilder] with the ability to query entities from a registry.
+ * Query results are evaluated per event and can be filtered using event-bound trait values.
+ *
+ * @param Ev the event type this builder handles
+ */
+interface QueryingEventSinkBuilder<out Ev> : EventSinkBuilder<Ev> {
+  /**
+   * Creates a query that will be evaluated when each event arrives.
+   *
+   * The query builds a plan that is executed against the entity registry for each event.
+   * Filters in the query can reference event-bound trait values, which are resolved at
+   * event processing time.
+   *
+   * @return a query builder for declaring entity requirements
+   */
+  fun query(): QueryBuilder
+}
+
+/**
+ * Builds a query for selecting entities from a registry.
+ *
+ * Query plans are constructed during the builder phase and executed per event.
+ * Results are cached within a single event processing cycle to avoid repeated evaluation.
+ */
+interface QueryBuilder : Sequence<Entity> {
+  /**
+   * Requires entities to have a specific trait, optionally filtered.
+   *
+   * The filter is evaluated during event processing and can reference event-bound values.
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @param filter optional predicate evaluated per entity
+   * @return this query builder for chaining
+   */
+  fun <R : Any, W : Any> has(
+    key: TraitKey<R, W>,
+    filter: ((R) -> Boolean)? = null,
+  ): QueryBuilder
+}
+
+/**
  * Builds an [EventSink] with declarative trait binding resolution.
  *
  * Events flow through the returned sink. For each event, the builder resolves
@@ -95,6 +141,24 @@ inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSin
   val builder = EventSinkBuilderImpl<Ev>()
   builder.block()
   return builder.build()
+}
+
+/**
+ * Builds an [EventSink] with entity query support and declarative trait binding resolution.
+ *
+ * The returned function accepts an [EntityQuery] and produces an [EventSink]. Events flow
+ * through the sink, and for each event, the builder resolves all declared bindings and
+ * executes registered queries. If every required binding succeeds, the [onEach] handler
+ * executes. If any required binding fails, the event is silently skipped.
+ *
+ * @param Ev the event type
+ * @param block the builder configuration with query support
+ * @return a function that produces an event sink given an entity query
+ */
+inline fun <Ev> buildQueryingEventSink(block: QueryingEventSinkBuilder<Ev>.() -> Unit): (EntityQuery) -> EventSink<Ev> {
+  val builder = QueryingEventSinkBuilderImpl<Ev>()
+  builder.block()
+  return builder::build
 }
 
 @PublishedApi
@@ -223,5 +287,104 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     override fun clear() {
       resolvedReadView = null
     }
+  }
+}
+
+@PublishedApi
+internal class QueryingEventSinkBuilderImpl<Ev>(
+  private val delegate: EventSinkBuilderImpl<Ev> = EventSinkBuilderImpl(),
+) : QueryingEventSinkBuilder<Ev>,
+  EventSinkBuilder<Ev> by delegate {
+  private val queries = mutableListOf<QueryBuilderImpl>()
+
+  override fun query(): QueryBuilder {
+    val builder = QueryBuilderImpl()
+    queries.add(builder)
+    return builder
+  }
+
+  fun build(registry: EntityQuery): EventSink<Ev> {
+    val eventSink = delegate.build()
+    val queryExecutions = queries.map { QueryExecution(it.plan, registry) }
+    queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
+    return EventSink { event ->
+      queryExecutions.forEach { it.executeFor(event) }
+      try {
+        eventSink.onEvent(event)
+      } finally {
+        queryExecutions.forEach { it.clear() }
+      }
+    }
+  }
+}
+
+@PublishedApi
+internal class QueryBuilderImpl : QueryBuilder {
+  val plan = QueryPlan()
+  private var execution: QueryExecution? = null
+
+  override fun <R : Any, W : Any> has(
+    key: TraitKey<R, W>,
+    filter: ((R) -> Boolean)?,
+  ): QueryBuilder {
+    plan.requirements.add(QueryRequirement(key, filter))
+    return this
+  }
+
+  override fun iterator(): Iterator<Entity> {
+    val exec = execution ?: error("Query can only be accessed during onEach execution")
+    return exec.results.iterator()
+  }
+
+  internal fun setExecution(execution: QueryExecution?) {
+    this.execution = execution
+  }
+}
+
+internal class QueryPlan {
+  val requirements = mutableListOf<QueryRequirement<*>>()
+}
+
+internal class QueryRequirement<R : Any>(
+  val key: TraitKey<R, *>,
+  val filter: ((R) -> Boolean)?,
+)
+
+internal class QueryExecution(
+  private val plan: QueryPlan,
+  private val registry: EntityQuery,
+) {
+  var results: List<Entity> = emptyList()
+    private set
+
+  fun executeFor(event: Any?) {
+    val types = plan.requirements.map { it.key.writableType }.toTypedArray()
+    val entities = registry.query(*types)
+    results =
+      entities
+        .filter { entity ->
+          plan.requirements.all { req ->
+            checkRequirement(entity, req)
+          }
+        }.toList()
+  }
+
+  private fun checkRequirement(
+    entity: Entity,
+    req: QueryRequirement<*>,
+  ): Boolean {
+    val trait = entity.get(req.key.writableType) ?: return false
+
+    // Use reflection-style unchecked cast to work around star projection limitations
+    @Suppress("UNCHECKED_CAST")
+    val readView = (req.key as TraitKey<Any, Any>).provideReadonlyView(trait as Any)
+
+    @Suppress("UNCHECKED_CAST")
+    val filter = req.filter as? ((Any) -> Boolean)
+    return filter?.invoke(readView) != false
+  }
+
+  fun clear() {
+    results = emptyList()
   }
 }
