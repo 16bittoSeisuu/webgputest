@@ -40,12 +40,13 @@ interface EventSinkBuilder<out Ev> {
  * @param block the builder configuration
  * @return an event sink that processes events according to the configured bindings
  */
-fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSink<Ev> {
+inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSink<Ev> {
   val builder = EventSinkBuilderImpl<Ev>()
   builder.block()
   return builder.build()
 }
 
+@PublishedApi
 internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
   private var handler: ((Ev) -> Unit)? = null
 
