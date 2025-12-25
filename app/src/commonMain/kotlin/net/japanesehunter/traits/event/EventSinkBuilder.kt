@@ -216,6 +216,28 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     }
   }
 
+  /**
+   * Attempts to resolve all bindings for the given event.
+   *
+   * @return true if all required bindings were resolved, false if any required binding failed
+   */
+  fun tryResolveBindings(event: Ev): Boolean = requiredBindings.all { it.tryResolve(event) }
+
+  /**
+   * Invokes the handler with the given event.
+   * Bindings must be resolved before calling this method.
+   */
+  fun invokeHandler(event: Ev) {
+    handler?.invoke(event)
+  }
+
+  /**
+   * Clears all resolved binding values.
+   */
+  fun clearBindings() {
+    requiredBindings.forEach { it.clear() }
+  }
+
   private interface Binding<Ev> {
     fun tryResolve(event: Ev): Boolean
 
@@ -304,15 +326,18 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
   }
 
   fun build(registry: EntityQuery): EventSink<Ev> {
-    val eventSink = delegate.build()
     val queryExecutions = queries.map { QueryExecution(it.plan, registry) }
     queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
     return EventSink { event ->
+      if (!delegate.tryResolveBindings(event)) {
+        return@EventSink
+      }
       queryExecutions.forEach { it.executeFor(event) }
       try {
-        eventSink.onEvent(event)
+        delegate.invokeHandler(event)
       } finally {
         queryExecutions.forEach { it.clear() }
+        delegate.clearBindings()
       }
     }
   }
