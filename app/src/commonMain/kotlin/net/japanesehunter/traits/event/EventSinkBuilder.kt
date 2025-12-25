@@ -339,13 +339,13 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
   }
 
   fun build(registry: EntityQuery): EventSink<Ev> {
-    val queryExecutions = queries.map { QueryExecution(it.plan, registry) }
+    val queryExecutions = queries.map { QueryExecution(it.requirements, registry) }
     queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
     return EventSink { event ->
       if (!delegate.tryResolveBindings(event)) {
         return@EventSink
       }
-      queryExecutions.forEach { it.executeFor(event) }
+      queryExecutions.forEach { it.execute() }
       try {
         delegate.invokeHandler(event)
       } finally {
@@ -358,7 +358,7 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
 
 @PublishedApi
 internal class QueryBuilderImpl : QueryBuilder {
-  val plan = QueryPlan()
+  val requirements: QueryPlan = mutableListOf()
   private var execution: QueryExecution? = null
   private var currentEntity: Entity? = null
   private val readBindings = mutableListOf<QueryReadBinding<*, *>>()
@@ -367,12 +367,12 @@ internal class QueryBuilderImpl : QueryBuilder {
     key: TraitKey<R, W>,
     filter: ((R) -> Boolean)?,
   ): QueryBuilder {
-    plan.requirements.add(QueryRequirement(key, filter))
+    requirements.add(QueryRequirement(key, filter))
     return this
   }
 
   override fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
-    val binding = QueryReadBinding(key, this)
+    val binding = QueryReadBinding(key)
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
       binding.resolvedReadView ?: error("Query trait binding can only be accessed during iteration")
@@ -419,7 +419,6 @@ private class QueryIterator(
 
 private class QueryReadBinding<R : Any, W : Any>(
   private val key: TraitKey<R, W>,
-  private val builder: QueryBuilderImpl,
 ) {
   var resolvedReadView: R? = null
     private set
@@ -439,46 +438,41 @@ private class QueryReadBinding<R : Any, W : Any>(
   }
 }
 
-internal class QueryPlan {
-  val requirements = mutableListOf<QueryRequirement<*>>()
-}
+internal typealias QueryPlan = MutableList<QueryRequirement<*, *>>
 
-internal class QueryRequirement<R : Any>(
-  val key: TraitKey<R, *>,
+internal class QueryRequirement<R : Any, W : Any>(
+  val key: TraitKey<R, W>,
   val filter: ((R) -> Boolean)?,
 )
 
 internal class QueryExecution(
-  private val plan: QueryPlan,
+  private val requirements: QueryPlan,
   private val registry: EntityQuery,
 ) {
   var results: List<Entity> = emptyList()
     private set
 
-  fun executeFor(event: Any?) {
-    val types = plan.requirements.map { it.key.writableType }.toTypedArray()
+  fun execute() {
+    val types = requirements.map { it.key.writableType }.toTypedArray()
     val entities = registry.query(*types)
     results =
       entities
         .filter { entity ->
-          plan.requirements.all { req ->
+          requirements.all { req ->
             checkRequirement(entity, req)
           }
         }.toList()
   }
 
-  private fun checkRequirement(
+  private fun <R : Any, W : Any> checkRequirement(
     entity: Entity,
-    req: QueryRequirement<*>,
+    req: QueryRequirement<R, W>,
   ): Boolean {
     val trait = entity.get(req.key.writableType) ?: return false
 
-    // Use reflection-style unchecked cast to work around star projection limitations
-    @Suppress("UNCHECKED_CAST")
-    val readView = (req.key as TraitKey<Any, Any>).provideReadonlyView(trait as Any)
+    val readView = req.key.provideReadonlyView(trait)
 
-    @Suppress("UNCHECKED_CAST")
-    val filter = req.filter as? ((Any) -> Boolean)
+    val filter = req.filter
     return filter?.invoke(readView) != false
   }
 

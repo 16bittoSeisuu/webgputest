@@ -3,6 +3,8 @@ package net.japanesehunter.traits.event
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import net.japanesehunter.traits.Entity
 import net.japanesehunter.traits.HashMapEntityRegistry
 import net.japanesehunter.traits.TraitKey
@@ -126,5 +128,108 @@ class QueryingEventSinkBuilderTest :
           Position(1.0, 2.0) to Name("first"),
           Position(3.0, 4.0) to Name("second"),
         )
+    }
+
+    test("multiple queries with different conditions return correct results") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      val e2 = registry.createEntity()
+      val e3 = registry.createEntity()
+      e1.add(Position(1.0, 0.0))
+      e1.add(Name("has both"))
+      e2.add(Position(2.0, 0.0))
+      e3.add(Name("name only"))
+
+      val positionOnly = mutableListOf<Position>()
+      val nameOnly = mutableListOf<Name>()
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entitiesWithPosition = query().has(Position)
+          val entitiesWithName = query().has(Name)
+          val pos by entitiesWithPosition.read(Position)
+          val name by entitiesWithName.read(Name)
+          onEach { event ->
+            for (entity in entitiesWithPosition) {
+              positionOnly.add(pos)
+            }
+            for (entity in entitiesWithName) {
+              nameOnly.add(name)
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      positionOnly shouldContainExactlyInAnyOrder
+        listOf(
+          Position(1.0, 0.0),
+          Position(2.0, 0.0),
+        )
+      nameOnly shouldContainExactlyInAnyOrder
+        listOf(
+          Name("has both"),
+          Name("name only"),
+        )
+    }
+
+    test("query results are evaluated once per event even with multiple iterations") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      e1.add(Position(1.0, 2.0))
+
+      var queryExecutionCount = 0
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities =
+            query().has(Position) { pos ->
+              queryExecutionCount++
+              true
+            }
+          onEach { event ->
+            // First iteration
+            for (entity in entities) {
+              // consume
+            }
+            // Second iteration - should not re-execute query filter
+            for (entity in entities) {
+              // consume
+            }
+            // Third iteration
+            for (entity in entities) {
+              // consume
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      queryExecutionCount shouldBe 1
+    }
+
+    test("query read throws when accessed outside iteration") {
+      val registry = HashMapEntityRegistry()
+      val e1 = registry.createEntity()
+      e1.add(Position(1.0, 2.0))
+
+      var caughtException: IllegalStateException? = null
+      val sink =
+        buildQueryingEventSink<TickEvent> {
+          val entities = query().has(Position)
+          val pos by entities.read(Position)
+          onEach { event ->
+            // Access outside of for loop should throw
+            try {
+              @Suppress("UNUSED_VARIABLE")
+              val unused = pos
+            } catch (e: IllegalStateException) {
+              caughtException = e
+            }
+          }
+        }(registry)
+
+      sink.onEvent(TickEvent(0.016))
+
+      caughtException shouldNotBe null
+      caughtException!!.message shouldContain "iteration"
     }
   })
