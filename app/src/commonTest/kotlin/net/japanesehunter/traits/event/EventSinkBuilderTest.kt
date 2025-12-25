@@ -102,4 +102,129 @@ class EventSinkBuilderTest :
         capturedHealth()
       }
     }
+
+    test("readOptional returns null when trait is missing") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+
+      var observedHealth: HealthView? = Health(-999)
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOptional(Health)
+          onEach { observedHealth = health }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      observedHealth shouldBe null
+    }
+
+    test("readOptional returns value when trait exists") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+      entity.add(Health(50))
+
+      var observedHealth: HealthView? = null
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOptional(Health)
+          onEach { observedHealth = health }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      observedHealth?.hp shouldBe 50
+    }
+
+    test("readOptional does not skip onEach when trait is missing") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+
+      var callCount = 0
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOptional(Health)
+          onEach { callCount++ }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      callCount shouldBe 1
+    }
+
+    test("readOrDefault returns default value when trait is missing") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+
+      var observedHp = -1
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOrDefault(Health) { Health(999) }
+          onEach { observedHp = health.hp }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      observedHp shouldBe 999
+    }
+
+    test("readOrDefault returns existing value when trait exists") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+      entity.add(Health(25))
+
+      var observedHp = -1
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOrDefault(Health) { Health(999) }
+          onEach { observedHp = health.hp }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      observedHp shouldBe 25
+    }
+
+    test("readOrDefault does not evaluate default when trait exists") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+      entity.add(Health(10))
+
+      var defaultCalled = false
+      val sink =
+        buildEventSink<DamageEvent> {
+          val target = DamageEvent::target
+          val health by target.readOrDefault(Health) {
+            defaultCalled = true
+            Health(999)
+          }
+          onEach { }
+        }
+
+      sink.onEvent(DamageEvent(entity, 10))
+
+      defaultCalled shouldBe false
+    }
+
+    test("readOrDefault evaluates default only during onEach") {
+      val registry = HashMapEntityRegistry()
+      val entity = registry.createEntity()
+
+      var defaultCalledDuringBuild = false
+      buildEventSink<DamageEvent> {
+        val target = DamageEvent::target
+        val health by target.readOrDefault(Health) {
+          defaultCalledDuringBuild = true
+          Health(999)
+        }
+        onEach { }
+      }
+
+      defaultCalledDuringBuild shouldBe false
+    }
   })

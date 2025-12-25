@@ -45,6 +45,39 @@ interface EventSinkBuilder<out Ev> {
    * @return a property delegate providing the read-only view
    */
   fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+
+  /**
+   * Declares an optional read-only trait binding from an entity property.
+   *
+   * The binding resolves when each event arrives. If the entity lacks the trait,
+   * the delegate returns null without skipping the event handler. Accessing the
+   * bound value outside [onEach] throws [IllegalStateException].
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the read-only view or null
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+
+  /**
+   * Declares a trait binding with a default value provider.
+   *
+   * The binding resolves when each event arrives. If the entity lacks the trait,
+   * the default value provider is evaluated during [onEach] execution. The provider
+   * is not evaluated if the trait exists. Accessing the bound value outside [onEach]
+   * throws [IllegalStateException].
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @param defaultValue the provider for the default read-only view
+   * @return a property delegate providing the read-only view
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+    key: TraitKey<R, W>,
+    defaultValue: () -> R,
+  ): ReadOnlyProperty<Any?, R>
 }
 
 /**
@@ -75,6 +108,29 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
 
   override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
     val binding = ReadBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
+    }
+  }
+
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+    val binding = ReadOptionalBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      if (binding.isResolved) {
+        binding.resolvedReadView
+      } else {
+        error("Trait binding can only be accessed during onEach execution")
+      }
+    }
+  }
+
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+    key: TraitKey<R, W>,
+    defaultValue: () -> R,
+  ): ReadOnlyProperty<Any?, R> {
+    val binding = ReadOrDefaultBinding(this, key, defaultValue)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
       binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
@@ -113,6 +169,54 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
       val entity = property.get(event)
       val trait = entity.get(key.writableType) ?: return false
       resolvedReadView = key.provideReadonlyView(trait)
+      return true
+    }
+
+    override fun clear() {
+      resolvedReadView = null
+    }
+  }
+
+  private class ReadOptionalBinding<Ev, R : Any, W : Any>(
+    val property: KProperty1<in Ev, Entity>,
+    val key: TraitKey<R, W>,
+  ) : Binding<Ev> {
+    var resolvedReadView: R? = null
+      private set
+    var isResolved: Boolean = false
+      private set
+
+    override fun tryResolve(event: Ev): Boolean {
+      val entity = property.get(event)
+      val trait = entity.get(key.writableType)
+      resolvedReadView = trait?.let { key.provideReadonlyView(it) }
+      isResolved = true
+      return true
+    }
+
+    override fun clear() {
+      resolvedReadView = null
+      isResolved = false
+    }
+  }
+
+  private class ReadOrDefaultBinding<Ev, R : Any, W : Any>(
+    val property: KProperty1<in Ev, Entity>,
+    val key: TraitKey<R, W>,
+    val defaultValue: () -> R,
+  ) : Binding<Ev> {
+    var resolvedReadView: R? = null
+      private set
+
+    override fun tryResolve(event: Ev): Boolean {
+      val entity = property.get(event)
+      val trait = entity.get(key.writableType)
+      resolvedReadView =
+        if (trait != null) {
+          key.provideReadonlyView(trait)
+        } else {
+          defaultValue()
+        }
       return true
     }
 
