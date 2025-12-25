@@ -1,6 +1,10 @@
 package net.japanesehunter.traits.event
 
+import net.japanesehunter.traits.Entity
+import net.japanesehunter.traits.TraitKey
 import net.japanesehunter.worldcreate.world.EventSink
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty1
 
 /**
  * Builds an [EventSink] with declarative trait bindings resolved per event.
@@ -27,6 +31,20 @@ interface EventSinkBuilder<out Ev> {
    * @param handler the event processing logic
    */
   fun onEach(handler: (Ev) -> Unit)
+
+  /**
+   * Declares a required read-only trait binding from an entity property.
+   *
+   * The binding resolves when each event arrives. If the entity lacks the trait,
+   * the event handler silently skips. Accessing the bound value outside [onEach]
+   * throws [IllegalStateException].
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the read-only view
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
 }
 
 /**
@@ -49,15 +67,47 @@ inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSin
 @PublishedApi
 internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
   private var handler: ((Ev) -> Unit)? = null
+  private val requiredBindings = mutableListOf<RequiredBinding<Ev>>()
+  private var currentEvent: Ev? = null
 
   override fun onEach(handler: (Ev) -> Unit) {
     this.handler = handler
   }
 
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+    val binding = RequiredBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      val event = currentEvent ?: error("Trait binding can only be accessed during onEach execution")
+      val entity = binding.property.get(event)
+      val trait = entity.get(key.writableType) ?: error("Trait ${key.writableType} unexpectedly missing")
+      key.provideReadonlyView(trait)
+    }
+  }
+
   fun build(): EventSink<Ev> {
     val h = handler
+    val bindings = requiredBindings.toList()
     return EventSink { event ->
-      h?.invoke(event)
+      if (!bindings.all { it.canResolve(event) }) {
+        return@EventSink
+      }
+      currentEvent = event
+      try {
+        h?.invoke(event)
+      } finally {
+        currentEvent = null
+      }
+    }
+  }
+
+  private class RequiredBinding<Ev>(
+    val property: KProperty1<in Ev, out Entity>,
+    val key: TraitKey<*, *>,
+  ) {
+    fun canResolve(event: Ev): Boolean {
+      val entity = property.get(event)
+      return entity.get(key.writableType) != null
     }
   }
 }
