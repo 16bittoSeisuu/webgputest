@@ -67,21 +67,17 @@ inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSin
 @PublishedApi
 internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
   private var handler: ((Ev) -> Unit)? = null
-  private val requiredBindings = mutableListOf<RequiredBinding<Ev>>()
-  private var currentEvent: Ev? = null
+  private val requiredBindings = mutableListOf<Binding<Ev>>()
 
   override fun onEach(handler: (Ev) -> Unit) {
     this.handler = handler
   }
 
   override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
-    val binding = RequiredBinding(this, key)
+    val binding = ReadBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      val event = currentEvent ?: error("Trait binding can only be accessed during onEach execution")
-      val entity = binding.property.get(event)
-      val trait = entity.get(key.writableType) ?: error("Trait ${key.writableType} unexpectedly missing")
-      key.provideReadonlyView(trait)
+      binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
@@ -89,25 +85,39 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     val h = handler
     val bindings = requiredBindings.toList()
     return EventSink { event ->
-      if (!bindings.all { it.canResolve(event) }) {
+      if (!bindings.all { it.tryResolve(event) }) {
         return@EventSink
       }
-      currentEvent = event
       try {
         h?.invoke(event)
       } finally {
-        currentEvent = null
+        bindings.forEach { it.clear() }
       }
     }
   }
 
-  private class RequiredBinding<Ev>(
-    val property: KProperty1<in Ev, out Entity>,
-    val key: TraitKey<*, *>,
-  ) {
-    fun canResolve(event: Ev): Boolean {
+  private interface Binding<Ev> {
+    fun tryResolve(event: Ev): Boolean
+
+    fun clear()
+  }
+
+  private class ReadBinding<Ev, R : Any, W : Any>(
+    val property: KProperty1<in Ev, Entity>,
+    val key: TraitKey<R, W>,
+  ) : Binding<Ev> {
+    var resolvedReadView: R? = null
+      private set
+
+    override fun tryResolve(event: Ev): Boolean {
       val entity = property.get(event)
-      return entity.get(key.writableType) != null
+      val trait = entity.get(key.writableType) ?: return false
+      resolvedReadView = key.provideReadonlyView(trait)
+      return true
+    }
+
+    override fun clear() {
+      resolvedReadView = null
     }
   }
 }
