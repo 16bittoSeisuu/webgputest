@@ -44,6 +44,20 @@ fun interface EventInterceptor<in Ev> {
 }
 
 /**
+ * Represents the result of a cancellable operation.
+ *
+ * Instances report whether the operation was canceled by any participant.
+ */
+fun interface Cancellation {
+  /**
+   * Returns true if the operation was canceled.
+   *
+   * @return true if canceled.
+   */
+  fun isCanceled(): Boolean
+}
+
+/**
  * Represents a scope that allows canceling the current event processing.
  *
  * Call [cancel] to prevent downstream subscribers from receiving the event.
@@ -71,6 +85,21 @@ interface InterceptableEventInterception<out Ev> :
   InterceptableEventSource<Ev, Ev>,
   AutoCloseable {
   override fun close()
+}
+
+/**
+ * Represents a consumer of events from an [InterceptableEventSource] that can cancel delivery.
+ *
+ * @param Ev the event type to consume
+ */
+fun interface CancellableEventSink<in Ev> {
+  /**
+   * Processes an event and returns the cancellation result.
+   *
+   * @param event the event to process.
+   * @return the cancellation result. null: never returns null
+   */
+  fun onEvent(event: Ev): Cancellation
 }
 
 /**
@@ -113,3 +142,96 @@ fun <R, W> InterceptableEventSource<R, W>.intercept(interceptor: QueryingEventIn
   PendingEventInterception { registry ->
     intercept(interceptor(registry))
   }
+
+// region Factory
+
+/**
+ * Creates an interceptable event source with a writable-to-readonly transformation.
+ *
+ * The returned pair contains the source for subscribers and interceptors, and a sink
+ * for emitting events. Events emitted through the sink flow through the interception
+ * chain, and final subscribers receive the read-only view.
+ *
+ * @param R the read-only event type for final subscribers
+ * @param W the mutable event type for interception
+ * @param toReadonlyView converts the writable event to a read-only view for final subscribers.
+ * @return a pair of the interceptable source and the sink for emitting events.
+ */
+fun <R, W> createInterceptableEventSource(toReadonlyView: (W) -> R): Pair<InterceptableEventSource<R, W>, CancellableEventSink<W>> {
+  class Node<T> : InterceptableEventSource<T, W> {
+    val children = mutableListOf<Node<W>>()
+    val interceptors = mutableListOf<EventInterceptor<W>>()
+    val sinks = mutableListOf<EventSink<T>>()
+
+    override fun intercept(interceptor: EventInterceptor<W>): InterceptableEventInterception<W> {
+      interceptors += interceptor
+      val child = Node<W>()
+      children += child
+      return object : InterceptableEventInterception<W>, InterceptableEventSource<W, W> by child {
+        override fun close() {
+          interceptors -= interceptor
+          children -= child
+        }
+      }
+    }
+
+    override fun subscribe(sink: EventSink<T>): EventSubscription {
+      sinks += sink
+      return EventSubscription { sinks -= sink }
+    }
+  }
+
+  val root = Node<R>()
+
+  val emitter =
+    CancellableEventSink<W> { event ->
+      fun <T> invokeRecursive(node: Node<T>): Cancellation {
+        var canceledInChildren = false
+        for (child in node.children) {
+          val result = invokeRecursive(child)
+          if (result.isCanceled()) {
+            canceledInChildren = true
+          }
+        }
+
+        var canceled = false
+        if (!canceledInChildren) {
+          val scope = CancellableScope { canceled = true }
+          for (interceptor in node.interceptors) {
+            with(interceptor) { scope.onIntercept(event) }
+          }
+        }
+
+        for (child in node.children) {
+          for (sink in child.sinks) {
+            sink.onEvent(event)
+          }
+        }
+
+        return Cancellation { canceled }
+      }
+
+      val canceled = invokeRecursive(root).isCanceled()
+      if (!canceled) {
+        val readonlyEvent = toReadonlyView(event)
+        for (sink in root.sinks) {
+          sink.onEvent(readonlyEvent)
+        }
+      }
+      Cancellation { canceled }
+    }
+
+  return root to emitter
+}
+
+/**
+ * Creates an interceptable event source where the writable and read-only types are the same.
+ *
+ * @param R the event type for both interception and subscription
+ * @return a pair of the interceptable source and the sink for emitting events.
+ */
+@Suppress("ktlint:standard:function-naming")
+fun <R> createInterceptableEventSource(): Pair<InterceptableEventSource<R, R>, CancellableEventSink<R>> =
+  createInterceptableEventSource { it }
+
+// endregion
