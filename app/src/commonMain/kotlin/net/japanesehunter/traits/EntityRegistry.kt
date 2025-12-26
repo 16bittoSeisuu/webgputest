@@ -12,7 +12,7 @@ import kotlin.reflect.KClass
  * Implementations are not required to be thread-safe. Callers must provide
  * external synchronization when accessing from multiple threads.
  */
-interface EntityRegistry {
+interface EntityRegistry : EntityQuery {
   /**
    * Creates a new entity and returns a high-level handle to it.
    *
@@ -22,9 +22,11 @@ interface EntityRegistry {
    * @return a handle to the newly created entity.
    */
   fun createEntity(): Entity
+}
 
+fun interface EntityQuery {
   /**
-   * Returns all entities that have all of the specified trait types.
+   * Returns all entities that have all the specified trait types.
    *
    * The returned entity handles refer to entities that exist at the time of
    * enumeration. Each handle follows the equality contract defined by [Entity],
