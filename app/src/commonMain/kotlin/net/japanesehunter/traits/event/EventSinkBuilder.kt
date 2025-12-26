@@ -4,6 +4,7 @@ import net.japanesehunter.traits.Entity
 import net.japanesehunter.traits.EntityQuery
 import net.japanesehunter.traits.TraitKey
 import net.japanesehunter.worldcreate.world.EventSink
+import net.japanesehunter.worldcreate.world.QueryingEventSink
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty1
 
@@ -172,19 +173,19 @@ inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSin
 /**
  * Builds an [EventSink] with entity query support and declarative trait binding resolution.
  *
- * The returned function accepts an [EntityQuery] and produces an [EventSink]. Events flow
- * through the sink, and for each event, the builder resolves all declared bindings and
- * executes registered queries. If every required binding succeeds, the [onEach] handler
- * executes. If any required binding fails, the event is silently skipped.
+ * The returned [QueryingEventSink] accepts an [EntityQuery] and produces an [EventSink].
+ * Events flow through the sink, and for each event, the builder resolves all declared
+ * bindings and executes registered queries. If every required binding succeeds, the
+ * [onEach] handler executes. If any required binding fails, the event is silently skipped.
  *
  * @param Ev the event type
  * @param block the builder configuration with query support
- * @return a function that produces an event sink given an entity query
+ * @return the querying event sink. null: never returns null
  */
-inline fun <Ev> buildQueryingEventSink(block: QueryingEventSinkBuilder<Ev>.() -> Unit): (EntityQuery) -> EventSink<Ev> {
+inline fun <Ev> buildQueryingEventSink(block: QueryingEventSinkBuilder<Ev>.() -> Unit): QueryingEventSink<Ev> {
   val builder = QueryingEventSinkBuilderImpl<Ev>()
   builder.block()
-  return builder::build
+  return QueryingEventSink(builder::build)
 }
 
 @PublishedApi

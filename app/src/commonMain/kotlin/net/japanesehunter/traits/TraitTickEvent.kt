@@ -1,6 +1,7 @@
 package net.japanesehunter.traits
 
 import net.japanesehunter.worldcreate.world.EventSink
+import net.japanesehunter.worldcreate.world.EventSubscription
 import kotlin.time.Duration
 
 /**
