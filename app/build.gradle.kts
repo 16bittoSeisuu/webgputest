@@ -53,6 +53,7 @@ kotlin {
 
   compilerOptions {
     freeCompilerArgs.add("-Xcontext-parameters")
+    allWarningsAsErrors = false
   }
 }
 

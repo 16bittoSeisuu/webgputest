@@ -13,6 +13,17 @@ import kotlin.time.Duration
  * define processing logic within [forEach]. The builder automatically generates
  * queries and resolves trait references for each matching entity during execution.
  */
+@Deprecated(
+  message =
+    "Use buildQueryingEventSink with TraitTickEvent instead. " +
+      "Replace forEach with query().has(...) and onEach, " +
+      "and use EventSource.subscribe(sink)(registry) for subscription.",
+  replaceWith =
+    ReplaceWith(
+      "buildQueryingEventSink { ... }",
+      "net.japanesehunter.traits.event.buildQueryingEventSink",
+    ),
+)
 class SystemBuilder internal constructor() {
   private var forEachBlock: (EntityScope.(Duration) -> Unit)? = null
   private val requiredTraitTypes = mutableSetOf<KClass<*>>()
@@ -111,6 +122,17 @@ class SystemBuilder internal constructor() {
  * @param block the system builder configuration
  * @return the trait update sink. null: never returns null
  */
+@Deprecated(
+  message =
+    "Use buildQueryingEventSink with TraitTickEvent instead. " +
+      "Replace forEach with query().has(...) and onEach, " +
+      "and use EventSource.subscribe(sink)(registry) for subscription.",
+  replaceWith =
+    ReplaceWith(
+      "buildQueryingEventSink { ... }",
+      "net.japanesehunter.traits.event.buildQueryingEventSink",
+    ),
+)
 fun buildSystem(block: SystemBuilder.() -> Unit): TraitUpdateSink {
   val builder = SystemBuilder()
   builder.block()
