@@ -51,11 +51,8 @@ import net.japanesehunter.webgpu.interop.GPUTextureUsage
 import net.japanesehunter.webgpu.interop.createImageBitmap
 import net.japanesehunter.webgpu.interop.navigator.gpu
 import net.japanesehunter.webgpu.interop.requestAnimationFrame
-import net.japanesehunter.worldcreate.BlockState
-import net.japanesehunter.worldcreate.FullBlockState
 import net.japanesehunter.worldcreate.MaterialKey
 import net.japanesehunter.worldcreate.PlayerController
-import net.japanesehunter.worldcreate.World
 import net.japanesehunter.worldcreate.entity.sync
 import net.japanesehunter.worldcreate.hud.CameraHud
 import net.japanesehunter.worldcreate.hud.PlayerHud
@@ -70,6 +67,9 @@ import net.japanesehunter.worldcreate.trait.Rigidbody
 import net.japanesehunter.worldcreate.trait.Rotation
 import net.japanesehunter.worldcreate.trait.Velocity
 import net.japanesehunter.worldcreate.world.BlockAccess
+import net.japanesehunter.worldcreate.world.BlockState
+import net.japanesehunter.worldcreate.world.FullBlockState
+import net.japanesehunter.worldcreate.world.World
 import net.japanesehunter.worldcreate.world.createFixedStepTickSource
 import org.w3c.dom.ImageBitmap
 import kotlin.time.Duration.Companion.milliseconds

@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Length
@@ -8,6 +8,7 @@ import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.cross
 import net.japanesehunter.math.plus
 import net.japanesehunter.math.times
+import net.japanesehunter.worldcreate.MaterialKey
 
 class MaterialQuad(
   min: Point3,

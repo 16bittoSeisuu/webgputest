@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.Length
 import net.japanesehunter.math.meters

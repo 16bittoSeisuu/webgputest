@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.ImmutableLength3
 import net.japanesehunter.math.ImmutablePoint3
@@ -8,15 +8,16 @@ import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.unaryMinus
+import net.japanesehunter.worldcreate.world.World
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
  * Represents an integer block position measured in whole meters within the finite world.
- * Coordinates never exceed the magnitude derived from [World.MAX_SIZE] and the type remains immutable and thread-safe.
+ * Coordinates never exceed the magnitude derived from [World.Companion.MAX_SIZE] and the type remains immutable and thread-safe.
  *
  * Invariants state that each component stays within `[-maxCoordinate, maxCoordinate]`, where `maxCoordinate` comes from the
- * whole-meter value of [World.MAX_SIZE].
+ * whole-meter value of [World.Companion.MAX_SIZE].
  */
 data class BlockPos(
   /**
@@ -98,9 +99,9 @@ data class BlockPos(
   operator fun minus(distance: Length3): BlockPos = translateBy(-distance)
 
   /**
-   * Converts this block position to a [Point3] measured in meters.
+   * Converts this block position to a [net.japanesehunter.math.Point3] measured in meters.
 
-   * @return The position expressed as [ImmutablePoint3].
+   * @return The position expressed as [net.japanesehunter.math.ImmutablePoint3].
    */
   fun toPoint3(): ImmutablePoint3 =
     Point3(
@@ -124,7 +125,7 @@ data class BlockPos(
 
     private val maxCoordinate: Int =
       run {
-        val meters = World.MAX_SIZE.inWholeMeters
+        val meters = World.Companion.MAX_SIZE.inWholeMeters
         require(meters <= Int.MAX_VALUE.toLong()) { "World size exceeds integer coordinate capacity." }
         meters.toInt()
       }

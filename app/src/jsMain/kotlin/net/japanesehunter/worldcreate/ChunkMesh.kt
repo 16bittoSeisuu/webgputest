@@ -9,6 +9,10 @@ import net.japanesehunter.webgpu.IndexGpuBuffer
 import net.japanesehunter.webgpu.VertexGpuBuffer
 import net.japanesehunter.webgpu.interop.GPUBufferUsage
 import net.japanesehunter.webgpu.interop.GPUIndexFormat
+import net.japanesehunter.worldcreate.world.BlockFace
+import net.japanesehunter.worldcreate.world.BlockState
+import net.japanesehunter.worldcreate.world.QuadSink
+import net.japanesehunter.worldcreate.world.opposite
 
 context(alloc: BufferAllocator, resource: ResourceScope)
 suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
@@ -157,7 +161,8 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
       requiredOpaqueMask = 0
       opaqueFaceSink.cullReq()
       val actualOpaqueMask = computeNeighborOpaqueMask(requiredOpaqueMask)
-      val shouldCull = (actualOpaqueMask and requiredOpaqueMask) == requiredOpaqueMask
+      val shouldCull =
+        (actualOpaqueMask and requiredOpaqueMask) == requiredOpaqueMask
 
       if (!shouldCull) {
         val min = quad.min

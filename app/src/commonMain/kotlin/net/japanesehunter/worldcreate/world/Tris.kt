@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Point3
@@ -7,6 +7,7 @@ import net.japanesehunter.math.cross
 import net.japanesehunter.math.minus
 import net.japanesehunter.math.toDirection
 import net.japanesehunter.math.unaryMinus
+import net.japanesehunter.worldcreate.MaterialKey
 
 class MaterialTriangle(
   v0: Pair<Point3, Proportion>,

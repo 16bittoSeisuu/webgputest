@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.Direction3
 import net.japanesehunter.math.Point3
@@ -8,6 +8,8 @@ import net.japanesehunter.math.meters
 import net.japanesehunter.math.north
 import net.japanesehunter.math.south
 import net.japanesehunter.math.west
+import net.japanesehunter.worldcreate.MaterialKey
+import net.japanesehunter.worldcreate.world.QuadSink
 
 interface BlockState {
   fun QuadSink.emitQuads()

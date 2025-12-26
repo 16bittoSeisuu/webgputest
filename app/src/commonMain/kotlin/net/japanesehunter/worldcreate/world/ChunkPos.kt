@@ -1,4 +1,4 @@
-package net.japanesehunter.worldcreate
+package net.japanesehunter.worldcreate.world
 
 import net.japanesehunter.math.ImmutableLength3
 import net.japanesehunter.math.ImmutablePoint3
@@ -8,12 +8,13 @@ import net.japanesehunter.math.LengthUnit
 import net.japanesehunter.math.Point3
 import net.japanesehunter.math.meters
 import net.japanesehunter.math.unaryMinus
+import net.japanesehunter.worldcreate.world.World
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
  * Represents a chunk position indexing contiguous 16x16x16 block regions within the finite world.
- * Coordinates remain within [-maxChunkCoordinate, maxChunkCoordinate] derived from [World.MAX_CHUNK_COORDINATE],
+ * Coordinates remain within [-maxChunkCoordinate, maxChunkCoordinate] derived from [World.Companion.MAX_CHUNK_COORDINATE],
  * and instances stay immutable and thread-safe.
  *
  * @param x Chunk index along the x axis.
@@ -94,7 +95,7 @@ data class ChunkPos(
   /**
    * Converts this chunk position to a point measured in meters at the chunk origin.
    *
-   * @return The position expressed as [ImmutablePoint3].
+   * @return The position expressed as [net.japanesehunter.math.ImmutablePoint3].
    */
   fun toPoint3(): ImmutablePoint3 =
     Point3(
@@ -118,7 +119,7 @@ data class ChunkPos(
 
     private val maxChunkCoordinate: Int =
       run {
-        val max = World.MAX_CHUNK_COORDINATE
+        val max = World.Companion.MAX_CHUNK_COORDINATE
         require(max <= Int.MAX_VALUE) { "Chunk coordinate exceeds integer capacity." }
         max
       }
@@ -164,7 +165,7 @@ data class ChunkPos(
       if (!meters.isFinite()) {
         throw ArithmeticException("Non-finite length cannot be rounded to chunks")
       }
-      val chunks = meters / World.CHUNK_LENGTH_BLOCKS
+      val chunks = meters / World.Companion.CHUNK_LENGTH_BLOCKS
       val rounded = chunks.roundToLong()
       if (rounded < Int.MIN_VALUE || rounded > Int.MAX_VALUE) {
         throw ArithmeticException("Rounded chunk displacement $rounded exceeds Int range")
@@ -173,7 +174,7 @@ data class ChunkPos(
     }
 
     private fun chunksToMeters(chunks: Int): Int {
-      val meters = chunks.toLong() * World.CHUNK_LENGTH_BLOCKS
+      val meters = chunks.toLong() * World.Companion.CHUNK_LENGTH_BLOCKS
       if (meters < Int.MIN_VALUE || meters > Int.MAX_VALUE) {
         throw ArithmeticException("Chunk conversion to meters overflowed")
       }
