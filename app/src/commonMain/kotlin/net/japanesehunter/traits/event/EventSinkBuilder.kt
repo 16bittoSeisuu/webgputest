@@ -3,7 +3,10 @@ package net.japanesehunter.traits.event
 import net.japanesehunter.traits.Entity
 import net.japanesehunter.traits.EntityQuery
 import net.japanesehunter.traits.TraitKey
+import net.japanesehunter.worldcreate.world.CancellableScope
+import net.japanesehunter.worldcreate.world.EventInterceptor
 import net.japanesehunter.worldcreate.world.EventSink
+import net.japanesehunter.worldcreate.world.QueryingEventInterceptor
 import net.japanesehunter.worldcreate.world.QueryingEventSink
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty1
@@ -249,6 +252,134 @@ inline fun <Ev> buildQueryingEventSink(block: QueryingEventSinkBuilder<Ev>.() ->
   return QueryingEventSink(builder::build)
 }
 
+// region EventInterceptorBuilder
+
+/**
+ * Builds an [EventInterceptor] with declarative trait bindings resolved per event.
+ *
+ * The builder allows declaring trait requirements from entities referenced in
+ * events. Bindings are resolved when each event arrives, not at declaration time.
+ * If all required bindings resolve successfully, [onIntercept] executes with a
+ * [CancellableScope]. Otherwise, the handler silently skips.
+ *
+ * Accessing bound trait values outside [onIntercept] throws [IllegalStateException].
+ *
+ * Implementations are not thread-safe. Build the interceptor on a single thread, then
+ * use the resulting [EventInterceptor] according to its own thread-safety contract.
+ *
+ * @param Ev the event type this builder handles
+ */
+interface EventInterceptorBuilder<out Ev> {
+  /**
+   * Registers the handler invoked for each event when all bindings resolve.
+   *
+   * The handler receives a [CancellableScope] and the event instance. Bound trait
+   * values are accessible only within this block. Call [CancellableScope.cancel] to
+   * prevent downstream processing.
+   *
+   * @param handler the event interception logic
+   */
+  fun onIntercept(handler: EventInterceptor<Ev>)
+
+  /**
+   * Declares a required read-only trait binding from an entity property.
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the read-only view
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+
+  /**
+   * Declares an optional read-only trait binding from an entity property.
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the read-only view or null
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+
+  /**
+   * Declares a trait binding with a default value provider.
+   *
+   * @param R the read-only view type
+   * @param W the writable trait type
+   * @param key the trait key
+   * @param defaultValue the provider for the default read-only view
+   * @return a property delegate providing the read-only view
+   */
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+    key: TraitKey<R, W>,
+    defaultValue: () -> R,
+  ): ReadOnlyProperty<Any?, R>
+
+  /**
+   * Declares a required writable trait binding from an entity property.
+   *
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the writable trait
+   */
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+
+  /**
+   * Declares a writable trait binding with a default value provider.
+   *
+   * @param W the writable trait type
+   * @param key the trait key
+   * @param defaultValue the provider for the default writable trait
+   * @return a property delegate providing the writable trait
+   */
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W>
+}
+
+/**
+ * Builds an [EventInterceptor] with entity query support.
+ *
+ * @param Ev the event type this builder handles
+ */
+interface QueryingEventInterceptorBuilder<out Ev> : EventInterceptorBuilder<Ev> {
+  /**
+   * Creates a query that will be evaluated when each event arrives.
+   *
+   * @return a query builder for declaring entity requirements
+   */
+  fun query(): QueryBuilder
+}
+
+/**
+ * Builds an [EventInterceptor] with declarative trait binding resolution.
+ *
+ * @param Ev the event type
+ * @param block the builder configuration
+ * @return an event interceptor that processes events according to the configured bindings
+ */
+inline fun <Ev> buildEventInterceptor(block: EventInterceptorBuilder<Ev>.() -> Unit): EventInterceptor<Ev> {
+  val builder = EventInterceptorBuilderImpl<Ev>()
+  builder.block()
+  return builder.build()
+}
+
+/**
+ * Builds an [EventInterceptor] with entity query support.
+ *
+ * @param Ev the event type
+ * @param block the builder configuration with query support
+ * @return the querying event interceptor. null: never returns null
+ */
+inline fun <Ev> buildQueryingEventInterceptor(block: QueryingEventInterceptorBuilder<Ev>.() -> Unit): QueryingEventInterceptor<Ev> {
+  val builder = QueryingEventInterceptorBuilderImpl<Ev>()
+  builder.block()
+  return QueryingEventInterceptor(builder::build)
+}
+
+// endregion
+
 @PublishedApi
 internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
   private var handler: ((Ev) -> Unit)? = null
@@ -343,123 +474,6 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
    */
   fun clearBindings() {
     requiredBindings.forEach { it.clear() }
-  }
-
-  private interface Binding<Ev> {
-    fun tryResolve(event: Ev): Boolean
-
-    fun clear()
-  }
-
-  private class ReadBinding<Ev, R : Any, W : Any>(
-    val property: KProperty1<in Ev, Entity>,
-    val key: TraitKey<R, W>,
-  ) : Binding<Ev> {
-    var resolvedReadView: R? = null
-      private set
-
-    override fun tryResolve(event: Ev): Boolean {
-      val entity = property.get(event)
-      val trait = entity.get(key.writableType) ?: return false
-      resolvedReadView = key.provideReadonlyView(trait)
-      return true
-    }
-
-    override fun clear() {
-      resolvedReadView = null
-    }
-  }
-
-  private class ReadOptionalBinding<Ev, R : Any, W : Any>(
-    val property: KProperty1<in Ev, Entity>,
-    val key: TraitKey<R, W>,
-  ) : Binding<Ev> {
-    var resolvedReadView: R? = null
-      private set
-    var isResolved: Boolean = false
-      private set
-
-    override fun tryResolve(event: Ev): Boolean {
-      val entity = property.get(event)
-      val trait = entity.get(key.writableType)
-      resolvedReadView = trait?.let { key.provideReadonlyView(it) }
-      isResolved = true
-      return true
-    }
-
-    override fun clear() {
-      resolvedReadView = null
-      isResolved = false
-    }
-  }
-
-  private class ReadOrDefaultBinding<Ev, R : Any, W : Any>(
-    val property: KProperty1<in Ev, Entity>,
-    val key: TraitKey<R, W>,
-    val defaultValue: () -> R,
-  ) : Binding<Ev> {
-    var resolvedReadView: R? = null
-      private set
-
-    override fun tryResolve(event: Ev): Boolean {
-      val entity = property.get(event)
-      val trait = entity.get(key.writableType)
-      resolvedReadView =
-        if (trait != null) {
-          key.provideReadonlyView(trait)
-        } else {
-          defaultValue()
-        }
-      return true
-    }
-
-    override fun clear() {
-      resolvedReadView = null
-    }
-  }
-
-  private class WriteBinding<Ev, W : Any>(
-    val property: KProperty1<in Ev, Entity>,
-    val key: TraitKey<*, W>,
-  ) : Binding<Ev> {
-    var resolvedWritable: W? = null
-      private set
-
-    override fun tryResolve(event: Ev): Boolean {
-      val entity = property.get(event)
-      val trait = entity.get(key.writableType) ?: return false
-      resolvedWritable = trait
-      return true
-    }
-
-    override fun clear() {
-      resolvedWritable = null
-    }
-  }
-
-  private class WriteDefaultBinding<Ev, W : Any>(
-    val property: KProperty1<in Ev, Entity>,
-    val key: TraitKey<*, W>,
-    val defaultValue: () -> W,
-  ) : Binding<Ev> {
-    var resolvedWritable: W? = null
-      private set
-
-    override fun tryResolve(event: Ev): Boolean {
-      val entity = property.get(event)
-      val trait = entity.get(key.writableType)
-      resolvedWritable =
-        if (trait != null) {
-          trait
-        } else {
-          defaultValue().also { entity.add(it) }
-        }
-      return true
-    }
-
-    override fun clear() {
-      resolvedWritable = null
-    }
   }
 }
 
@@ -748,3 +762,252 @@ internal class QueryExecution(
     results = emptyList()
   }
 }
+
+// region EventInterceptorBuilder implementations
+
+@PublishedApi
+internal class EventInterceptorBuilderImpl<Ev> : EventInterceptorBuilder<Ev> {
+  private var handler: EventInterceptor<Ev>? = null
+  private val requiredBindings = mutableListOf<Binding<Ev>>()
+
+  override fun onIntercept(handler: EventInterceptor<Ev>) {
+    this.handler = handler
+  }
+
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+    val binding = ReadBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedReadView ?: error("Trait binding can only be accessed during onIntercept execution")
+    }
+  }
+
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+    val binding = ReadOptionalBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      if (binding.isResolved) {
+        binding.resolvedReadView
+      } else {
+        error("Trait binding can only be accessed during onIntercept execution")
+      }
+    }
+  }
+
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+    key: TraitKey<R, W>,
+    defaultValue: () -> R,
+  ): ReadOnlyProperty<Any?, R> {
+    val binding = ReadOrDefaultBinding(this, key, defaultValue)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedReadView ?: error("Trait binding can only be accessed during onIntercept execution")
+    }
+  }
+
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+    val binding = WriteBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Trait binding can only be accessed during onIntercept execution")
+    }
+  }
+
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W> {
+    val binding = WriteDefaultBinding(this, key, defaultValue)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Trait binding can only be accessed during onIntercept execution")
+    }
+  }
+
+  fun build(): EventInterceptor<Ev> {
+    val h = handler
+    val bindings = requiredBindings.toList()
+    return EventInterceptor { event ->
+      if (!bindings.all { it.tryResolve(event) }) {
+        return@EventInterceptor
+      }
+      try {
+        h?.run {
+          onIntercept(event)
+        }
+      } finally {
+        bindings.forEach { it.clear() }
+      }
+    }
+  }
+
+  internal fun tryResolveBindings(event: Ev): Boolean = requiredBindings.all { it.tryResolve(event) }
+
+  internal fun invokeHandler(
+    scope: CancellableScope,
+    event: Ev,
+  ) {
+    handler?.run {
+      scope.onIntercept(event)
+    }
+  }
+
+  internal fun clearBindings() {
+    requiredBindings.forEach { it.clear() }
+  }
+}
+
+@PublishedApi
+internal class QueryingEventInterceptorBuilderImpl<Ev>(
+  private val delegate: EventInterceptorBuilderImpl<Ev> = EventInterceptorBuilderImpl(),
+) : QueryingEventInterceptorBuilder<Ev>,
+  EventInterceptorBuilder<Ev> by delegate {
+  private val queries = mutableListOf<QueryBuilderImpl>()
+
+  override fun query(): QueryBuilder {
+    val builder = QueryBuilderImpl()
+    queries.add(builder)
+    return builder
+  }
+
+  fun build(registry: EntityQuery): EventInterceptor<Ev> {
+    val queryExecutions = queries.map { QueryExecution(it.requirements, registry) }
+    queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
+    return EventInterceptor { event ->
+      if (!delegate.tryResolveBindings(event)) {
+        return@EventInterceptor
+      }
+      queryExecutions.forEach { it.execute() }
+      try {
+        delegate.invokeHandler(this, event)
+      } finally {
+        queries.forEach { it.clearAllState() }
+        queryExecutions.forEach { it.clear() }
+        delegate.clearBindings()
+      }
+    }
+  }
+}
+
+// endregion
+
+// region Shared Binding classes
+
+private interface Binding<Ev> {
+  fun tryResolve(event: Ev): Boolean
+
+  fun clear()
+}
+
+private class ReadBinding<Ev, R : Any, W : Any>(
+  val property: KProperty1<in Ev, Entity>,
+  val key: TraitKey<R, W>,
+) : Binding<Ev> {
+  var resolvedReadView: R? = null
+    private set
+
+  override fun tryResolve(event: Ev): Boolean {
+    val entity = property.get(event)
+    val trait = entity.get(key.writableType) ?: return false
+    resolvedReadView = key.provideReadonlyView(trait)
+    return true
+  }
+
+  override fun clear() {
+    resolvedReadView = null
+  }
+}
+
+private class ReadOptionalBinding<Ev, R : Any, W : Any>(
+  val property: KProperty1<in Ev, Entity>,
+  val key: TraitKey<R, W>,
+) : Binding<Ev> {
+  var resolvedReadView: R? = null
+    private set
+  var isResolved: Boolean = false
+    private set
+
+  override fun tryResolve(event: Ev): Boolean {
+    val entity = property.get(event)
+    val trait = entity.get(key.writableType)
+    resolvedReadView = trait?.let { key.provideReadonlyView(it) }
+    isResolved = true
+    return true
+  }
+
+  override fun clear() {
+    resolvedReadView = null
+    isResolved = false
+  }
+}
+
+private class ReadOrDefaultBinding<Ev, R : Any, W : Any>(
+  val property: KProperty1<in Ev, Entity>,
+  val key: TraitKey<R, W>,
+  val defaultValue: () -> R,
+) : Binding<Ev> {
+  var resolvedReadView: R? = null
+    private set
+
+  override fun tryResolve(event: Ev): Boolean {
+    val entity = property.get(event)
+    val trait = entity.get(key.writableType)
+    resolvedReadView =
+      if (trait != null) {
+        key.provideReadonlyView(trait)
+      } else {
+        defaultValue()
+      }
+    return true
+  }
+
+  override fun clear() {
+    resolvedReadView = null
+  }
+}
+
+private class WriteBinding<Ev, W : Any>(
+  val property: KProperty1<in Ev, Entity>,
+  val key: TraitKey<*, W>,
+) : Binding<Ev> {
+  var resolvedWritable: W? = null
+    private set
+
+  override fun tryResolve(event: Ev): Boolean {
+    val entity = property.get(event)
+    val trait = entity.get(key.writableType) ?: return false
+    resolvedWritable = trait
+    return true
+  }
+
+  override fun clear() {
+    resolvedWritable = null
+  }
+}
+
+private class WriteDefaultBinding<Ev, W : Any>(
+  val property: KProperty1<in Ev, Entity>,
+  val key: TraitKey<*, W>,
+  val defaultValue: () -> W,
+) : Binding<Ev> {
+  var resolvedWritable: W? = null
+    private set
+
+  override fun tryResolve(event: Ev): Boolean {
+    val entity = property.get(event)
+    val trait = entity.get(key.writableType)
+    resolvedWritable =
+      if (trait != null) {
+        trait
+      } else {
+        defaultValue().also { entity.add(it) }
+      }
+    return true
+  }
+
+  override fun clear() {
+    resolvedWritable = null
+  }
+}
+
+// endregion
