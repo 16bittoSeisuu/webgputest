@@ -80,6 +80,37 @@ interface EventSinkBuilder<out Ev> {
     key: TraitKey<R, W>,
     defaultValue: () -> R,
   ): ReadOnlyProperty<Any?, R>
+
+  /**
+   * Declares a required writable trait binding from an entity property.
+   *
+   * The binding resolves when each event arrives. If the entity lacks the trait,
+   * the event handler silently skips. Accessing the bound value outside [onEach]
+   * throws [IllegalStateException]. Writing the trait replaces it in the entity.
+   *
+   * @param W the writable trait type
+   * @param key the trait key
+   * @return a property delegate providing the writable trait
+   */
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+
+  /**
+   * Declares a writable trait binding with a default value provider.
+   *
+   * The binding resolves when each event arrives. If the entity lacks the trait,
+   * the default value provider is evaluated and added to the entity during [onEach]
+   * execution. The provider is not evaluated if the trait exists. Accessing the bound
+   * value outside [onEach] throws [IllegalStateException].
+   *
+   * @param W the writable trait type
+   * @param key the trait key
+   * @param defaultValue the provider for the default writable trait
+   * @return a property delegate providing the writable trait
+   */
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W>
 }
 
 /**
@@ -151,6 +182,36 @@ interface QueryBuilder : Sequence<Entity> {
    * @return a property delegate that provides the trait value or null during iteration
    */
   fun <R : Any, W : Any> readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+
+  /**
+   * Creates a binding to write a trait from the current query result entity.
+   *
+   * The binding resolves to the writable trait instance of whichever entity is being
+   * iterated in the onEach block. If the entity lacks the trait, an exception is thrown
+   * during iteration. Access outside of iteration throws [IllegalStateException].
+   *
+   * @param W the writable trait type
+   * @param key the trait key to write
+   * @return a property delegate that provides the writable trait during iteration
+   */
+  fun <W : Any> write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+
+  /**
+   * Creates a binding to write a trait with a default value from the current query result entity.
+   *
+   * The binding resolves to the writable trait instance if present. If the entity
+   * does not have the trait, the default value provider is evaluated and added to
+   * the entity. Access outside of iteration throws [IllegalStateException].
+   *
+   * @param W the writable trait type
+   * @param key the trait key to write
+   * @param defaultValue the provider for the default writable trait
+   * @return a property delegate that provides the writable trait during iteration
+   */
+  fun <W : Any> writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W>
 }
 
 /**
@@ -225,6 +286,25 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
       binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
+    }
+  }
+
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+    val binding = WriteBinding(this, key)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Trait binding can only be accessed during onEach execution")
+    }
+  }
+
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W> {
+    val binding = WriteDefaultBinding(this, key, defaultValue)
+    requiredBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
@@ -337,6 +417,50 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
       resolvedReadView = null
     }
   }
+
+  private class WriteBinding<Ev, W : Any>(
+    val property: KProperty1<in Ev, Entity>,
+    val key: TraitKey<*, W>,
+  ) : Binding<Ev> {
+    var resolvedWritable: W? = null
+      private set
+
+    override fun tryResolve(event: Ev): Boolean {
+      val entity = property.get(event)
+      val trait = entity.get(key.writableType) ?: return false
+      resolvedWritable = trait
+      return true
+    }
+
+    override fun clear() {
+      resolvedWritable = null
+    }
+  }
+
+  private class WriteDefaultBinding<Ev, W : Any>(
+    val property: KProperty1<in Ev, Entity>,
+    val key: TraitKey<*, W>,
+    val defaultValue: () -> W,
+  ) : Binding<Ev> {
+    var resolvedWritable: W? = null
+      private set
+
+    override fun tryResolve(event: Ev): Boolean {
+      val entity = property.get(event)
+      val trait = entity.get(key.writableType)
+      resolvedWritable =
+        if (trait != null) {
+          trait
+        } else {
+          defaultValue().also { entity.add(it) }
+        }
+      return true
+    }
+
+    override fun clear() {
+      resolvedWritable = null
+    }
+  }
 }
 
 @PublishedApi
@@ -402,6 +526,25 @@ internal class QueryBuilderImpl : QueryBuilder {
         error("Query trait binding can only be accessed during iteration")
       }
       binding.resolvedReadView
+    }
+  }
+
+  override fun <W : Any> write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+    val binding = QueryWriteBinding(key)
+    readBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Query trait binding can only be accessed during iteration")
+    }
+  }
+
+  override fun <W : Any> writeDefault(
+    key: TraitKey<*, W>,
+    defaultValue: () -> W,
+  ): ReadOnlyProperty<Any?, W> {
+    val binding = QueryWriteDefaultBinding(key, defaultValue)
+    readBindings.add(binding)
+    return ReadOnlyProperty { _, _ ->
+      binding.resolvedWritable ?: error("Query trait binding can only be accessed during iteration")
     }
   }
 
@@ -522,6 +665,44 @@ private class QueryReadOptionalBinding<R : Any, W : Any>(
   override fun clear() {
     resolvedReadView = null
     isResolved = false
+  }
+}
+
+private class QueryWriteBinding<W : Any>(
+  private val key: TraitKey<*, W>,
+) : QueryBinding {
+  var resolvedWritable: W? = null
+    private set
+
+  override fun resolve(entity: Entity) {
+    val trait = entity.get(key.writableType)
+    resolvedWritable = trait
+  }
+
+  override fun clear() {
+    resolvedWritable = null
+  }
+}
+
+private class QueryWriteDefaultBinding<W : Any>(
+  private val key: TraitKey<*, W>,
+  private val defaultValue: () -> W,
+) : QueryBinding {
+  var resolvedWritable: W? = null
+    private set
+
+  override fun resolve(entity: Entity) {
+    val trait = entity.get(key.writableType)
+    resolvedWritable =
+      if (trait != null) {
+        trait
+      } else {
+        defaultValue().also { entity.add(it) }
+      }
+  }
+
+  override fun clear() {
+    resolvedWritable = null
   }
 }
 
