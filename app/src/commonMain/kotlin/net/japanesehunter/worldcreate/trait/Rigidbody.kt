@@ -44,8 +44,12 @@ class Rigidbody(
       field = validateDrag(value)
     }
 
-  private fun validateDrag(value: Double): Double {
-    require(value.isFinite() && value >= 0.0) { "drag must be finite and non-negative: $value" }
+  private fun validateDrag(
+    value: Double,
+  ): Double {
+    require(value.isFinite() && value >= 0.0) {
+      "drag must be finite and non-negative: $value"
+    }
     return value
   }
 

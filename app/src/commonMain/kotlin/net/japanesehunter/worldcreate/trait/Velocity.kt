@@ -22,10 +22,11 @@ interface VelocityView {
  * Velocity is modified by physics simulation systems and directly affects the
  * entity's position in subsequent frames.
  */
-class Velocity(
-  initialVelocity: Velocity3 = Velocity3.zero,
-) : VelocityView {
-  override val value: MutableVelocity3 = MutableVelocity3.copyOf(initialVelocity)
+class Velocity(initialVelocity: Velocity3 = Velocity3.zero) : VelocityView {
+  override val value: MutableVelocity3 =
+    MutableVelocity3.copyOf(
+      initialVelocity,
+    )
 
   companion object : TraitKey<VelocityView, Velocity> by TraitKey()
 }

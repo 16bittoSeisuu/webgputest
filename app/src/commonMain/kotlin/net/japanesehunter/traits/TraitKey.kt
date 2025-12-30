@@ -25,7 +25,9 @@ interface TraitKey<out R : Any, W : Any> {
    * @param write the writable instance
    * @return the read-only view. null: never returns null
    */
-  fun provideReadonlyView(write: W): R
+  fun provideReadonlyView(
+    write: W,
+  ): R
 }
 
 /**
@@ -39,11 +41,16 @@ interface TraitKey<out R : Any, W : Any> {
  * @param W the writable type
  * @return the trait key. null: never returns null
  */
-inline fun <R : Any, reified W : Any> TraitKey(noinline toReadonlyView: (W) -> R): TraitKey<R, W> =
+inline fun <R : Any, reified W : Any> TraitKey(
+  noinline toReadonlyView: (W) -> R,
+): TraitKey<R, W> =
   object : TraitKey<R, W> {
     override val writableType: KClass<W> = W::class
 
-    override fun provideReadonlyView(write: W): R = toReadonlyView(write)
+    override fun provideReadonlyView(
+      write: W,
+    ): R =
+      toReadonlyView(write)
   }
 
 /**
@@ -59,4 +66,7 @@ inline fun <R : Any, reified W : Any> TraitKey(noinline toReadonlyView: (W) -> R
  * @param W the writable type
  * @return the trait key. null: never returns null
  */
-inline fun <R : Any, reified W : R> TraitKey(): TraitKey<R, W> = TraitKey { it }
+inline fun <R : Any, reified W : R> TraitKey(): TraitKey<R, W> =
+  TraitKey {
+    it
+  }

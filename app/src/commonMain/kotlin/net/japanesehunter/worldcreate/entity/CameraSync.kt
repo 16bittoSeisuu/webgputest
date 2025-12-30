@@ -23,8 +23,14 @@ fun MovableCamera.sync(
   entity: Entity,
   eyeHeight: Length,
 ) {
-  val pos = entity.get<Position>()?.value ?: return
-  val rot = entity.get<Rotation>()?.value ?: return
+  val pos =
+    entity
+      .get<Position>()
+      ?.value ?: return
+  val rot =
+    entity
+      .get<Rotation>()
+      ?.value ?: return
   setPosition(Length3(pos.x, pos.y + eyeHeight, pos.z))
   setRotation(rot)
 }

@@ -43,21 +43,26 @@ sealed interface Area3 {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = ax
+  operator fun component1() =
+    ax
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = ay
+  operator fun component2() =
+    ay
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component3() = az
+  operator fun component3() =
+    az
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -100,7 +105,10 @@ interface MutableArea3 :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableArea3.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableArea3.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -187,7 +195,8 @@ fun MutableArea3(
   ax: Area = Area.ZERO,
   ay: Area = Area.ZERO,
   az: Area = Area.ZERO,
-): MutableArea3 = MutableArea3Impl(ax, ay, az)
+): MutableArea3 =
+  MutableArea3Impl(ax, ay, az)
 
 /**
  * Creates a [MutableArea3] by copying an existing [Area3].
@@ -195,7 +204,10 @@ fun MutableArea3(
  * @param copyFrom The instance to copy from.
  * @return The created [MutableArea3].
  */
-fun MutableArea3.Companion.copyOf(copyFrom: Area3): MutableArea3 = MutableArea3(copyFrom.ax, copyFrom.ay, copyFrom.az)
+fun MutableArea3.Companion.copyOf(
+  copyFrom: Area3,
+): MutableArea3 =
+  MutableArea3(copyFrom.ax, copyFrom.ay, copyFrom.az)
 
 // endregion
 
@@ -214,9 +226,9 @@ inline val Area3.isZero: Boolean
  */
 inline val Area3.magnitude: Area
   get() {
-    val axNm2 = ax.toDouble(AreaUnit.SQUARE_NANOMETER)
-    val ayNm2 = ay.toDouble(AreaUnit.SQUARE_NANOMETER)
-    val azNm2 = az.toDouble(AreaUnit.SQUARE_NANOMETER)
+    val axNm2 = ax.toDouble(AreaUnit.SquareNanometer)
+    val ayNm2 = ay.toDouble(AreaUnit.SquareNanometer)
+    val azNm2 = az.toDouble(AreaUnit.SquareNanometer)
     val max = maxOf(abs(axNm2), abs(ayNm2), abs(azNm2))
     if (max == 0.0) return Area.ZERO
     val minThreshold = 1e-154
@@ -227,7 +239,7 @@ inline val Area3.magnitude: Area
       } else {
         hypot(hypot(axNm2, ayNm2), azNm2)
       }
-    return Area.from(magnitudeNm2, AreaUnit.SQUARE_NANOMETER)
+    return Area.from(magnitudeNm2, AreaUnit.SquareNanometer)
   }
 
 /**
@@ -236,7 +248,10 @@ inline val Area3.magnitude: Area
  * @param other The area to take the dot product with.
  * @return The scalar dot product in [unit]⁴.
  */
-inline infix fun Area3.dot(other: Area3): Double = dot(other, AreaUnit.SQUARE_NANOMETER)
+inline infix fun Area3.dot(
+  other: Area3,
+): Double =
+  dot(other, AreaUnit.SquareNanometer)
 
 /**
  * Returns the dot product of this area with [other] in the provided [unit]⁴.
@@ -249,16 +264,31 @@ fun Area3.dot(
   other: Area3,
   unit: AreaUnit,
 ): Double {
-  val ax = this.ax.toDouble(unit)
-  val ay = this.ay.toDouble(unit)
-  val az = this.az.toDouble(unit)
-  return ax * other.ax.toDouble(unit) + ay * other.ay.toDouble(unit) + az * other.az.toDouble(unit)
+  val ax =
+    this.ax
+      .toDouble(unit)
+  val ay =
+    this.ay
+      .toDouble(unit)
+  val az =
+    this.az
+      .toDouble(unit)
+  return ax *
+    other.ax
+      .toDouble(unit) +
+    ay *
+    other.ay
+      .toDouble(unit) +
+    az *
+    other.az
+      .toDouble(unit)
 }
 
 /**
  * Negates all components of this mutable area.
  */
-inline fun MutableArea3.negate() = map({ "Negation" }) { _, value -> -value }
+inline fun MutableArea3.negate() =
+  map({ "Negation" }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutableArea3] with all components negated.
@@ -271,7 +301,9 @@ inline operator fun Area3.unaryMinus(): ImmutableArea3 =
 /**
  * Adds the corresponding components of [other] to this mutable area.
  */
-inline operator fun MutableArea3.plusAssign(other: Area3) {
+inline operator fun MutableArea3.plusAssign(
+  other: Area3,
+) {
   map({ "Addition of $other" }) { index, value ->
     when (index) {
       0 -> value + other.ax
@@ -284,7 +316,9 @@ inline operator fun MutableArea3.plusAssign(other: Area3) {
 /**
  * Returns a new [ImmutableArea3] representing the sum of this area and [other].
  */
-inline operator fun Area3.plus(other: Area3): ImmutableArea3 =
+inline operator fun Area3.plus(
+  other: Area3,
+): ImmutableArea3 =
   Area3.copyOf(this) {
     this += other
   }
@@ -292,7 +326,9 @@ inline operator fun Area3.plus(other: Area3): ImmutableArea3 =
 /**
  * Subtracts the corresponding components of [other] from this mutable area.
  */
-inline operator fun MutableArea3.minusAssign(other: Area3) {
+inline operator fun MutableArea3.minusAssign(
+  other: Area3,
+) {
   map({ "Subtraction of $other" }) { index, value ->
     when (index) {
       0 -> value - other.ax
@@ -305,7 +341,9 @@ inline operator fun MutableArea3.minusAssign(other: Area3) {
 /**
  * Returns a new [ImmutableArea3] representing the difference of this area and [other].
  */
-inline operator fun Area3.minus(other: Area3): ImmutableArea3 =
+inline operator fun Area3.minus(
+  other: Area3,
+): ImmutableArea3 =
   Area3.copyOf(this) {
     this -= other
   }
@@ -314,12 +352,20 @@ inline operator fun Area3.minus(other: Area3): ImmutableArea3 =
  * Multiplies all components of this mutable area by the given scalar.
  * This operation mutates the original area.
  */
-inline operator fun MutableArea3.timesAssign(scalar: Double) = map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
+inline operator fun MutableArea3.timesAssign(
+  scalar: Double,
+) =
+  map({ "Multiplication by $scalar" }) { _, value ->
+    value *
+      scalar
+  }
 
 /**
  * Returns a new [ImmutableArea3] with all components multiplied by the given scalar.
  */
-inline operator fun Area3.times(scalar: Double): ImmutableArea3 =
+inline operator fun Area3.times(
+  scalar: Double,
+): ImmutableArea3 =
   Area3.copyOf(this) {
     this *= scalar
   }
@@ -330,7 +376,9 @@ inline operator fun Area3.times(scalar: Double): ImmutableArea3 =
  *
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun MutableArea3.divAssign(scalar: Double) {
+inline operator fun MutableArea3.divAssign(
+  scalar: Double,
+) {
   require(scalar != 0.0) { "Cannot divide an Area3 by 0.0" }
   map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
@@ -340,7 +388,9 @@ inline operator fun MutableArea3.divAssign(scalar: Double) {
  *
  * @throws IllegalArgumentException if [scalar] is zero.
  */
-inline operator fun Area3.div(scalar: Double): ImmutableArea3 =
+inline operator fun Area3.div(
+  scalar: Double,
+): ImmutableArea3 =
   Area3.copyOf(this) {
     this /= scalar
   }
@@ -376,23 +426,28 @@ inline fun MutableArea3.map(
 
 // region implementations
 
-private val AREA3_ZERO: ImmutableArea3 = ImmutableArea3Impl(Area.ZERO, Area.ZERO, Area.ZERO)
+private val AREA3_ZERO: ImmutableArea3 =
+  ImmutableArea3Impl(Area.ZERO, Area.ZERO, Area.ZERO)
 
 private data class ImmutableArea3Impl(
   override var ax: Area,
   override var ay: Area,
   override var az: Area,
 ) : ImmutableArea3 {
-  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String =
+    "Area3(ax=$ax, ay=$ay, az=$az)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Area3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(ax, ay, az)
+  override fun hashCode(): Int =
+    componentsHash(ax, ay, az)
 }
 
 private value class Area3MutableWrapper(
@@ -414,7 +469,8 @@ private value class Area3MutableWrapper(
       impl.az = value
     }
 
-  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String =
+    "Area3(ax=$ax, ay=$ay, az=$az)"
 
   override val axFlow: StateFlow<Area>
     get() = throw UnsupportedOperationException()
@@ -423,7 +479,8 @@ private value class Area3MutableWrapper(
   override val azFlow: StateFlow<Area>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 }
 
 private class MutableArea3Impl(
@@ -466,33 +523,42 @@ private class MutableArea3Impl(
   override val ayFlow: StateFlow<Area> get() = _ayFlow.asStateFlow()
   override val azFlow: StateFlow<Area> get() = _azFlow.asStateFlow()
 
-  override fun mutate(action: MutableArea3.() -> Unit) {
+  override fun mutate(
+    action: MutableArea3.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Area3(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String =
+    "Area3(ax=$ax, ay=$ay, az=$az)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Area3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(ax, ay, az)
+  override fun hashCode(): Int =
+    componentsHash(ax, ay, az)
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  private class Ticket(
-    original: MutableArea3Impl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableArea3Impl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean
@@ -531,9 +597,18 @@ private fun componentsHash(
   az: Area,
 ): Int {
   var result = 17
-  result = 31 * result + ax.inWholeSquareNanometers.hashCode()
-  result = 31 * result + ay.inWholeSquareNanometers.hashCode()
-  result = 31 * result + az.inWholeSquareNanometers.hashCode()
+  result = 31 *
+    result +
+    ax.inWholeSquareNanometers
+      .hashCode()
+  result = 31 *
+    result +
+    ay.inWholeSquareNanometers
+      .hashCode()
+  result = 31 *
+    result +
+    az.inWholeSquareNanometers
+      .hashCode()
   return result
 }
 

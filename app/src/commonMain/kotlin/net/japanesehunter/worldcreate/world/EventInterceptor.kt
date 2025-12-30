@@ -23,7 +23,9 @@ interface InterceptableEventSource<out R, out W> : EventSource<R> {
    * @param interceptor the interceptor to register.
    * @return an interception handle that acts as a child source. null: never returns null
    */
-  fun intercept(interceptor: EventInterceptor<W>): InterceptableEventInterception<W>
+  fun intercept(
+    interceptor: EventInterceptor<W>,
+  ): InterceptableEventInterception<W>
 }
 
 /**
@@ -40,7 +42,9 @@ fun interface EventInterceptor<in Ev> {
    *
    * @param event the event to process.
    */
-  fun CancellableScope.onIntercept(event: Ev)
+  fun CancellableScope.onIntercept(
+    event: Ev,
+  )
 }
 
 /**
@@ -99,7 +103,9 @@ fun interface CancellableEventSink<in Ev> {
    * @param event the event to process.
    * @return the cancellation result. null: never returns null
    */
-  fun onEvent(event: Ev): Cancellation
+  fun onEvent(
+    event: Ev,
+  ): Cancellation
 }
 
 /**
@@ -114,7 +120,9 @@ fun interface QueryingEventInterceptor<in Ev> {
    * @param registry the entity registry to query during event processing.
    * @return the event interceptor. null: never returns null
    */
-  operator fun invoke(registry: EntityRegistry): EventInterceptor<Ev>
+  operator fun invoke(
+    registry: EntityRegistry,
+  ): EventInterceptor<Ev>
 }
 
 /**
@@ -127,7 +135,9 @@ fun interface PendingEventInterception {
    * @param registry the entity registry for query execution.
    * @return the active interception. null: never returns null
    */
-  operator fun invoke(registry: EntityRegistry): InterceptableEventInterception<*>
+  operator fun invoke(
+    registry: EntityRegistry,
+  ): InterceptableEventInterception<*>
 }
 
 /**
@@ -138,7 +148,9 @@ fun interface PendingEventInterception {
  * @param interceptor the querying event interceptor factory.
  * @return a pending interception awaiting registry. null: never returns null
  */
-fun <R, W> InterceptableEventSource<R, W>.intercept(interceptor: QueryingEventInterceptor<W>): PendingEventInterception =
+fun <R, W> InterceptableEventSource<R, W>.intercept(
+  interceptor: QueryingEventInterceptor<W>,
+): PendingEventInterception =
   PendingEventInterception { registry ->
     intercept(interceptor(registry))
   }
@@ -157,17 +169,23 @@ fun <R, W> InterceptableEventSource<R, W>.intercept(interceptor: QueryingEventIn
  * @param toReadonlyView converts the writable event to a read-only view for final subscribers.
  * @return a pair of the interceptable source and the sink for emitting events.
  */
-fun <R, W> createInterceptableEventSource(toReadonlyView: (W) -> R): Pair<InterceptableEventSource<R, W>, CancellableEventSink<W>> {
+fun <R, W> createInterceptableEventSource(
+  toReadonlyView: (W) -> R,
+): Pair<InterceptableEventSource<R, W>, CancellableEventSink<W>> {
   class Node<T> : InterceptableEventSource<T, W> {
     val children = mutableListOf<Node<W>>()
     val interceptors = mutableListOf<EventInterceptor<W>>()
     val sinks = mutableListOf<EventSink<T>>()
 
-    override fun intercept(interceptor: EventInterceptor<W>): InterceptableEventInterception<W> {
+    override fun intercept(
+      interceptor: EventInterceptor<W>,
+    ): InterceptableEventInterception<W> {
       interceptors += interceptor
       val child = Node<W>()
       children += child
-      return object : InterceptableEventInterception<W>, InterceptableEventSource<W, W> by child {
+      return object :
+        InterceptableEventInterception<W>,
+        InterceptableEventSource<W, W> by child {
         override fun close() {
           interceptors -= interceptor
           children -= child
@@ -175,7 +193,9 @@ fun <R, W> createInterceptableEventSource(toReadonlyView: (W) -> R): Pair<Interc
       }
     }
 
-    override fun subscribe(sink: EventSink<T>): EventSubscription {
+    override fun subscribe(
+      sink: EventSink<T>,
+    ): EventSubscription {
       sinks += sink
       return EventSubscription { sinks -= sink }
     }
@@ -185,7 +205,9 @@ fun <R, W> createInterceptableEventSource(toReadonlyView: (W) -> R): Pair<Interc
 
   val emitter =
     CancellableEventSink<W> { event ->
-      fun <T> invokeRecursive(node: Node<T>): Cancellation {
+      fun <T> invokeRecursive(
+        node: Node<T>,
+      ): Cancellation {
         var canceledInChildren = false
         for (child in node.children) {
           val result = invokeRecursive(child)
@@ -231,7 +253,8 @@ fun <R, W> createInterceptableEventSource(toReadonlyView: (W) -> R): Pair<Interc
  * @return a pair of the interceptable source and the sink for emitting events.
  */
 @Suppress("ktlint:standard:function-naming")
-fun <R> createInterceptableEventSource(): Pair<InterceptableEventSource<R, R>, CancellableEventSink<R>> =
+fun <R> createInterceptableEventSource():
+  Pair<InterceptableEventSource<R, R>, CancellableEventSink<R>> =
   createInterceptableEventSource { it }
 
 // endregion

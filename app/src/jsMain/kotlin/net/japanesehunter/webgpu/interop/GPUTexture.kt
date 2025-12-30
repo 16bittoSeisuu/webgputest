@@ -13,7 +13,9 @@ external interface GPUTexture : GPUObjectBase {
   val usage: GPUTextureUsage
   val textureBindingViewDimension: GPUTextureViewDimension?
 
-  fun createView(descriptor: GPUTextureViewDescriptor = definedExternally): GPUTextureView
+  fun createView(
+    descriptor: GPUTextureViewDescriptor = definedExternally,
+  ): GPUTextureView
 
   fun destroy()
 }

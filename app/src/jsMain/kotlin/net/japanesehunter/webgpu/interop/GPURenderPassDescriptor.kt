@@ -11,7 +11,11 @@ fun GPURenderPassDescriptor(
   js("{}").unsafeCast<GPURenderPassDescriptor>().apply {
     this.colorAttachments = colorAttachments
     if (label != null) this.label = label
-    if (depthStencilAttachment != null) this.depthStencilAttachment = depthStencilAttachment
+    if (depthStencilAttachment !=
+      null
+    ) {
+      this.depthStencilAttachment = depthStencilAttachment
+    }
     if (maxDrawCount != null) this.maxDrawCount = maxDrawCount
     if (occlusionQuerySet != null) this.occlusionQuerySet = occlusionQuerySet
     if (timestampWrite != null) this.timestampWrite = timestampWrite

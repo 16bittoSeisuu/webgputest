@@ -14,21 +14,37 @@ external interface GPUDevice : GPUObjectBase {
   val limits: GPUSupportedLimits
   val queue: GPUQueue
 
-  fun createBuffer(descriptor: GPUBufferDescriptor): GPUBuffer
+  fun createBuffer(
+    descriptor: GPUBufferDescriptor,
+  ): GPUBuffer
 
-  fun createCommandEncoder(descriptor: GPUCommandEncoderDescriptor = definedExternally): GPUCommandEncoder
+  fun createCommandEncoder(
+    descriptor: GPUCommandEncoderDescriptor = definedExternally,
+  ): GPUCommandEncoder
 
-  fun createSampler(descriptor: GPUSamplerDescriptor = definedExternally): GPUSampler
+  fun createSampler(
+    descriptor: GPUSamplerDescriptor = definedExternally,
+  ): GPUSampler
 
-  fun createRenderPipelineAsync(descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline>
+  fun createRenderPipelineAsync(
+    descriptor: GPURenderPipelineDescriptor,
+  ): Promise<GPURenderPipeline>
 
-  fun createTexture(descriptor: GPUTextureDescriptor): GPUTexture
+  fun createTexture(
+    descriptor: GPUTextureDescriptor,
+  ): GPUTexture
 
-  fun createRenderBundleEncoder(descriptor: GPURenderBundleEncoderDescriptor): GPURenderBundleEncoder
+  fun createRenderBundleEncoder(
+    descriptor: GPURenderBundleEncoderDescriptor,
+  ): GPURenderBundleEncoder
 
-  fun createBindGroup(descriptor: GPUBindGroupDescriptor): GPUBindGroup
+  fun createBindGroup(
+    descriptor: GPUBindGroupDescriptor,
+  ): GPUBindGroup
 
-  fun createShaderModule(descriptor: GPUShaderModuleDescriptor): GPUShaderModule
+  fun createShaderModule(
+    descriptor: GPUShaderModuleDescriptor,
+  ): GPUShaderModule
 
   fun destroy()
 }

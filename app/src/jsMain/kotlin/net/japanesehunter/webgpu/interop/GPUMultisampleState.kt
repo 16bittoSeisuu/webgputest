@@ -8,7 +8,11 @@ fun GPUMultisampleState(
   js("{}").unsafeCast<GPUMultisampleState>().apply {
     if (count != null) this.count = count
     if (mask != null) this.mask = mask
-    if (alphaToCoverageEnabled != null) this.alphaToCoverageEnabled = alphaToCoverageEnabled
+    if (alphaToCoverageEnabled !=
+      null
+    ) {
+      this.alphaToCoverageEnabled = alphaToCoverageEnabled
+    }
   }
 
 external interface GPUMultisampleState {

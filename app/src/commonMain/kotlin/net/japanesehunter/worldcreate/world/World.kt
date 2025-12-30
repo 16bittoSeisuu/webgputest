@@ -10,7 +10,13 @@ interface World {
     val MAX_CHUNK_COORDINATE: Int =
       run {
         val maxChunks = MAX_SIZE.inWholeMeters / CHUNK_LENGTH_BLOCKS
-        require(maxChunks <= Int.MAX_VALUE.toLong()) { "World chunk span exceeds integer coordinate capacity." }
+        require(
+          maxChunks <=
+            Int.MAX_VALUE
+              .toLong(),
+        ) {
+          "World chunk span exceeds integer coordinate capacity."
+        }
         maxChunks.toInt()
       }
   }

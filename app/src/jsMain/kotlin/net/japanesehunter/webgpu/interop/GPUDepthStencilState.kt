@@ -23,7 +23,11 @@ fun GPUDepthStencilState(
     if (stencilReadMask != null) this.stencilReadMask = stencilReadMask
     if (stencilWriteMask != null) this.stencilWriteMask = stencilWriteMask
     if (depthBias != null) this.depthBias = depthBias
-    if (depthBiasSlopeScale != null) this.depthBiasSlopeScale = depthBiasSlopeScale
+    if (depthBiasSlopeScale !=
+      null
+    ) {
+      this.depthBiasSlopeScale = depthBiasSlopeScale
+    }
     if (depthBiasClamp != null) this.depthBiasClamp = depthBiasClamp
   }
 

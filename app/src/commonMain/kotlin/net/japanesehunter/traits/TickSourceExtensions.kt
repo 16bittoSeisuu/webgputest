@@ -16,7 +16,9 @@ import net.japanesehunter.worldcreate.world.TickSource
  *   null: never returns null
  */
 context(registry: EntityRegistry)
-fun TickSource.subscribe(sink: TraitUpdateSink): EventSubscription =
+fun TickSource.subscribe(
+  sink: TraitUpdateSink,
+): EventSubscription =
   subscribe { dt ->
     sink.onEvent(TraitUpdateEvent(registry, dt))
   }

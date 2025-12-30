@@ -8,7 +8,9 @@ import net.japanesehunter.webgpu.interop.GPUTextureDescriptor
 import net.japanesehunter.webgpu.interop.GPUTextureUsage
 
 context(device: GPUDevice, canvas: CanvasContext, resource: ResourceScope)
-fun createMsaaTexture(sampleCount: Int = 4): () -> GPUTexture {
+fun createMsaaTexture(
+  sampleCount: Int = 4,
+): () -> GPUTexture {
   var knownWidth = canvas.width
   var knownHeight = canvas.height
 

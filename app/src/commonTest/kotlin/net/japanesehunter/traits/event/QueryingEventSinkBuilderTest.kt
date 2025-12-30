@@ -1,3 +1,5 @@
+@file:Suppress("UnusedVariable", "unused", "ControlFlowWithEmptyBody")
+
 package net.japanesehunter.traits.event
 
 import io.kotest.core.spec.style.FunSpec
@@ -16,15 +18,11 @@ private data class Position(
   companion object : TraitKey<Position, Position> by TraitKey()
 }
 
-private data class Name(
-  val value: String,
-) {
+private data class Name(val value: String) {
   companion object : TraitKey<Name, Name> by TraitKey()
 }
 
-private data class TickEvent(
-  val dt: Double,
-)
+private data class TickEvent(val dt: Double)
 
 private data class ProximityEvent(
   val center: Entity,
@@ -46,7 +44,7 @@ class QueryingEventSinkBuilderTest :
       val sink =
         buildQueryingEventSink<TickEvent> {
           val entities = query().has(Position)
-          onEach { event ->
+          onEach {
             for (entity in entities) {
               val pos = entity.get(Position.writableType)!!
               observed.add(pos)
@@ -74,7 +72,7 @@ class QueryingEventSinkBuilderTest :
 
       val observed = mutableListOf<Position>()
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val entities =
             query().has(Position) { pos ->
@@ -82,7 +80,7 @@ class QueryingEventSinkBuilderTest :
               val dy = pos.y - centerPos.y
               dx * dx + dy * dy <= 10.0 * 10.0
             }
-          onEach { event ->
+          onEach {
             for (entity in entities) {
               val pos = entity.get(Position.writableType)!!
               observed.add(pos)
@@ -111,7 +109,10 @@ class QueryingEventSinkBuilderTest :
       val observed = mutableListOf<Pair<Position, Name>>()
       val sink =
         buildQueryingEventSink<TickEvent> {
-          val entities = query().has(Position).has(Name)
+          val entities =
+            query()
+              .has(Position)
+              .has(Name)
           val pos by entities.read(Position)
           val name by entities.read(Name)
           onEach {
@@ -172,7 +173,9 @@ class QueryingEventSinkBuilderTest :
         )
     }
 
-    test("query results are evaluated once per event even with multiple iterations") {
+    test(
+      "query results are evaluated once per event even with multiple iterations",
+    ) {
       val registry = HashMapEntityRegistry()
       val e1 = registry.createEntity()
       e1.add(Position(1.0, 2.0))
@@ -185,7 +188,7 @@ class QueryingEventSinkBuilderTest :
               queryExecutionCount++
               true
             }
-          onEach { event ->
+          onEach {
             // First iteration
             for (entity in entities) {
               // consume
@@ -218,7 +221,6 @@ class QueryingEventSinkBuilderTest :
           val pos by entities.read(Position)
           onEach {
             try {
-              @Suppress("unused", "UNUSED_VARIABLE")
               val unused = pos
             } catch (e: IllegalStateException) {
               caughtException = e
@@ -232,7 +234,9 @@ class QueryingEventSinkBuilderTest :
       caughtException!!.message shouldContain "iteration"
     }
 
-    test("query readOptional returns value when trait exists and null when missing") {
+    test(
+      "query readOptional returns value when trait exists and null when missing",
+    ) {
       val registry = HashMapEntityRegistry()
       val e1 = registry.createEntity()
       val e2 = registry.createEntity()
@@ -281,7 +285,7 @@ class QueryingEventSinkBuilderTest :
               for (inner in entities) {
                 // do nothing
               }
-              // After inner loop finishes, pos should refer to outer entity
+              // After the inner loop finishes, pos should refer to the outer entity
               outerPositions.add(pos)
             }
           }
@@ -312,7 +316,7 @@ class QueryingEventSinkBuilderTest :
             for (entity in entities) {
               break // Break immediately
             }
-            // Context remains active after break (expected behavior)
+            // Context remains active after the break (expected behavior)
             try {
               posAfterBreak = pos
             } catch (e: Exception) {
@@ -339,7 +343,7 @@ class QueryingEventSinkBuilderTest :
 
       var onEachCount = 0
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val entities = query().has(Position)
           onEach {
@@ -365,7 +369,7 @@ class QueryingEventSinkBuilderTest :
       var onEachCount = 0
       var observedName: Name? = Name("sentinel")
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val name by ProximityEvent::center.readOptional(Name)
           val entities = query().has(Position)
           onEach {
@@ -394,7 +398,7 @@ class QueryingEventSinkBuilderTest :
       var onEachCount = 0
       var caughtException: IllegalStateException? = null
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val entities = query().has(Position)
           val name by entities.read(Name)
@@ -402,7 +406,6 @@ class QueryingEventSinkBuilderTest :
             onEachCount++
             for (entity in entities) {
               try {
-                @Suppress("UNUSED_VARIABLE")
                 val unused = name
               } catch (e: IllegalStateException) {
                 caughtException = e
@@ -429,7 +432,7 @@ class QueryingEventSinkBuilderTest :
       var onEachCount = 0
       val observedNames = mutableListOf<Name?>()
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val entities = query().has(Position)
           val name by entities.readOptional(Name)
@@ -459,7 +462,7 @@ class QueryingEventSinkBuilderTest :
       var onEachCount = 0
       val observed = mutableListOf<Triple<Position, Name, Name>>()
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val centerName by ProximityEvent::center.read(Name)
           val entities = query().has(Position)
@@ -493,7 +496,7 @@ class QueryingEventSinkBuilderTest :
       var onEachCount = 0
       var caughtException: IllegalStateException? = null
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerName by ProximityEvent::center.readOptional(Name)
           val entities = query().has(Position)
           val name by entities.read(Name)
@@ -501,7 +504,6 @@ class QueryingEventSinkBuilderTest :
             onEachCount++
             for (entity in entities) {
               try {
-                @Suppress("UNUSED_VARIABLE")
                 val unused = name
               } catch (e: IllegalStateException) {
                 caughtException = e
@@ -527,10 +529,11 @@ class QueryingEventSinkBuilderTest :
       other.add(Name("other"))
 
       var onEachCount = 0
+
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
-          val centerName by ProximityEvent::center.read(Name) // This is missing
+          val centerName by ProximityEvent::center.read(Name) // Missing
           val entities = query().has(Position)
           val otherName by entities.read(Name)
           onEach {
@@ -560,7 +563,7 @@ class QueryingEventSinkBuilderTest :
       val observed = mutableListOf<Pair<Position, Name>>()
       var exceptionCount = 0
       val sink =
-        buildQueryingEventSink<ProximityEvent> {
+        buildQueryingEventSink {
           val centerPos by ProximityEvent::center.read(Position)
           val entities = query()
           val pos by entities.read(Position)
@@ -579,7 +582,8 @@ class QueryingEventSinkBuilderTest :
       sink.onEvent(ProximityEvent(center, 10.0))
 
       // Only withBoth has Name, so only that succeeds
-      observed shouldContainExactlyInAnyOrder listOf(Position(1.0, 2.0) to Name("withBoth"))
+      observed shouldContainExactlyInAnyOrder
+        listOf(Position(1.0, 2.0) to Name("withBoth"))
       // Two entities (center and posOnly) throw exceptions
       exceptionCount shouldBe 2
     }

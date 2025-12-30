@@ -22,9 +22,7 @@ interface PositionView {
  * For entities with a bounding box, this typically represents the center-bottom
  * point of their collision shape.
  */
-class Position(
-  initialPosition: Point3 = Point3.zero,
-) : PositionView {
+class Position(initialPosition: Point3 = Point3.zero) : PositionView {
   override val value: MutablePoint3 = MutablePoint3.copyOf(initialPosition)
 
   companion object : TraitKey<PositionView, Position> by TraitKey()

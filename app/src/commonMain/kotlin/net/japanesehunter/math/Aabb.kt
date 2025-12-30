@@ -41,16 +41,20 @@ sealed interface Aabb {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = min
+  operator fun component1() =
+    min
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = max
+  operator fun component2() =
+    max
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -90,7 +94,10 @@ interface MutableAabb :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableAabb.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableAabb.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -191,7 +198,10 @@ inline fun Aabb.Companion.copyOf(
 fun MutableAabb(
   min: Point3 = Point3.zero,
   max: Point3 = Point3.zero,
-): MutableAabb = MutableAabbImpl(min = Point3.copyOf(min), max = Point3.copyOf(max)).also { it.normalizeInPlace() }
+): MutableAabb =
+  MutableAabbImpl(min = Point3.copyOf(min), max = Point3.copyOf(max)).also {
+    it.normalizeInPlace()
+  }
 
 /**
  * Creates a mutable bounding box by copying [copyFrom].
@@ -201,7 +211,10 @@ fun MutableAabb(
  * @param copyFrom the instance to copy from.
  * @return the copied bounding box.
  */
-fun MutableAabb.Companion.copyOf(copyFrom: Aabb): MutableAabb = MutableAabb(copyFrom.min, copyFrom.max)
+fun MutableAabb.Companion.copyOf(
+  copyFrom: Aabb,
+): MutableAabb =
+  MutableAabb(copyFrom.min, copyFrom.max)
 
 // endregion
 
@@ -217,7 +230,9 @@ fun MutableAabb.Companion.copyOf(copyFrom: Aabb): MutableAabb = MutableAabb(copy
  * @param other the box to test against.
  * @return true when the boxes intersect.
  */
-fun Aabb.intersects(other: Aabb): Boolean =
+fun Aabb.intersects(
+  other: Aabb,
+): Boolean =
   min.x <= other.max.x &&
     max.x >= other.min.x &&
     min.y <= other.max.y &&
@@ -236,7 +251,9 @@ fun Aabb.intersects(other: Aabb): Boolean =
  * @param other the box to test against.
  * @return true when the boxes have a non-zero volume of intersection.
  */
-fun Aabb.overlaps(other: Aabb): Boolean =
+fun Aabb.overlaps(
+  other: Aabb,
+): Boolean =
   min.x < other.max.x &&
     max.x > other.min.x &&
     min.y < other.max.y &&
@@ -263,7 +280,9 @@ inline val Aabb.size: ImmutableLength3
  * @return the translated box.
  * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
-inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
+inline fun Aabb.translatedBy(
+  distance: Length3,
+): ImmutableAabb =
   Aabb(
     min = min + distance,
     max = max + distance,
@@ -277,7 +296,9 @@ inline fun Aabb.translatedBy(distance: Length3): ImmutableAabb =
  * @param distance the displacement to add to both corners.
  * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
-fun MutableAabb.translateBy(distance: Length3) {
+fun MutableAabb.translateBy(
+  distance: Length3,
+) {
   if (this is MutableAabbImpl) {
     translateInPlace(distance)
     return
@@ -303,7 +324,9 @@ fun MutableAabb.translateBy(distance: Length3) {
  * @throws ArithmeticException arithmetic overflow in underlying length operations.
  * @throws IllegalArgumentException when padding is negative.
  */
-inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
+inline fun Aabb.expandedBy(
+  padding: Length,
+): ImmutableAabb =
   expandedBy(
     Length3(
       dx = padding,
@@ -324,8 +347,12 @@ inline fun Aabb.expandedBy(padding: Length): ImmutableAabb =
  * @throws ArithmeticException arithmetic overflow in underlying length operations.
  * @throws IllegalArgumentException when any component of padding is negative.
  */
-inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb {
-  require(!padding.dx.isNegative && !padding.dy.isNegative && !padding.dz.isNegative) {
+inline fun Aabb.expandedBy(
+  padding: Length3,
+): ImmutableAabb {
+  require(
+    !padding.dx.isNegative && !padding.dy.isNegative && !padding.dz.isNegative,
+  ) {
     "Padding must be non-negative: $padding"
   }
   return Aabb(
@@ -343,7 +370,9 @@ inline fun Aabb.expandedBy(padding: Length3): ImmutableAabb {
  * @return the smallest box that contains both the start and end boxes.
  * @throws ArithmeticException arithmetic overflow in underlying length operations.
  */
-fun Aabb.sweptBy(distance: Length3): ImmutableAabb {
+fun Aabb.sweptBy(
+  distance: Length3,
+): ImmutableAabb {
   val end = translatedBy(distance)
 
   val minX = if (min.x <= end.min.x) min.x else end.min.x
@@ -364,7 +393,8 @@ fun Aabb.sweptBy(distance: Length3): ImmutableAabb {
 
 // region implementations
 
-private val AABB_ZERO: ImmutableAabb = ImmutableAabbImpl(Point3.zero, Point3.zero)
+private val AABB_ZERO: ImmutableAabb =
+  ImmutableAabbImpl(Point3.zero, Point3.zero)
 
 private class ImmutableAabbImpl(
   min: ImmutablePoint3,
@@ -385,21 +415,24 @@ private class ImmutableAabbImpl(
     maxPoint = normalizedMax
   }
 
-  override fun toString(): String = "Aabb(min=$min, max=$max)"
+  override fun toString(): String =
+    "Aabb(min=$min, max=$max)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Aabb -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(min, max)
+  override fun hashCode(): Int =
+    componentsHash(min, max)
 }
 
-private value class AabbMutableWrapper(
-  private val impl: ImmutableAabbImpl,
-) : MutableAabb {
+private value class AabbMutableWrapper(private val impl: ImmutableAabbImpl) :
+  MutableAabb {
   override var min: Point3
     get() = impl.min
     set(value) {
@@ -422,9 +455,11 @@ private value class AabbMutableWrapper(
   override val maxFlow: StateFlow<Point3>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 
-  override fun toString(): String = "Aabb(min=$min, max=$max)"
+  override fun toString(): String =
+    "Aabb(min=$min, max=$max)"
 }
 
 private class MutableAabbImpl(
@@ -463,16 +498,24 @@ private class MutableAabbImpl(
   override val minFlow: StateFlow<Point3> get() = _minFlow.asStateFlow()
   override val maxFlow: StateFlow<Point3> get() = _maxFlow.asStateFlow()
 
-  override fun mutate(action: MutableAabb.() -> Unit) {
+  override fun mutate(
+    action: MutableAabb.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  fun translateInPlace(distance: Length3) {
+  fun translateInPlace(
+    distance: Length3,
+  ) {
     lock.withLock {
       generation++
       val currentMin = _minFlow.value
       val currentMax = _maxFlow.value
-      val (normalizedMin, normalizedMax) = normalize(currentMin + distance, currentMax + distance)
+      val (normalizedMin, normalizedMax) =
+        normalize(
+          currentMin + distance,
+          currentMax + distance,
+        )
       _minFlow.value = normalizedMin
       _maxFlow.value = normalizedMax
     }
@@ -481,35 +524,46 @@ private class MutableAabbImpl(
   fun normalizeInPlace() {
     lock.withLock {
       generation++
-      val (normalizedMin, normalizedMax) = normalize(_minFlow.value, _maxFlow.value)
+      val (normalizedMin, normalizedMax) =
+        normalize(
+          _minFlow.value,
+          _maxFlow.value,
+        )
       _minFlow.value = normalizedMin
       _maxFlow.value = normalizedMax
     }
   }
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  override fun toString(): String = "Aabb(min=$min, max=$max)"
+  override fun toString(): String =
+    "Aabb(min=$min, max=$max)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Aabb -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(min, max)
+  override fun hashCode(): Int =
+    componentsHash(min, max)
 
-  private class Ticket(
-    original: MutableAabbImpl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableAabbImpl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean

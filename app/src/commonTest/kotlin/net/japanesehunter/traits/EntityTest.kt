@@ -4,13 +4,9 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
-private data class Health(
-  var value: Int,
-)
+private data class Health(var value: Int)
 
-private data class Name(
-  val text: String,
-)
+private data class Name(val text: String)
 
 class EntityTest :
   FunSpec({
@@ -24,14 +20,18 @@ class EntityTest :
       val registry = HashMapEntityRegistry()
       val entity = registry.createEntity()
       entity.add(Health(1))
-      entity.get(Health::class)?.value shouldBe 1
+      entity
+        .get(Health::class)
+        ?.value shouldBe 1
     }
 
     test("add and get with reified extension") {
       val registry = HashMapEntityRegistry()
       val entity = registry.createEntity()
       entity.add(Health(42))
-      entity.get<Health>()?.value shouldBe 42
+      entity
+        .get<Health>()
+        ?.value shouldBe 42
     }
 
     test("add replaces existing trait of the same type") {
@@ -39,7 +39,9 @@ class EntityTest :
       val entity = registry.createEntity()
       entity.add(Health(1))
       entity.add(Health(2))
-      entity.get<Health>()?.value shouldBe 2
+      entity
+        .get<Health>()
+        ?.value shouldBe 2
     }
 
     test("has returns false before adding trait") {
@@ -151,14 +153,21 @@ class EntityTest :
       val exception =
         runCatching { entity.add(Health(1)) }
           .exceptionOrNull()
-      (exception?.message?.contains("destroyed") == true) shouldBe true
+      (
+        exception
+          ?.message
+          ?.contains("destroyed") == true
+      ) shouldBe true
     }
 
     test("same entity obtained from query equals itself") {
       val registry = HashMapEntityRegistry()
       val entity = registry.createEntity()
       entity.add(Health(1))
-      val queried = registry.query(Health::class).first()
+      val queried =
+        registry
+          .query(Health::class)
+          .first()
       (entity == queried) shouldBe true
     }
 
@@ -166,7 +175,10 @@ class EntityTest :
       val registry = HashMapEntityRegistry()
       val entity = registry.createEntity()
       entity.add(Health(1))
-      val queried = registry.query(Health::class).first()
+      val queried =
+        registry
+          .query(Health::class)
+          .first()
       entity.hashCode() shouldBe queried.hashCode()
     }
 
@@ -183,7 +195,9 @@ class EntityTest :
       registry.createEntity()
       registry.createEntity()
       registry.createEntity()
-      registry.query().count() shouldBe 3
+      registry
+        .query()
+        .count() shouldBe 3
     }
 
     test("query with multiple types requires all") {
@@ -198,9 +212,15 @@ class EntityTest :
       entity3.add(Health(2))
       entity3.add(Name("both"))
 
-      registry.query(Health::class).count() shouldBe 2
-      registry.query(Name::class).count() shouldBe 2
-      registry.query(Health::class, Name::class).count() shouldBe 1
+      registry
+        .query(Health::class)
+        .count() shouldBe 2
+      registry
+        .query(Name::class)
+        .count() shouldBe 2
+      registry
+        .query(Health::class, Name::class)
+        .count() shouldBe 1
     }
 
     test("destroyed entity is removed from query results") {
@@ -210,9 +230,13 @@ class EntityTest :
       val entity2 = registry.createEntity()
       entity2.add(Health(2))
 
-      registry.query(Health::class).count() shouldBe 2
+      registry
+        .query(Health::class)
+        .count() shouldBe 2
       entity1.destroy()
-      registry.query(Health::class).count() shouldBe 1
+      registry
+        .query(Health::class)
+        .count() shouldBe 1
     }
 
     test("unaryPlus operator adds trait") {
@@ -221,7 +245,9 @@ class EntityTest :
       with(entity) {
         +Health(42)
       }
-      entity.get<Health>()?.value shouldBe 42
+      entity
+        .get<Health>()
+        ?.value shouldBe 42
     }
 
     test("unaryPlus throws after destroy") {

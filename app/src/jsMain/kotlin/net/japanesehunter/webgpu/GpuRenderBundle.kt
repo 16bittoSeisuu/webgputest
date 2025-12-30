@@ -3,7 +3,6 @@
 package net.japanesehunter.webgpu
 
 import kotlinx.coroutines.await
-import net.japanesehunter.webgpu.GpuVertexFormat
 import net.japanesehunter.webgpu.interop.GPUBindGroupDescriptor
 import net.japanesehunter.webgpu.interop.GPUBindGroupEntry
 import net.japanesehunter.webgpu.interop.GPUBindingResource
@@ -71,7 +70,9 @@ class GpuRenderBundleEncoder
       mutableListOf()
     private val bindings: MutableList<Binding> = mutableListOf()
 
-    fun UniformGpuBuffer.asUniform(type: String): PropertyDelegateProvider<
+    fun UniformGpuBuffer.asUniform(
+      type: String,
+    ): PropertyDelegateProvider<
       Any?,
       ReadOnlyProperty<Any?, Binding>,
     > =
@@ -85,7 +86,9 @@ class GpuRenderBundleEncoder
         ReadOnlyProperty { _, _ -> binding }
       }
 
-    fun StorageGpuBuffer.asStorage(type: String): PropertyDelegateProvider<
+    fun StorageGpuBuffer.asStorage(
+      type: String,
+    ): PropertyDelegateProvider<
       Any?,
       ReadOnlyProperty<Any?, Binding>,
     > =
@@ -143,7 +146,9 @@ class GpuRenderBundleEncoder
         ReadOnlyProperty { _, _ -> ret }
       }
 
-    fun header(action: () -> String) {
+    fun header(
+      action: () -> String,
+    ) {
       headerCode.store(action)
     }
 
@@ -153,14 +158,17 @@ class GpuRenderBundleEncoder
     ) {
       indexBuffer.store(indices)
       val scope = VertexScope()
-      val code = scope.action().trimIndent()
+      val code =
+        scope
+          .action()
+          .trimIndent()
       vertexCode.store {
         """
         struct VsOut {
           @builtin(position) ${scope.position.removePrefix("out.")}: vec4f,
           ${vsOuts.joinToString("\n") { it.code }}
         }
-        
+
         @vertex
         fn vs_main(
           @builtin(vertex_index) ${scope.vertexIndex}: u32,
@@ -175,11 +183,16 @@ class GpuRenderBundleEncoder
       }
     }
 
-    fun fragment(code: FragmentScope.() -> String): FragmentCodeDone =
+    fun fragment(
+      code: FragmentScope.() -> String,
+    ): FragmentCodeDone =
       FragmentCodeDone.also {
         val scope = FragmentScope()
         vsOuts.forEach(VsOut::setFragmentMode)
-        val fragmentCodeStr = scope.code().trimIndent()
+        val fragmentCodeStr =
+          scope
+            .code()
+            .trimIndent()
         targets += scope.targets
         fragmentCode.store {
           """
@@ -190,7 +203,7 @@ class GpuRenderBundleEncoder
             }.joinToString("\n")
           }
           }
-            
+
           @fragment
           fn fs_main(
             ${vsOuts.joinToString("\n") { it.code }}
@@ -214,7 +227,11 @@ class GpuRenderBundleEncoder
       device
         .createRenderBundleEncoder(
           GPURenderBundleEncoderDescriptor(
-            colorFormats = targets.map { (_, format) -> format }.toTypedArray(),
+            colorFormats =
+              targets
+                .map { (_, format) ->
+                  format
+                }.toTypedArray(),
             depthStencilFormat = depthStencilFormat,
             sampleCount = sampleCount,
             label = label?.let { "$it-bundle-encoder" },
@@ -279,13 +296,19 @@ class GpuRenderBundleEncoder
       cullMode: GPUCullMode?,
     ): GPURenderPipeline {
       val header =
-        headerCode.load()?.invoke() ?: ""
+        headerCode
+          .load()
+          ?.invoke() ?: ""
       val bindingCode = bindings.joinToString("\n") { it.code }
       val vertexCode =
-        vertexCode.load()?.invoke()
+        vertexCode
+          .load()
+          ?.invoke()
           ?: error("Vertex shader code is not defined")
       val fragmentCode =
-        fragmentCode.load()?.invoke()
+        fragmentCode
+          .load()
+          ?.invoke()
           ?: error("Fragment shader code is not defined")
       val code = header + bindingCode + vertexCode + "\n" + fragmentCode
       val module =
@@ -295,7 +318,9 @@ class GpuRenderBundleEncoder
       val vertexState =
         GPUVertexState(
           module = module,
-          buffers = layout.values.toTypedArray(),
+          buffers =
+            layout.values
+              .toTypedArray(),
         )
       val fragmentState =
         GPUFragmentState(
@@ -342,7 +367,8 @@ class GpuRenderBundleEncoder
       internal var prefix: String = "out."
         private set
 
-      override fun toString(): String = "$prefix$name"
+      override fun toString(): String =
+        "$prefix$name"
 
       internal fun setFragmentMode() {
         prefix = ""
@@ -354,7 +380,8 @@ class GpuRenderBundleEncoder
       internal val resource: GPUBindingResource,
       internal val code: String,
     ) {
-      override fun toString(): String = name
+      override fun toString(): String =
+        name
     }
 
     inner class VertexScope internal constructor() {
@@ -391,8 +418,8 @@ class GpuRenderBundleEncoder
         val index = bufferAttrIndex.getOrElse(this) { 0 }
         bufferAttrIndex[this] = index + 1
         check(index < formats.size) {
-          "VertexGpuBuffer '${this.label}' has only ${formats.size} attributes, " +
-            "but tried to access attribute index $index"
+          "VertexGpuBuffer '${this.label}' has only ${formats.size} " +
+            "attributes, but tried to access attribute index $index"
         }
         val location = location.fetchAndIncrement()
         val type = formats[index].type
@@ -467,7 +494,9 @@ class GpuRenderBundleEncoder
         ReadOnlyProperty<Any?, String>,
       > get() = target(canvas.preferredFormat)
 
-      fun target(format: GPUTextureFormat): PropertyDelegateProvider<
+      fun target(
+        format: GPUTextureFormat,
+      ): PropertyDelegateProvider<
         Any?,
         ReadOnlyProperty<Any?, String>,
       > =

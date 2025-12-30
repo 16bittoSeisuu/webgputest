@@ -27,15 +27,33 @@ class PlayerHud internal constructor(
    * Mutates the container innerHTML when the displayed values change.
    */
   fun update() {
-    val pos = entity.get<Position>()?.value ?: return
-    val vel = entity.get<Velocity>()?.value ?: return
+    val pos =
+      entity
+        .get<Position>()
+        ?.value ?: return
+    val vel =
+      entity
+        .get<Velocity>()
+        ?.value ?: return
 
-    val x = pos.x.toString(unit = null, decimals = 2)
-    val y = pos.y.toString(unit = null, decimals = 2)
-    val z = pos.z.toString(unit = null, decimals = 2)
-    val vx = vel.vx.toString(unit = null, decimals = 2)
-    val vy = vel.vy.toString(unit = null, decimals = 2)
-    val vz = vel.vz.toString(unit = null, decimals = 2)
+    val x =
+      pos.x
+        .toString(unit = null, decimals = 2)
+    val y =
+      pos.y
+        .toString(unit = null, decimals = 2)
+    val z =
+      pos.z
+        .toString(unit = null, decimals = 2)
+    val vx =
+      vel.vx
+        .toString(unit = null, decimals = 2)
+    val vy =
+      vel.vy
+        .toString(unit = null, decimals = 2)
+    val vz =
+      vel.vz
+        .toString(unit = null, decimals = 2)
 
     val text =
       buildString {
@@ -90,7 +108,9 @@ fun PlayerHud(
   val body = document.body ?: error("Document body is not available")
   require(x.isFinite()) { "x must be finite" }
   require(y.isFinite()) { "y must be finite" }
-  require(scale.isFinite() && scale > 0.0) { "Scale must be positive and finite" }
+  require(scale.isFinite() && scale > 0.0) {
+    "Scale must be positive and finite"
+  }
   val container =
     (document.getElementById(CONTAINER_ID) as? HTMLDivElement)
       ?: (document.createElement("div") as HTMLDivElement).also { element ->

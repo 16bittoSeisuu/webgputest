@@ -5,7 +5,9 @@ package net.japanesehunter.webgpu.interop
 external interface GPURenderPassEncoder : GPUObjectBase {
   override var label: String
 
-  fun setPipeline(pipeline: GPURenderPipeline)
+  fun setPipeline(
+    pipeline: GPURenderPipeline,
+  )
 
   fun setVertexBuffer(
     slot: Int,
@@ -54,7 +56,9 @@ external interface GPURenderPassEncoder : GPUObjectBase {
     indirectOffset: Int,
   )
 
-  fun executeBundles(bundles: Array<GPURenderBundle>)
+  fun executeBundles(
+    bundles: Array<GPURenderBundle>,
+  )
 
   fun end()
 }

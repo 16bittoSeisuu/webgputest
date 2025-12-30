@@ -25,10 +25,13 @@ interface GravityAffectedView {
  *
  * @param initialGravity the initial gravitational acceleration.
  */
-class GravityAffected(
-  initialGravity: Acceleration3 = Acceleration3.zero,
-) : GravityAffectedView {
-  override val gravity: MutableAcceleration3 = MutableAcceleration3.copyOf(initialGravity)
+class GravityAffected(initialGravity: Acceleration3 = Acceleration3.zero) :
+  GravityAffectedView {
+  override val gravity: MutableAcceleration3 =
+    MutableAcceleration3.copyOf(
+      initialGravity,
+    )
 
-  companion object Key : TraitKey<GravityAffectedView, GravityAffected> by TraitKey()
+  companion object Key :
+    TraitKey<GravityAffectedView, GravityAffected> by TraitKey()
 }

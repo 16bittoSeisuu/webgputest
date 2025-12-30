@@ -26,7 +26,11 @@ fun GPURenderBundleEncoderDescriptor(
 ): GPURenderBundleEncoderDescriptor =
   js("{}").unsafeCast<GPURenderBundleEncoderDescriptor>().apply {
     this.colorFormats = colorFormats
-    if (depthStencilFormat != null) this.depthStencilFormat = depthStencilFormat
+    if (depthStencilFormat !=
+      null
+    ) {
+      this.depthStencilFormat = depthStencilFormat
+    }
     if (sampleCount != null) this.sampleCount = sampleCount
     if (depthReadOnly != null) this.depthReadOnly = depthReadOnly
     if (stencilReadOnly != null) this.stencilReadOnly = stencilReadOnly

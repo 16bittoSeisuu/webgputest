@@ -12,7 +12,11 @@ fun GPUImageCopyExternalImage(
     this.source = source
     if (origin != null) this.origin = origin
     if (flipY != null) this.flipY = flipY
-    if (premultipliedAlpha != null) this.premultipliedAlpha = premultipliedAlpha
+    if (premultipliedAlpha !=
+      null
+    ) {
+      this.premultipliedAlpha = premultipliedAlpha
+    }
   }
 
 fun GPUImageCopyTextureTagged(

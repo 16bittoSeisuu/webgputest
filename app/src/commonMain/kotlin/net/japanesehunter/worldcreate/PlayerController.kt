@@ -134,7 +134,10 @@ class PlayerController internal constructor(
     var maxPitch: Angle = 89.0.degrees,
   ) {
     init {
-      require(mouseSensitivityDegPerDot.isFinite() && mouseSensitivityDegPerDot >= 0.0) {
+      require(
+        mouseSensitivityDegPerDot.isFinite() &&
+          mouseSensitivityDegPerDot >= 0.0,
+      ) {
         "mouseSensitivityDegPerDot must be finite and non-negative: $mouseSensitivityDegPerDot"
       }
       val maxPitchRadians = maxPitch.toDouble(AngleUnit.RADIAN)
@@ -144,7 +147,10 @@ class PlayerController internal constructor(
     }
   }
 
-  private val maxPitchRadians get() = settings.maxPitch.toDouble(AngleUnit.RADIAN)
+  private val maxPitchRadians get() =
+    settings.maxPitch.toDouble(
+      AngleUnit.RADIAN,
+    )
   private val mouseSensitivityRadiansPerDot
     get() = settings.mouseSensitivityDegPerDot * (PI / 180.0)
   private val activeKeys = mutableSetOf<String>()
@@ -161,7 +167,9 @@ class PlayerController internal constructor(
     val rotation =
       entity.get<Rotation>()
         ?: error("Entity must have Rotation trait")
-    val initialForward = rotation.value.rotate(Direction3.forward)
+    val initialForward =
+      rotation.value
+        .rotate(Direction3.forward)
     yaw = atan2(initialForward.ux, -initialForward.uz)
     pitch = asin(initialForward.uy).coerceIn(-maxPitchRadians, maxPitchRadians)
 
@@ -198,7 +206,9 @@ class PlayerController internal constructor(
    *
    *   range: dt > 0
    */
-  fun update(dt: Duration) {
+  fun update(
+    dt: Duration,
+  ) {
     require(dt.isPositive()) { "dt must be positive: $dt" }
     if (!pointerLock.isPointerLocked) return
 
@@ -225,17 +235,24 @@ class PlayerController internal constructor(
     }
   }
 
-  private fun handleKeyDown(code: String) {
+  private fun handleKeyDown(
+    code: String,
+  ) {
     if (code == settings.jumpKey) {
       if (entity.has<Grounded>()) {
-        entity.get<Velocity>()?.value?.vy = settings.jumpSpeed
+        entity
+          .get<Velocity>()
+          ?.value
+          ?.vy = settings.jumpSpeed
       }
     } else if (code in navKeys()) {
       activeKeys.add(code)
     }
   }
 
-  private fun handleKeyUp(code: String) {
+  private fun handleKeyUp(
+    code: String,
+  ) {
     if (code in navKeys()) {
       activeKeys.remove(code)
     }
@@ -259,10 +276,13 @@ class PlayerController internal constructor(
         uy = sin(pitch),
         uz = -cos(yaw) * cosPitch,
       )
-    rotation.value.lookAlong(forward, Direction3.up)
+    rotation.value
+      .lookAlong(forward, Direction3.up)
   }
 
-  private fun updatePlayerVelocity(dt: Duration) {
+  private fun updatePlayerVelocity(
+    dt: Duration,
+  ) {
     val planarForward =
       Direction3(
         ux = sin(yaw),
@@ -370,6 +390,6 @@ private fun hypot(
   y: Speed,
 ): Speed =
   hypot(
-    x.toDouble(SpeedUnit.METER_PER_SECOND),
-    y.toDouble(SpeedUnit.METER_PER_SECOND),
+    x.toDouble(SpeedUnit.MeterPerSecond),
+    y.toDouble(SpeedUnit.MeterPerSecond),
   ).metersPerSecond

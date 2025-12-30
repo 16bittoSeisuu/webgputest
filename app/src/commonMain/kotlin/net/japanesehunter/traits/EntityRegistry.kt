@@ -36,5 +36,7 @@ fun interface EntityQuery {
    * @param types the trait types to match.
    * @return a sequence of entity handles that have all specified traits.
    */
-  fun query(vararg types: KClass<*>): Sequence<Entity>
+  fun query(
+    vararg types: KClass<*>,
+  ): Sequence<Entity>
 }

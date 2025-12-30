@@ -121,7 +121,9 @@ class AabbTest :
       val d1 = d(1, 2, 3)
       val d2 = d(-4, 0, 7)
 
-      a.translatedBy(d1).translatedBy(d2) shouldBe a.translatedBy(d1 + d2)
+      a
+        .translatedBy(d1)
+        .translatedBy(d2) shouldBe a.translatedBy(d1 + d2)
     }
 
     test("MutableAabb.translateBy matches Aabb.translatedBy") {
@@ -153,7 +155,9 @@ class AabbTest :
       }
 
       shouldThrow<IllegalArgumentException> {
-        a.expandedBy(Length3(dx = (-1).meters, dy = Length.ZERO, dz = Length.ZERO))
+        a.expandedBy(
+          Length3(dx = (-1).meters, dy = Length.ZERO, dz = Length.ZERO),
+        )
       }
     }
 

@@ -28,10 +28,12 @@ interface BoundingBoxView {
  *
  * @param boxes the initial collision boxes in local coordinates.
  */
-class BoundingBox(
-  vararg boxes: Aabb,
-) : BoundingBoxView {
-  private val _boxes: MutableList<MutableAabb> = boxes.map { MutableAabb.copyOf(it) }.toMutableList()
+class BoundingBox(vararg boxes: Aabb) : BoundingBoxView {
+  private val _boxes: MutableList<MutableAabb> =
+    boxes
+      .map {
+        MutableAabb.copyOf(it)
+      }.toMutableList()
 
   /**
    * The collision boxes in local coordinates.
@@ -48,7 +50,9 @@ class BoundingBox(
    *
    * @param box the collision box to add in local coordinates.
    */
-  fun add(box: Aabb) {
+  fun add(
+    box: Aabb,
+  ) {
     _boxes.add(MutableAabb.copyOf(box))
   }
 
@@ -61,7 +65,10 @@ class BoundingBox(
    * @param box the collision box to remove.
    * @return true if the box was removed, false if it was not found.
    */
-  fun remove(box: MutableAabb): Boolean = _boxes.remove(box)
+  fun remove(
+    box: MutableAabb,
+  ): Boolean =
+    _boxes.remove(box)
 
   /**
    * Removes all collision boxes from this bounding box.

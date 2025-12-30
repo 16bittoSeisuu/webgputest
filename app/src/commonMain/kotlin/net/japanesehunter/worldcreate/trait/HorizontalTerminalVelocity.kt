@@ -17,7 +17,9 @@ interface HorizontalTerminalVelocityView {
    * @param acceleration the acceleration magnitude.
    * @return the terminal speed.
    */
-  fun terminalSpeedFor(acceleration: Acceleration): Speed
+  fun terminalSpeedFor(
+    acceleration: Acceleration,
+  ): Speed
 }
 
 /**
@@ -26,10 +28,14 @@ interface HorizontalTerminalVelocityView {
  *
  * @param rule the mapping from acceleration magnitude to terminal speed.
  */
-class HorizontalTerminalVelocity(
-  var rule: (Acceleration) -> Speed,
-) : HorizontalTerminalVelocityView {
-  override fun terminalSpeedFor(acceleration: Acceleration): Speed = rule(acceleration)
+class HorizontalTerminalVelocity(var rule: (Acceleration) -> Speed) :
+  HorizontalTerminalVelocityView {
+  override fun terminalSpeedFor(
+    acceleration: Acceleration,
+  ): Speed =
+    rule(acceleration)
 
-  companion object Key : TraitKey<HorizontalTerminalVelocityView, HorizontalTerminalVelocity> by TraitKey()
+  companion object Key :
+    TraitKey<HorizontalTerminalVelocityView, HorizontalTerminalVelocity>
+    by TraitKey()
 }

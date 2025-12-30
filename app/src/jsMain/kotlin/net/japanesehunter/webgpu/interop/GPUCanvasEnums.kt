@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class PredefinedColorSpace private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class PredefinedColorSpace private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Srgb = PredefinedColorSpace("srgb")
@@ -11,10 +10,9 @@ value class PredefinedColorSpace private constructor(
   }
 }
 
-value class GPUCanvasAlphaMode private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUCanvasAlphaMode private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Opaque = GPUCanvasAlphaMode("opaque")
@@ -22,10 +20,9 @@ value class GPUCanvasAlphaMode private constructor(
   }
 }
 
-value class GPUCanvasToneMappingMode private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUCanvasToneMappingMode private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Standard = GPUCanvasToneMappingMode("standard")

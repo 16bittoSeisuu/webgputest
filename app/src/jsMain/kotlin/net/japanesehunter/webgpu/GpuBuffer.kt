@@ -18,7 +18,8 @@ import org.khronos.webgl.Int32Array
 import org.khronos.webgl.Uint8Array
 import org.khronos.webgl.set
 
-fun GPUDevice.createBufferAllocator(): BufferAllocator = BufferAllocatorImpl(this)
+fun GPUDevice.createBufferAllocator(): BufferAllocator =
+  BufferAllocatorImpl(this)
 
 // region interface
 
@@ -68,7 +69,9 @@ interface CopySrcGpuBuffer : GpuBuffer {
    * Enqueues a buffer-to-buffer copy on the given [GPUCommandEncoder] context.
    */
   context(encoder: GPUCommandEncoder)
-  fun writeTo(dst: MutableGpuBuffer)
+  fun writeTo(
+    dst: MutableGpuBuffer,
+  )
 }
 
 /**
@@ -79,15 +82,25 @@ interface MutableGpuBuffer : GpuBuffer {
    * Writes data into this buffer view using `GPUQueue.writeBuffer`.
    * May perform the work asynchronously.
    */
-  fun write(data: ByteString)
+  fun write(
+    data: ByteString,
+  )
 
-  fun write(data: ByteArray)
+  fun write(
+    data: ByteArray,
+  )
 
-  fun write(data: FloatArray)
+  fun write(
+    data: FloatArray,
+  )
 
-  fun write(data: ShortArray)
+  fun write(
+    data: ShortArray,
+  )
 
-  fun write(data: IntArray)
+  fun write(
+    data: IntArray,
+  )
 }
 
 interface MutableCopySrcGpuBuffer :
@@ -274,9 +287,8 @@ interface BufferAllocator {
 
 // region implementation
 
-private class BufferAllocatorImpl(
-  private val device: GPUDevice,
-) : BufferAllocator {
+private class BufferAllocatorImpl(private val device: GPUDevice) :
+  BufferAllocator {
   private val queue: GPUQueue = device.queue
 
   override fun static(
@@ -818,7 +830,9 @@ private class StaticCopySrcBufferImpl(
 ) : StaticBufferImpl(raw, offset, size),
   CopySrcGpuBuffer {
   context(encoder: GPUCommandEncoder)
-  override fun writeTo(dst: MutableGpuBuffer) {
+  override fun writeTo(
+    dst: MutableGpuBuffer,
+  ) {
     require(dst.size >= size) {
       "Destination buffer is too small: dst.size=${dst.size}, src.size=$size"
     }
@@ -833,31 +847,41 @@ private open class MutableBufferImpl(
   private val queue: GPUQueue,
 ) : StaticBufferImpl(raw, offset, size),
   MutableGpuBuffer {
-  override fun write(data: ByteArray) {
+  override fun write(
+    data: ByteArray,
+  ) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
     queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
   }
 
-  override fun write(data: ByteString) {
+  override fun write(
+    data: ByteString,
+  ) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
     queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
   }
 
-  override fun write(data: FloatArray) {
+  override fun write(
+    data: FloatArray,
+  ) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
     queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
   }
 
-  override fun write(data: ShortArray) {
+  override fun write(
+    data: ShortArray,
+  ) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
     queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
   }
 
-  override fun write(data: IntArray) {
+  override fun write(
+    data: IntArray,
+  ) {
     data.requireFits(size)
     val buffer = data.toArrayBuffer()
     queue.writeBuffer(raw, offset, buffer, 0, data.byteSize)
@@ -872,7 +896,9 @@ private class MutableCopySrcBufferImpl(
 ) : MutableBufferImpl(raw, offset, size, queue),
   MutableCopySrcGpuBuffer {
   context(encoder: GPUCommandEncoder)
-  override fun writeTo(dst: MutableGpuBuffer) {
+  override fun writeTo(
+    dst: MutableGpuBuffer,
+  ) {
     require(dst.size >= size) {
       "Destination buffer is too small: dst.size=${dst.size}, src.size=$size"
     }
@@ -920,35 +946,45 @@ private fun IntArray.toArrayBuffer(): ArrayBuffer {
   return array.buffer
 }
 
-private fun ByteArray.writeTo(buffer: ArrayBuffer) {
+private fun ByteArray.writeTo(
+  buffer: ArrayBuffer,
+) {
   val array = Uint8Array(buffer)
   for (i in indices) {
     array[i] = this[i]
   }
 }
 
-private fun ByteString.writeTo(buffer: ArrayBuffer) {
+private fun ByteString.writeTo(
+  buffer: ArrayBuffer,
+) {
   val array = Uint8Array(buffer)
   for (i in 0 until size) {
     array[i] = this[i]
   }
 }
 
-private fun FloatArray.writeTo(buffer: ArrayBuffer) {
+private fun FloatArray.writeTo(
+  buffer: ArrayBuffer,
+) {
   val array = Float32Array(buffer)
   for (i in indices) {
     array[i] = this[i]
   }
 }
 
-private fun ShortArray.writeTo(buffer: ArrayBuffer) {
+private fun ShortArray.writeTo(
+  buffer: ArrayBuffer,
+) {
   val array = Int16Array(buffer)
   for (i in indices) {
     array[i] = this[i]
   }
 }
 
-private fun IntArray.writeTo(buffer: ArrayBuffer) {
+private fun IntArray.writeTo(
+  buffer: ArrayBuffer,
+) {
   val array = Int32Array(buffer)
   for (i in indices) {
     array[i] = this[i]
@@ -972,15 +1008,30 @@ private fun GpuBuffer.requireRange(
   }
 }
 
-private fun ByteArray.requireFits(limit: Int) = requireFits(byteSize, limit, "ByteArray")
+private fun ByteArray.requireFits(
+  limit: Int,
+) =
+  requireFits(byteSize, limit, "ByteArray")
 
-private fun ByteString.requireFits(limit: Int) = requireFits(byteSize, limit, "ByteString")
+private fun ByteString.requireFits(
+  limit: Int,
+) =
+  requireFits(byteSize, limit, "ByteString")
 
-private fun FloatArray.requireFits(limit: Int) = requireFits(byteSize, limit, "FloatArray")
+private fun FloatArray.requireFits(
+  limit: Int,
+) =
+  requireFits(byteSize, limit, "FloatArray")
 
-private fun ShortArray.requireFits(limit: Int) = requireFits(byteSize, limit, "ShortArray")
+private fun ShortArray.requireFits(
+  limit: Int,
+) =
+  requireFits(byteSize, limit, "ShortArray")
 
-private fun IntArray.requireFits(limit: Int) = requireFits(byteSize, limit, "IntArray")
+private fun IntArray.requireFits(
+  limit: Int,
+) =
+  requireFits(byteSize, limit, "IntArray")
 
 private fun requireFits(
   dataSize: Int,

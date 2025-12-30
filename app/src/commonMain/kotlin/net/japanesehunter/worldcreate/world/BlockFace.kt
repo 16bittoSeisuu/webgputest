@@ -8,9 +8,7 @@ import net.japanesehunter.math.south
 import net.japanesehunter.math.up
 import net.japanesehunter.math.west
 
-enum class BlockFace(
-  val normal: Direction3,
-) {
+enum class BlockFace(val normal: Direction3) {
   TOP(Direction3.up),
   NORTH(Direction3.north),
   EAST(Direction3.east),

@@ -37,21 +37,26 @@ sealed interface Scale3 {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = sx
+  operator fun component1() =
+    sx
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = sy
+  operator fun component2() =
+    sy
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component3() = sz
+  operator fun component3() =
+    sz
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -93,7 +98,10 @@ interface MutableScale3 :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableScale3.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableScale3.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -180,7 +188,8 @@ fun MutableScale3(
   sx: Double = 1.0,
   sy: Double = 1.0,
   sz: Double = 1.0,
-): MutableScale3 = MutableScale3Impl(sx, sy, sz)
+): MutableScale3 =
+  MutableScale3Impl(sx, sy, sz)
 
 /**
  * Creates a [MutableScale3] by copying an existing one.
@@ -188,7 +197,10 @@ fun MutableScale3(
  * @param copyFrom The source scale vector.
  * @return The created [MutableScale3].
  */
-fun MutableScale3.Companion.copyOf(copyFrom: Scale3): MutableScale3 = MutableScale3(copyFrom.sx, copyFrom.sy, copyFrom.sz)
+fun MutableScale3.Companion.copyOf(
+  copyFrom: Scale3,
+): MutableScale3 =
+  MutableScale3(copyFrom.sx, copyFrom.sy, copyFrom.sz)
 
 // endregion
 
@@ -209,15 +221,21 @@ inline val Scale3.isZero: Boolean
 /**
  * Scales all components of this mutable scale by a finite scalar in place.
  */
-inline operator fun MutableScale3.timesAssign(scalar: Double) {
-  require(scalar.isFinite()) { "Cannot scale Scale3 by a non-finite value: $scalar" }
+inline operator fun MutableScale3.timesAssign(
+  scalar: Double,
+) {
+  require(scalar.isFinite()) {
+    "Cannot scale Scale3 by a non-finite value: $scalar"
+  }
   map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 }
 
 /**
  * Returns a new scale vector with all components multiplied by the given scalar.
  */
-inline operator fun Scale3.times(scalar: Double): ImmutableScale3 =
+inline operator fun Scale3.times(
+  scalar: Double,
+): ImmutableScale3 =
   Scale3.copyOf(this) {
     this *= scalar
   }
@@ -225,15 +243,21 @@ inline operator fun Scale3.times(scalar: Double): ImmutableScale3 =
 /**
  * Divides all components of this mutable scale by a finite, non-zero scalar.
  */
-inline operator fun MutableScale3.divAssign(scalar: Double) {
-  require(scalar.isFinite() && scalar != 0.0) { "Cannot divide Scale3 by $scalar." }
+inline operator fun MutableScale3.divAssign(
+  scalar: Double,
+) {
+  require(scalar.isFinite() && scalar != 0.0) {
+    "Cannot divide Scale3 by $scalar."
+  }
   map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
  * Returns a new scale vector with all components divided by the given scalar.
  */
-inline operator fun Scale3.div(scalar: Double): ImmutableScale3 =
+inline operator fun Scale3.div(
+  scalar: Double,
+): ImmutableScale3 =
   Scale3.copyOf(this) {
     this /= scalar
   }
@@ -241,7 +265,9 @@ inline operator fun Scale3.div(scalar: Double): ImmutableScale3 =
 /**
  * Multiplies this mutable scale component-wise by [other].
  */
-inline operator fun MutableScale3.timesAssign(other: Scale3) =
+inline operator fun MutableScale3.timesAssign(
+  other: Scale3,
+) =
   map({ "Component-wise multiplication by $other" }) { index, value ->
     when (index) {
       0 -> value * other.sx
@@ -253,7 +279,9 @@ inline operator fun MutableScale3.timesAssign(other: Scale3) =
 /**
  * Returns the component-wise product of this scale and [other].
  */
-inline operator fun Scale3.times(other: Scale3): ImmutableScale3 =
+inline operator fun Scale3.times(
+  other: Scale3,
+): ImmutableScale3 =
   Scale3.copyOf(this) {
     this *= other
   }
@@ -261,7 +289,9 @@ inline operator fun Scale3.times(other: Scale3): ImmutableScale3 =
 /**
  * Divides this mutable scale component-wise by [other]. Throws if any divisor is zero or non-finite.
  */
-inline operator fun MutableScale3.divAssign(other: Scale3) =
+inline operator fun MutableScale3.divAssign(
+  other: Scale3,
+) =
   map({ "Component-wise division by $other" }) { index, value ->
     val divisor =
       when (index) {
@@ -269,14 +299,18 @@ inline operator fun MutableScale3.divAssign(other: Scale3) =
         1 -> ensureFiniteScaleComponent(other.sy, "sy")
         else -> ensureFiniteScaleComponent(other.sz, "sz")
       }
-    require(divisor != 0.0) { "Cannot divide Scale3 by zero on component $index." }
+    require(
+      divisor != 0.0,
+    ) { "Cannot divide Scale3 by zero on component $index." }
     value / divisor
   }
 
 /**
  * Returns the component-wise quotient of this scale and [other]. Throws if any divisor is zero or non-finite.
  */
-inline operator fun Scale3.div(other: Scale3): ImmutableScale3 =
+inline operator fun Scale3.div(
+  other: Scale3,
+): ImmutableScale3 =
   Scale3.copyOf(this) {
     this /= other
   }
@@ -284,7 +318,9 @@ inline operator fun Scale3.div(other: Scale3): ImmutableScale3 =
 /**
  * Applies this scale to a [Length3] distance.
  */
-fun Scale3.scale(distance: Length3): ImmutableLength3 =
+fun Scale3.scale(
+  distance: Length3,
+): ImmutableLength3 =
   Length3(
     dx = distance.dx * sx,
     dy = distance.dy * sy,
@@ -294,7 +330,9 @@ fun Scale3.scale(distance: Length3): ImmutableLength3 =
 /**
  * Applies this scale to a [Point3] position relative to the origin.
  */
-fun Scale3.scale(point: Point3): ImmutablePoint3 =
+fun Scale3.scale(
+  point: Point3,
+): ImmutablePoint3 =
   Point3(
     x = point.x * sx,
     y = point.y * sy,
@@ -304,12 +342,18 @@ fun Scale3.scale(point: Point3): ImmutablePoint3 =
 /**
  * Returns a copy of this [Length3] scaled by [scale].
  */
-inline fun Length3.scaledBy(scale: Scale3): ImmutableLength3 = scale.scale(this)
+inline fun Length3.scaledBy(
+  scale: Scale3,
+): ImmutableLength3 =
+  scale.scale(this)
 
 /**
  * Returns a copy of this [Point3] scaled by [scale].
  */
-inline fun Point3.scaledBy(scale: Scale3): ImmutablePoint3 = scale.scale(this)
+inline fun Point3.scaledBy(
+  scale: Scale3,
+): ImmutablePoint3 =
+  scale.scale(this)
 
 /**
  * Maps each component using [action] and writes the result back.
@@ -326,9 +370,12 @@ inline fun MutableScale3.map(
 ) {
   val actionNameValue = actionName?.invoke()
   mutate {
-    val newSx = ensureFiniteScaleComponent(action(0, sx), "sx", actionNameValue)
-    val newSy = ensureFiniteScaleComponent(action(1, sy), "sy", actionNameValue)
-    val newSz = ensureFiniteScaleComponent(action(2, sz), "sz", actionNameValue)
+    val newSx =
+      ensureFiniteScaleComponent(action(0, sx), "sx", actionNameValue)
+    val newSy =
+      ensureFiniteScaleComponent(action(1, sy), "sy", actionNameValue)
+    val newSz =
+      ensureFiniteScaleComponent(action(2, sz), "sz", actionNameValue)
     sx = newSx
     sy = newSy
     sz = newSz
@@ -339,8 +386,10 @@ inline fun MutableScale3.map(
 
 // region implementations
 
-private val SCALE3_IDENTITY: ImmutableScale3Impl = ImmutableScale3Impl(1.0, 1.0, 1.0)
-private val SCALE3_ZERO: ImmutableScale3Impl = ImmutableScale3Impl(0.0, 0.0, 0.0)
+private val SCALE3_IDENTITY: ImmutableScale3Impl =
+  ImmutableScale3Impl(1.0, 1.0, 1.0)
+private val SCALE3_ZERO: ImmutableScale3Impl =
+  ImmutableScale3Impl(0.0, 0.0, 0.0)
 
 private data class ImmutableScale3Impl(
   override var sx: Double,
@@ -351,16 +400,20 @@ private data class ImmutableScale3Impl(
     ensureFiniteScaleComponents(sx, sy, sz)
   }
 
-  override fun toString(): String = "Scale3(sx=$sx, sy=$sy, sz=$sz)"
+  override fun toString(): String =
+    "Scale3(sx=$sx, sy=$sy, sz=$sz)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Scale3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(sx, sy, sz)
+  override fun hashCode(): Int =
+    componentsHash(sx, sy, sz)
 }
 
 private value class Scale3MutableWrapper(
@@ -389,9 +442,11 @@ private value class Scale3MutableWrapper(
   override val szFlow: StateFlow<Double>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 
-  override fun toString(): String = "Scale3(sx=$sx, sy=$sy, sz=$sz)"
+  override fun toString(): String =
+    "Scale3(sx=$sx, sy=$sy, sz=$sz)"
 }
 
 private class MutableScale3Impl(
@@ -401,9 +456,12 @@ private class MutableScale3Impl(
 ) : MutableScale3 {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _sxFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteScaleComponent(sx, "sx"))
-  private val _syFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteScaleComponent(sy, "sy"))
-  private val _szFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteScaleComponent(sz, "sz"))
+  private val _sxFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteScaleComponent(sx, "sx"))
+  private val _syFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteScaleComponent(sy, "sy"))
+  private val _szFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteScaleComponent(sz, "sz"))
 
   override var sx: Double
     get() = lock.withLock { _sxFlow.value }
@@ -437,33 +495,42 @@ private class MutableScale3Impl(
   override val syFlow: StateFlow<Double> get() = _syFlow.asStateFlow()
   override val szFlow: StateFlow<Double> get() = _szFlow.asStateFlow()
 
-  override fun mutate(action: MutableScale3.() -> Unit) {
+  override fun mutate(
+    action: MutableScale3.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  override fun toString(): String = "Scale3(sx=$sx, sy=$sy, sz=$sz)"
+  override fun toString(): String =
+    "Scale3(sx=$sx, sy=$sy, sz=$sz)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Scale3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(sx, sy, sz)
+  override fun hashCode(): Int =
+    componentsHash(sx, sy, sz)
 
-  private class Ticket(
-    original: MutableScale3Impl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableScale3Impl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean

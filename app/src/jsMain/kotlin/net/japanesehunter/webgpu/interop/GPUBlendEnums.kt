@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUBlendOperation private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUBlendOperation private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Add = GPUBlendOperation("add")
@@ -14,10 +13,9 @@ value class GPUBlendOperation private constructor(
   }
 }
 
-value class GPUBlendFactor private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUBlendFactor private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Zero = GPUBlendFactor("zero")

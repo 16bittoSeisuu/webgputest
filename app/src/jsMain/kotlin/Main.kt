@@ -90,7 +90,10 @@ fun main() =
           }
         val cameraHud = CameraHud()
 
-        val (tickSource, tickSink) = createFixedStepTickSource(targetStep = 20.milliseconds)
+        val (tickSource, tickSink) =
+          createFixedStepTickSource(
+            targetStep = 20.milliseconds,
+          )
         val blockAccess = ChunkBlockAccess(chunk)
         val registry = HashMapEntityRegistry()
         val player =
@@ -124,11 +127,16 @@ fun main() =
         val controllerSettings = PlayerController.Settings()
         val controller = playerController(player, controllerSettings)
         val eyeHeight = 1.62.meters
-        var lastFrameTime = window.performance.now()
+        var lastFrameTime =
+          window.performance
+            .now()
 
         webgpuContext {
           debugPrintLimits()
-          val cameraBuf = camera.toGpuBuffer().bind()
+          val cameraBuf =
+            camera
+              .toGpuBuffer()
+              .bind()
           val draw =
             buildDrawCommand(clearColor = { Color.blue }) {
               val textureBuffer =
@@ -192,7 +200,9 @@ fun main() =
 
           fun loop() {
             try {
-              val currentTime = window.performance.now()
+              val currentTime =
+                window.performance
+                  .now()
               val frameDelta = (currentTime - lastFrameTime).milliseconds
               lastFrameTime = currentTime
               tickSink.onEvent(frameDelta)
@@ -234,9 +244,13 @@ private suspend inline fun <R> webgpuContext(
 ): R {
   val gpu = gpu ?: throw UnsupportedBrowserException()
   val adapter =
-    gpu.requestAdapter().await() ?: throw UnsupportedAdapterException()
+    gpu
+      .requestAdapter()
+      .await() ?: throw UnsupportedAdapterException()
   val device =
-    adapter.requestDevice().await()
+    adapter
+      .requestDevice()
+      .await()
   resource.onClose {
     device.destroy()
   }
@@ -267,7 +281,9 @@ private fun debugPrintLimits() {
         "Max bind groups plus vertex buffers: " +
           "${limits.maxBindGroupsPlusVertexBuffers}",
       )
-      appendLine("Max bindings per bind group: ${limits.maxBindingsPerBindGroup}")
+      appendLine(
+        "Max bindings per bind group: ${limits.maxBindingsPerBindGroup}",
+      )
       appendLine(
         "Max dynamic uniform buffers per pipeline layout: " +
           "${limits.maxDynamicUniformBuffersPerPipelineLayout}",
@@ -280,7 +296,9 @@ private fun debugPrintLimits() {
         "Max sampled textures per shader stage: " +
           "${limits.maxSampledTexturesPerShaderStage}",
       )
-      appendLine("Max samplers per shader stage: ${limits.maxSamplersPerShaderStage}")
+      appendLine(
+        "Max samplers per shader stage: ${limits.maxSamplersPerShaderStage}",
+      )
       appendLine(
         "Max storage buffers per shader stage: " +
           "${limits.maxStorageBuffersPerShaderStage}",
@@ -312,7 +330,9 @@ private fun debugPrintLimits() {
       appendLine("Max vertex buffers: ${limits.maxVertexBuffers}")
       appendLine("Max buffer size: ${limits.maxBufferSize}")
       appendLine("Max vertex attributes: ${limits.maxVertexAttributes}")
-      appendLine("Max vertex buffer array stride: ${limits.maxVertexBufferArrayStride}")
+      appendLine(
+        "Max vertex buffer array stride: ${limits.maxVertexBufferArrayStride}",
+      )
       appendLine(
         "Max inter-stage shader variables: " +
           "${limits.maxInterStageShaderVariables}",
@@ -330,9 +350,15 @@ private fun debugPrintLimits() {
         "Max compute invocations per workgroup: " +
           "${limits.maxComputeInvocationsPerWorkgroup}",
       )
-      appendLine("Max compute workgroup size X: ${limits.maxComputeWorkgroupSizeX}")
-      appendLine("Max compute workgroup size Y: ${limits.maxComputeWorkgroupSizeY}")
-      appendLine("Max compute workgroup size Z: ${limits.maxComputeWorkgroupSizeZ}")
+      appendLine(
+        "Max compute workgroup size X: ${limits.maxComputeWorkgroupSizeX}",
+      )
+      appendLine(
+        "Max compute workgroup size Y: ${limits.maxComputeWorkgroupSizeY}",
+      )
+      appendLine(
+        "Max compute workgroup size Z: ${limits.maxComputeWorkgroupSizeZ}",
+      )
       appendLine(
         "Max compute workgroups per dimension: " +
           "${limits.maxComputeWorkgroupsPerDimension}",
@@ -342,16 +368,26 @@ private fun debugPrintLimits() {
 }
 
 context(coroutine: CoroutineScope)
-private fun loadImageBitmap(path: String): Deferred<ImageBitmap> =
+private fun loadImageBitmap(
+  path: String,
+): Deferred<ImageBitmap> =
   coroutine.async {
     val path = path.removePrefix("/")
-    val resp = window.fetch("/$path").await()
-    val blob = resp.blob().await()
+    val resp =
+      window
+        .fetch("/$path")
+        .await()
+    val blob =
+      resp
+        .blob()
+        .await()
     createImageBitmap(blob).await()
   }
 
 context(device: GPUDevice, coroutine: CoroutineScope)
-private fun createTexture(path: String): Deferred<GPUTexture> =
+private fun createTexture(
+  path: String,
+): Deferred<GPUTexture> =
   coroutine.async {
     val bitmap = loadImageBitmap(path).await()
     val textureSize = GPUExtent3D(bitmap.width, bitmap.height, 1)
@@ -363,7 +399,8 @@ private fun createTexture(path: String): Deferred<GPUTexture> =
         dimension = GPUTextureDimension.D2,
         format = GPUTextureFormat.Rgba8UnormSrgb,
         usage =
-          GPUTextureUsage.TextureBinding + GPUTextureUsage.CopyDst +
+          GPUTextureUsage.TextureBinding +
+            GPUTextureUsage.CopyDst +
             GPUTextureUsage.RenderAttachment,
       )
     val texture = device.createTexture(descriptor)
@@ -399,16 +436,22 @@ private fun createSampler(): GPUSampler {
 }
 
 context(device: GPUDevice)
-private inline fun gpuCommand(action: GPUCommandEncoder.() -> Unit) {
+private inline fun gpuCommand(
+  action: GPUCommandEncoder.() -> Unit,
+) {
   val commandEncoder = device.createCommandEncoder()
   commandEncoder.action()
-  device.queue.submit(arrayOf(commandEncoder.finish()))
+  device.queue
+    .submit(arrayOf(commandEncoder.finish()))
 }
 
 private val logger = logger("Main")
 
 context(canvas: CanvasContext)
-private val canvasAspect get() = canvas.width.toDouble() / canvas.height
+private val canvasAspect get() =
+  canvas.width
+    .toDouble() /
+    canvas.height
 
 context(canvas: CanvasContext)
 private fun MovableCamera.autoFit(): AutoCloseable =
@@ -440,28 +483,77 @@ private class ChunkBlockAccess(
 ) : BlockAccess {
   private val sizeX = chunk.size
   private val sizeY = if (chunk.isNotEmpty()) chunk[0].size else 0
-  private val sizeZ = if (sizeY > 0 && chunk[0].isNotEmpty()) chunk[0][0].size else 0
+  private val sizeZ =
+    if (sizeY > 0 &&
+      chunk[0].isNotEmpty()
+    ) {
+      chunk[0][0].size
+    } else {
+      0
+    }
 
-  override fun getCollisions(region: Aabb): List<Aabb> {
-    val minBlockX = (region.min.x.inWholeMeters - 1).coerceIn(0L, sizeX.toLong() - 1).toInt()
-    val maxBlockX = (region.max.x.inWholeMeters + 1).coerceIn(0L, sizeX.toLong() - 1).toInt()
-    val minBlockY = (region.min.y.inWholeMeters - 1).coerceIn(0L, sizeY.toLong() - 1).toInt()
-    val maxBlockY = (region.max.y.inWholeMeters + 1).coerceIn(0L, sizeY.toLong() - 1).toInt()
-    val minBlockZ = (region.min.z.inWholeMeters - 1).coerceIn(0L, sizeZ.toLong() - 1).toInt()
-    val maxBlockZ = (region.max.z.inWholeMeters + 1).coerceIn(0L, sizeZ.toLong() - 1).toInt()
+  override fun getCollisions(
+    region: Aabb,
+  ): List<Aabb> {
+    val minBlockX =
+      (region.min.x.inWholeMeters - 1)
+        .coerceIn(
+          0L,
+          sizeX.toLong() - 1,
+        ).toInt()
+    val maxBlockX =
+      (region.max.x.inWholeMeters + 1)
+        .coerceIn(
+          0L,
+          sizeX.toLong() - 1,
+        ).toInt()
+    val minBlockY =
+      (region.min.y.inWholeMeters - 1)
+        .coerceIn(
+          0L,
+          sizeY.toLong() - 1,
+        ).toInt()
+    val maxBlockY =
+      (region.max.y.inWholeMeters + 1)
+        .coerceIn(
+          0L,
+          sizeY.toLong() - 1,
+        ).toInt()
+    val minBlockZ =
+      (region.min.z.inWholeMeters - 1)
+        .coerceIn(
+          0L,
+          sizeZ.toLong() - 1,
+        ).toInt()
+    val maxBlockZ =
+      (region.max.z.inWholeMeters + 1)
+        .coerceIn(
+          0L,
+          sizeZ.toLong() - 1,
+        ).toInt()
 
     val collisions = mutableListOf<ImmutableAabb>()
 
     for (x in minBlockX..maxBlockX) {
       for (y in minBlockY..maxBlockY) {
         for (z in minBlockZ..maxBlockZ) {
-          val block = chunk.getOrNull(x)?.getOrNull(y)?.getOrNull(z) ?: continue
+          val block =
+            chunk
+              .getOrNull(x)
+              ?.getOrNull(y)
+              ?.getOrNull(z) ?: continue
           if (block == BlockState.Air) continue
 
           val blockBox =
             Aabb(
               min = Point3(x = x.meters, y = y.meters, z = z.meters),
-              max = Point3(x = (x + 1).meters, y = (y + 1).meters, z = (z + 1).meters),
+              max =
+                Point3(
+                  x = (x + 1).meters, y = (y + 1).meters,
+                  z =
+                    (z + 1)
+                      .meters,
+                ),
             )
 
           if (region.intersects(blockBox)) {

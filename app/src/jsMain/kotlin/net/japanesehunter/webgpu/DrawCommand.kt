@@ -29,8 +29,14 @@ suspend inline fun buildDrawCommand(
   noinline depthStencilTexture: (() -> GPUTexture)? = null,
   noinline label: () -> String = { "Draw Command" },
   cullMode: GPUCullMode = GPUCullMode.None,
-  sampleCount: Int = multisampleTexture?.invoke()?.sampleCount ?: 1,
-  depthStencilFormat: GPUTextureFormat? = depthStencilTexture?.invoke()?.format,
+  sampleCount: Int =
+    multisampleTexture
+      ?.invoke()
+      ?.sampleCount ?: 1,
+  depthStencilFormat: GPUTextureFormat? =
+    depthStencilTexture
+      ?.invoke()
+      ?.format,
   record: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): DrawCommand {
   val renderBundle =
@@ -55,7 +61,8 @@ suspend inline fun buildDrawCommand(
   noinline clearColor: () -> Color,
   sampleCount: Int = 4,
   depthStencilFormat: GPUTextureFormat = GPUTextureFormat.Depth24PlusStencil8,
-  noinline multisampleTexture: (() -> GPUTexture)? = createMsaaTexture(sampleCount),
+  noinline multisampleTexture: (() -> GPUTexture)? =
+    createMsaaTexture(sampleCount),
   noinline depthStencilTexture: (() -> GPUTexture)? =
     createDepthStencilTexture(sampleCount, depthStencilFormat),
   noinline label: () -> String = { "Main Draw" },
@@ -63,7 +70,11 @@ suspend inline fun buildDrawCommand(
   record: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): DrawCommand =
   buildDrawCommand(
-    { canvas.getCurrentTexture().createView() },
+    {
+      canvas
+        .getCurrentTexture()
+        .createView()
+    },
     clearColor = clearColor,
     multisampleTexture = multisampleTexture,
     depthStencilTexture = depthStencilTexture,
@@ -77,7 +88,9 @@ suspend inline fun buildDrawCommand(
 interface DrawCommand {
   val raw: Array<GPURenderBundle>
 
-  operator fun plus(other: DrawCommand): DrawCommand
+  operator fun plus(
+    other: DrawCommand,
+  ): DrawCommand
 
   context(commandEncoder: GPUCommandEncoder)
   fun dispatch()
@@ -95,14 +108,18 @@ internal class DrawCommandImpl(
 ) : DrawCommand {
   private val frames = AtomicInt(initialFrame)
 
-  override fun plus(other: DrawCommand): DrawCommand =
+  override fun plus(
+    other: DrawCommand,
+  ): DrawCommand =
     DrawCommandImpl(
       colorTargetTexture = this.colorTargetTexture,
       msaa = this.msaa,
       depthStencil = this.depthStencil,
       label = this.label,
       raw = this.raw + other.raw,
-      initialFrame = this.frames.load(),
+      initialFrame =
+        this.frames
+          .load(),
       clearColor = this.clearColor,
     )
 
@@ -112,10 +129,18 @@ internal class DrawCommandImpl(
       run {
         val c = clearColor()
         GPUColor(
-          r = c.r.toDouble(),
-          g = c.g.toDouble(),
-          b = c.b.toDouble(),
-          a = c.a.toDouble(),
+          r =
+            c.r
+              .toDouble(),
+          g =
+            c.g
+              .toDouble(),
+          b =
+            c.b
+              .toDouble(),
+          a =
+            c.a
+              .toDouble(),
         )
       }
     val colorAttachment =

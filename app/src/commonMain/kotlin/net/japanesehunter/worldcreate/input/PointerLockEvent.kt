@@ -5,6 +5,4 @@ package net.japanesehunter.worldcreate.input
  *
  * @param locked true if the pointer is now locked, false if released.
  */
-data class PointerLockEvent(
-  val locked: Boolean,
-)
+data class PointerLockEvent(val locked: Boolean)

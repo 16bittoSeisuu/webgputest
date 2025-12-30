@@ -20,7 +20,9 @@ sealed interface Camera {
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -47,7 +49,9 @@ interface MovableCamera : Camera {
    * Implementations without a lock simply execute [action] directly. For built-in cameras this is safe to call from
    * multiple threads.
    */
-  fun mutate(action: MovableCamera.() -> Unit) {
+  fun mutate(
+    action: MovableCamera.() -> Unit,
+  ) {
     if (this is LockingMovableCamera) {
       lock.withLock { action(this) }
     } else {
@@ -117,7 +121,9 @@ inline var MovableCamera.z: Length
 /**
  * Translates the camera by [delta].
  */
-inline fun MovableCamera.translate(delta: Length3) =
+inline fun MovableCamera.translate(
+  delta: Length3,
+) =
   mutateTransform {
     mutateTranslation {
       this += delta
@@ -128,7 +134,9 @@ inline fun MovableCamera.translate(delta: Length3) =
  * Sets the camera translation to [position].
  * Copies mutable transform components first so the camera does not share them with callers.
  */
-inline fun MovableCamera.setPosition(position: Length3) =
+inline fun MovableCamera.setPosition(
+  position: Length3,
+) =
   mutateTransform {
     mutateTranslation {
       dx = position.dx
@@ -140,7 +148,9 @@ inline fun MovableCamera.setPosition(position: Length3) =
 /**
  * Rotates the camera by [deltaRotation] (post-multiplication).
  */
-inline fun MovableCamera.rotate(deltaRotation: Quaternion) =
+inline fun MovableCamera.rotate(
+  deltaRotation: Quaternion,
+) =
   mutateTransform {
     mutateRotation {
       this *= deltaRotation
@@ -151,7 +161,9 @@ inline fun MovableCamera.rotate(deltaRotation: Quaternion) =
  * Sets the camera rotation to [rotation].
  * Copies mutable transform components first so the camera does not share them with callers.
  */
-inline fun MovableCamera.setRotation(rotation: Quaternion) =
+inline fun MovableCamera.setRotation(
+  rotation: Quaternion,
+) =
   mutateTransform {
     mutateRotation {
       w = rotation.w
@@ -167,32 +179,40 @@ inline fun MovableCamera.setRotation(rotation: Quaternion) =
 inline fun MovableCamera.lookAt(
   at: Point3,
   up: Direction3 = Direction3.up,
-) = mutateTransform {
-  val position = Point3.zero + translation
-  val dir = (at - position).toDirection()
-  mutateRotation {
-    lookAlong(dir, up)
+) =
+  mutateTransform {
+    val position = Point3.zero + translation
+    val dir = (at - position).toDirection()
+    mutateRotation {
+      lookAlong(dir, up)
+    }
   }
-}
 
 /**
  * Returns the current 16-direction heading the camera is facing.
  */
-fun Camera.currentDirection16(): Direction16 = transform.currentDirection16()
+fun Camera.currentDirection16(): Direction16 =
+  transform.currentDirection16()
 
 /**
  * Adjusts the camera aspect ratio.
  */
-inline fun MovableCamera.setAspect(aspect: Double) =
+inline fun MovableCamera.setAspect(
+  aspect: Double,
+) =
   mutate {
-    require(aspect.isFinite() && aspect > 0.0) { "aspect must be finite and > 0.0, was $aspect" }
+    require(aspect.isFinite() && aspect > 0.0) {
+      "aspect must be finite and > 0.0, was $aspect"
+    }
     this.aspect = aspect
   }
 
 /**
  * Adjusts the camera FOV.
  */
-inline fun MovableCamera.setFov(fov: Fov) =
+inline fun MovableCamera.setFov(
+  fov: Fov,
+) =
   mutate {
     this.fov = fov
   }
@@ -200,7 +220,9 @@ inline fun MovableCamera.setFov(fov: Fov) =
 /**
  * Adjusts the camera near/far range.
  */
-inline fun MovableCamera.setNearFar(nearFar: NearFar) =
+inline fun MovableCamera.setNearFar(
+  nearFar: NearFar,
+) =
   mutate {
     this.nearFar = nearFar
   }
@@ -259,12 +281,15 @@ fun MovableCamera(
   fov: Fov,
   aspect: Double,
   nearFar: NearFar,
-): MovableCamera = MovableCameraImpl(transform, fov, aspect, nearFar)
+): MovableCamera =
+  MovableCameraImpl(transform, fov, aspect, nearFar)
 
 /**
  * Creates a [MovableCamera] copied from [camera].
  */
-fun MovableCamera.Companion.copyOf(camera: Camera): MovableCamera =
+fun MovableCamera.Companion.copyOf(
+  camera: Camera,
+): MovableCamera =
   MovableCamera(
     transform = camera.transform,
     fov = camera.fov,
@@ -286,16 +311,20 @@ private data class StaticCameraImpl(
     validateAspect(aspect)
   }
 
-  override fun toString(): String = "Camera(transform=$transform, fov=$fov, aspect=$aspect, nearFar=$nearFar)"
+  override fun toString(): String =
+    "Camera(transform=$transform, fov=$fov, aspect=$aspect, nearFar=$nearFar)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Camera -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(transform, fov, aspect, nearFar)
+  override fun hashCode(): Int =
+    componentsHash(transform, fov, aspect, nearFar)
 }
 
 private class MovableCameraImpl(
@@ -347,21 +376,24 @@ private class MovableCameraImpl(
     validateAspect(aspect)
   }
 
-  override fun toString(): String = "Camera(transform=$transform, fov=$fov, aspect=$aspect, nearFar=$nearFar)"
+  override fun toString(): String =
+    "Camera(transform=$transform, fov=$fov, aspect=$aspect, nearFar=$nearFar)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Camera -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(transform, fov, aspect, nearFar)
+  override fun hashCode(): Int =
+    componentsHash(transform, fov, aspect, nearFar)
 }
 
-private class MovableCameraWrapper(
-  private val impl: StaticCameraImpl,
-) : MovableCamera,
+private class MovableCameraWrapper(private val impl: StaticCameraImpl) :
+  MovableCamera,
   LockingMovableCamera {
   override val lock: ReentrantLock = ReentrantLock()
 
@@ -389,15 +421,24 @@ private class MovableCameraWrapper(
       lock.withLock { impl.nearFar = value }
     }
 
-  override fun toString(): String = impl.toString()
+  override fun toString(): String =
+    impl.toString()
 
-  override fun equals(other: Any?): Boolean = impl == other
+  override fun equals(
+    other: Any?,
+  ): Boolean =
+    impl == other
 
-  override fun hashCode(): Int = impl.hashCode()
+  override fun hashCode(): Int =
+    impl.hashCode()
 }
 
-private fun validateAspect(aspect: Double) {
-  require(aspect.isFinite() && aspect > 0.0) { "aspect must be finite and > 0.0, was $aspect" }
+private fun validateAspect(
+  aspect: Double,
+) {
+  require(aspect.isFinite() && aspect > 0.0) {
+    "aspect must be finite and > 0.0, was $aspect"
+  }
 }
 
 private fun componentsEqual(
@@ -424,7 +465,9 @@ private fun componentsHash(
 }
 
 @PublishedApi
-internal inline fun MovableCamera.mutateTransform(noinline action: MutableTransform.() -> Unit) {
+internal inline fun MovableCamera.mutateTransform(
+  noinline action: MutableTransform.() -> Unit,
+) {
   when (val t = transform) {
     is MutableTransform -> {
       t.mutate {

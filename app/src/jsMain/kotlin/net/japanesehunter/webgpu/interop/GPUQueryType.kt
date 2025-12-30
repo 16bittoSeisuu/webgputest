@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUQueryType private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUQueryType private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Occlusion = GPUQueryType("occlusion")

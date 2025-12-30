@@ -3,7 +3,9 @@ package net.japanesehunter.webgpu.interop
 import org.khronos.webgl.ArrayBuffer
 
 external interface GPUQueue {
-  fun submit(commandBuffers: Array<GPUCommandBuffer>)
+  fun submit(
+    commandBuffers: Array<GPUCommandBuffer>,
+  )
 
   fun writeBuffer(
     buffer: GPUBuffer,

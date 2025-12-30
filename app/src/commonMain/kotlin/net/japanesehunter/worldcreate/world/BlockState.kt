@@ -14,14 +14,19 @@ import net.japanesehunter.worldcreate.world.QuadSink
 interface BlockState {
   fun QuadSink.emitQuads()
 
-  fun isOpaque(face: BlockFace): Boolean
+  fun isOpaque(
+    face: BlockFace,
+  ): Boolean
 
   data object Air : BlockState {
     override fun QuadSink.emitQuads() {
       // No quads for air
     }
 
-    override fun isOpaque(face: BlockFace): Boolean = false
+    override fun isOpaque(
+      face: BlockFace,
+    ): Boolean =
+      false
   }
 }
 
@@ -60,18 +65,19 @@ open class FullBlockState(
         normal: BlockFace,
         tangent: Direction3,
         material: MaterialKey,
-      ) = MaterialQuad(
-        min = min,
-        normal = normal.normal,
-        tangent = tangent,
-        sizeU = 1.meters,
-        sizeV = 1.meters,
-        aoLeftBottom = Proportion.ONE,
-        aoRightBottom = Proportion.ONE,
-        aoLeftTop = Proportion.ONE,
-        aoRightTop = Proportion.ONE,
-        material = material,
-      ) to normal
+      ) =
+        MaterialQuad(
+          min = min,
+          normal = normal.normal,
+          tangent = tangent,
+          sizeU = 1.meters,
+          sizeV = 1.meters,
+          aoLeftBottom = Proportion.ONE,
+          aoRightBottom = Proportion.ONE,
+          aoLeftTop = Proportion.ONE,
+          aoRightTop = Proportion.ONE,
+          material = material,
+        ) to normal
       listOf(
         // UP
         quad(
@@ -118,5 +124,8 @@ open class FullBlockState(
       )
     }
 
-  override fun isOpaque(face: BlockFace): Boolean = true
+  override fun isOpaque(
+    face: BlockFace,
+  ): Boolean =
+    true
 }

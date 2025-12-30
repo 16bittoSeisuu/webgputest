@@ -12,26 +12,27 @@ import org.w3c.dom.HTMLDivElement
  * The class is not thread-safe and is intended for use on the browser main thread.
  * @param container overlay element used to present the HUD content.
  */
-class CameraHud internal constructor(
-  private val container: HTMLDivElement,
-) : AutoCloseable {
-  /**
-   * Updates the HUD text to show the provided compass direction.
-   *
-   * Mutates the container text content when the displayed direction changes.
-   * @param direction compass heading to render in the HUD.
-   */
-  fun update(direction: Direction16) {
-    val label = direction.displayName()
-    val text = "Direction: $label"
-    if (container.textContent == text) return
-    container.textContent = text
-  }
+class CameraHud internal constructor(private val container: HTMLDivElement) :
+  AutoCloseable {
+    /**
+     * Updates the HUD text to show the provided compass direction.
+     *
+     * Mutates the container text content when the displayed direction changes.
+     * @param direction compass heading to render in the HUD.
+     */
+    fun update(
+      direction: Direction16,
+    ) {
+      val label = direction.displayName()
+      val text = "Direction: $label"
+      if (container.textContent == text) return
+      container.textContent = text
+    }
 
-  override fun close() {
-    container.remove()
+    override fun close() {
+      container.remove()
+    }
   }
-}
 
 /**
  * Creates a camera direction HUD attached to the document body.
@@ -59,7 +60,9 @@ fun CameraHud(
   val body = document.body ?: error("Document body is not available")
   require(x.isFinite()) { "x must be finite" }
   require(y.isFinite()) { "y must be finite" }
-  require(scale.isFinite() && scale > 0.0) { "Scale must be positive and finite" }
+  require(scale.isFinite() && scale > 0.0) {
+    "Scale must be positive and finite"
+  }
   val container =
     (document.getElementById(CONTAINER_ID) as? HTMLDivElement)
       ?: (document.createElement("div") as HTMLDivElement).also { element ->
@@ -94,5 +97,7 @@ private fun Direction16.displayName(): String =
   name
     .split('_')
     .joinToString(" ") { segment ->
-      segment.lowercase().replaceFirstChar(Char::titlecaseChar)
+      segment
+        .lowercase()
+        .replaceFirstChar(Char::titlecaseChar)
     }

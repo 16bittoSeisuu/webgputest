@@ -17,7 +17,9 @@ internal fun formatDecimals(
   decimals: Int,
 ): String {
   if (decimals == 0) {
-    return value.roundToLong().toString()
+    return value
+      .roundToLong()
+      .toString()
   }
   val factor = 10.0.pow(decimals)
   val rounded = (value * factor).roundToLong() / factor

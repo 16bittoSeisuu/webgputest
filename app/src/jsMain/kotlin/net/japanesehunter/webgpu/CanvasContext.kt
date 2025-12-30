@@ -44,11 +44,15 @@ interface CanvasContext : PointerLock {
   val canvas: HTMLCanvasElement
   val preferredFormat: GPUTextureFormat
 
-  fun onResize(action: () -> Unit): AutoCloseable
+  fun onResize(
+    action: () -> Unit,
+  ): AutoCloseable
 
   fun getCurrentTexture(): GPUTexture
 
-  fun configure(configuration: GPUCanvasConfiguration): AutoCloseable
+  fun configure(
+    configuration: GPUCanvasConfiguration,
+  ): AutoCloseable
 }
 
 @PublishedApi
@@ -65,7 +69,8 @@ internal class CanvasContextImpl(
         ?: if (createOnMissing) {
           val canvas = document.createElement("canvas") as HTMLCanvasElement
           canvas.id = id
-          document.body?.appendChild(canvas)
+          document.body
+            ?.appendChild(canvas)
           canvas
         } else {
           error("Canvas element with id '$id' not found")
@@ -97,7 +102,10 @@ internal class CanvasContextImpl(
   private var lastUnlockMark: ComparableTimeMark = timeSource.markNow()
 
   private val pointerLockChangeHandler: (Event) -> Unit = {
-    val locked = document.asDynamic().pointerLockElement == canvasElement
+    val locked =
+      document
+        .asDynamic()
+        .pointerLockElement == canvasElement
     if (!locked) {
       lastUnlockMark = timeSource.markNow()
     }
@@ -112,7 +120,9 @@ internal class CanvasContextImpl(
 
   private val pointerLockEventSource =
     object : EventSource<PointerLockEvent> {
-      override fun subscribe(sink: EventSink<PointerLockEvent>): EventSubscription {
+      override fun subscribe(
+        sink: EventSink<PointerLockEvent>,
+      ): EventSubscription {
         pointerLockSinks.add(sink)
         return EventSubscription { pointerLockSinks.remove(sink) }
       }
@@ -135,7 +145,9 @@ internal class CanvasContextImpl(
   override val preferredFormat: GPUTextureFormat
     get() = gpu.getPreferredCanvasFormat()
 
-  override fun onResize(action: () -> Unit): AutoCloseable {
+  override fun onResize(
+    action: () -> Unit,
+  ): AutoCloseable {
     val handler: (Event) -> Unit = {
       action()
     }
@@ -145,9 +157,12 @@ internal class CanvasContextImpl(
     }
   }
 
-  override fun getCurrentTexture(): GPUTexture = canvasContext.getCurrentTexture()
+  override fun getCurrentTexture(): GPUTexture =
+    canvasContext.getCurrentTexture()
 
-  override fun configure(configuration: GPUCanvasConfiguration): AutoCloseable {
+  override fun configure(
+    configuration: GPUCanvasConfiguration,
+  ): AutoCloseable {
     canvasContext.configure(configuration)
     return AutoCloseable {
       canvasContext.unconfigure()
@@ -155,21 +170,29 @@ internal class CanvasContextImpl(
   }
 
   override val isPointerLocked: Boolean
-    get() = document.asDynamic().pointerLockElement == canvasElement
+    get() =
+      document
+        .asDynamic()
+        .pointerLockElement == canvasElement
 
-  override fun pointerLockEvents(): EventSource<PointerLockEvent> = pointerLockEventSource
+  override fun pointerLockEvents(): EventSource<PointerLockEvent> =
+    pointerLockEventSource
 
   override fun requestPointerLock(): Boolean {
     if (lastUnlockMark.elapsedNow() < POINTER_LOCK_COOLDOWN) {
       return false
     }
-    canvasElement.asDynamic().requestPointerLock()
+    canvasElement
+      .asDynamic()
+      .requestPointerLock()
     return true
   }
 
   override fun exitPointerLock() {
     if (isPointerLocked) {
-      document.asDynamic().exitPointerLock()
+      document
+        .asDynamic()
+        .exitPointerLock()
     }
   }
 

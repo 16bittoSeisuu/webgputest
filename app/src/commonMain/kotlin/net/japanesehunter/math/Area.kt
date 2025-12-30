@@ -32,26 +32,28 @@ enum class AreaUnit(
   internal val nanometersSquaredPerUnit: Double,
   internal val symbol: String,
 ) {
-  SQUARE_NANOMETER(1.0, "nm^2"),
-  SQUARE_MICROMETER(SQUARE_NANOMETERS_PER_MICROMETER, "um^2"),
-  SQUARE_MILLIMETER(SQUARE_NANOMETERS_PER_MILLIMETER, "mm^2"),
-  SQUARE_CENTIMETER(SQUARE_NANOMETERS_PER_CENTIMETER, "cm^2"),
-  SQUARE_METER(SQUARE_NANOMETERS_PER_METER, "m^2"),
-  SQUARE_KILOMETER(SQUARE_NANOMETERS_PER_KILOMETER, "km^2"),
+  SquareNanometer(1.0, "nm^2"),
+  SquareMicrometer(SQUARE_NANOMETERS_PER_MICROMETER, "um^2"),
+  SquareMillimeter(SQUARE_NANOMETERS_PER_MILLIMETER, "mm^2"),
+  SquareCentimeter(SQUARE_NANOMETERS_PER_CENTIMETER, "cm^2"),
+  SquareMeter(SQUARE_NANOMETERS_PER_METER, "m^2"),
+  SquareKilometer(SQUARE_NANOMETERS_PER_KILOMETER, "km^2"),
   ;
 
   companion object {
     /**
      * Returns the [AreaUnit] corresponding to the given [LengthUnit] squared.
      */
-    fun from(distanceUnit: LengthUnit): AreaUnit =
+    fun from(
+      distanceUnit: LengthUnit,
+    ): AreaUnit =
       when (distanceUnit) {
-        LengthUnit.NANOMETER -> SQUARE_NANOMETER
-        LengthUnit.MICROMETER -> SQUARE_MICROMETER
-        LengthUnit.MILLIMETER -> SQUARE_MILLIMETER
-        LengthUnit.CENTIMETER -> SQUARE_CENTIMETER
-        LengthUnit.METER -> SQUARE_METER
-        LengthUnit.KILOMETER -> SQUARE_KILOMETER
+        LengthUnit.NANOMETER -> SquareNanometer
+        LengthUnit.MICROMETER -> SquareMicrometer
+        LengthUnit.MILLIMETER -> SquareMillimeter
+        LengthUnit.CENTIMETER -> SquareCentimeter
+        LengthUnit.METER -> SquareMeter
+        LengthUnit.KILOMETER -> SquareKilometer
       }
   }
 }
@@ -66,362 +68,431 @@ enum class AreaUnit(
  *
  * @author Int16
  */
-value class Area internal constructor(
-  private val squareNanometers: Long,
-) : Comparable<Area> {
-  /**
-   * Returns this area as a whole number of square nanometers.
-   */
-  val inWholeSquareNanometers: Long
-    get() = squareNanometers
+value class Area internal constructor(private val squareNanometers: Long) :
+  Comparable<Area> {
+    /**
+     * Returns this area as a whole number of square nanometers.
+     */
+    val inWholeSquareNanometers: Long
+      get() = squareNanometers
 
-  /**
-   * Returns this area as a whole number of square micrometers,
-   * truncated toward zero.
-   */
-  val inWholeSquareMicrometers: Long
-    get() = toLong(AreaUnit.SQUARE_MICROMETER)
+    /**
+     * Returns this area as a whole number of square micrometers,
+     * truncated toward zero.
+     */
+    val inWholeSquareMicrometers: Long
+      get() = toLong(AreaUnit.SquareMicrometer)
 
-  /**
-   * Returns this area as a whole number of square millimeters,
-   * truncated toward zero.
-   */
-  val inWholeSquareMillimeters: Long
-    get() = toLong(AreaUnit.SQUARE_MILLIMETER)
+    /**
+     * Returns this area as a whole number of square millimeters,
+     * truncated toward zero.
+     */
+    val inWholeSquareMillimeters: Long
+      get() = toLong(AreaUnit.SquareMillimeter)
 
-  /**
-   * Returns this area as a whole number of square meters,
-   * truncated toward zero.
-   */
-  val inWholeSquareMeters: Long
-    get() = toLong(AreaUnit.SQUARE_METER)
+    /**
+     * Returns this area as a whole number of square meters,
+     * truncated toward zero.
+     */
+    val inWholeSquareMeters: Long
+      get() = toLong(AreaUnit.SquareMeter)
 
-  /**
-   * Returns this area as a whole number of square kilometers,
-   * truncated toward zero.
-   */
-  val inWholeSquareKilometers: Long
-    get() = toLong(AreaUnit.SQUARE_KILOMETER)
+    /**
+     * Returns this area as a whole number of square kilometers,
+     * truncated toward zero.
+     */
+    val inWholeSquareKilometers: Long
+      get() = toLong(AreaUnit.SquareKilometer)
 
-  /**
-   * Converts this [Area] to a [Long] value using the specified [unit].
-   * The result is truncated toward zero.
-   *
-   * @param unit The [AreaUnit] to convert to.
-   * @return The truncated [Long] representation in [unit].
-   */
-  fun toLong(unit: AreaUnit): Long = (squareNanometers.toDouble() / unit.nanometersSquaredPerUnit).toLong()
+    /**
+     * Converts this [Area] to a [Long] value using the specified [unit].
+     * The result is truncated toward zero.
+     *
+     * @param unit The [AreaUnit] to convert to.
+     * @return The truncated [Long] representation in [unit].
+     */
+    fun toLong(
+      unit: AreaUnit,
+    ): Long =
+      (
+        squareNanometers.toDouble() /
+          unit.nanometersSquaredPerUnit
+      ).toLong()
 
-  /**
-   * Converts this [Area] to a [Double] value using the specified [unit].
-   *
-   * @param unit The [AreaUnit] to convert to.
-   * @return The [Double] representation in [unit].
-   */
-  fun toDouble(unit: AreaUnit): Double = squareNanometers.toDouble() / unit.nanometersSquaredPerUnit
+    /**
+     * Converts this [Area] to a [Double] value using the specified [unit].
+     *
+     * @param unit The [AreaUnit] to convert to.
+     * @return The [Double] representation in [unit].
+     */
+    fun toDouble(
+      unit: AreaUnit,
+    ): Double =
+      squareNanometers.toDouble() / unit.nanometersSquaredPerUnit
 
-  /**
-   * Returns the absolute value of this area.
-   */
-  val absoluteValue: Area
-    get() =
-      if (squareNanometers < 0) {
-        Area(safeNegate(squareNanometers))
-      } else {
-        this
-      }
+    /**
+     * Returns the absolute value of this area.
+     */
+    val absoluteValue: Area
+      get() =
+        if (squareNanometers < 0) {
+          Area(safeNegate(squareNanometers))
+        } else {
+          this
+        }
 
-  /**
-   * Returns `true` if this area is exactly zero.
-   */
-  val isZero: Boolean
-    get() = squareNanometers == 0L
+    /**
+     * Returns `true` if this area is exactly zero.
+     */
+    val isZero: Boolean
+      get() = squareNanometers == 0L
 
-  /**
-   * Returns `true` if this area is strictly positive.
-   */
-  val isPositive: Boolean
-    get() = squareNanometers > 0L
+    /**
+     * Returns `true` if this area is strictly positive.
+     */
+    val isPositive: Boolean
+      get() = squareNanometers > 0L
 
-  /**
-   * Returns `true` if this area is strictly negative.
-   */
-  val isNegative: Boolean
-    get() = squareNanometers < 0L
+    /**
+     * Returns `true` if this area is strictly negative.
+     */
+    val isNegative: Boolean
+      get() = squareNanometers < 0L
 
-  /**
-   * Returns the negated area.
-   *
-   * @throws ArithmeticException If negation overflows [Long].
-   */
-  operator fun unaryMinus(): Area = Area(safeNegate(squareNanometers))
+    /**
+     * Returns the negated area.
+     *
+     * @throws ArithmeticException If negation overflows [Long].
+     */
+    operator fun unaryMinus(): Area =
+      Area(safeNegate(squareNanometers))
 
-  /**
-   * Adds another [Area].
-   *
-   * @param other The area to add.
-   * @return The sum of the areas.
-   * @throws ArithmeticException If the sum overflows [Long].
-   */
-  operator fun plus(other: Area): Area = Area(safeAdd(squareNanometers, other.squareNanometers))
+    /**
+     * Adds another [Area].
+     *
+     * @param other The area to add.
+     * @return The sum of the areas.
+     * @throws ArithmeticException If the sum overflows [Long].
+     */
+    operator fun plus(
+      other: Area,
+    ): Area =
+      Area(safeAdd(squareNanometers, other.squareNanometers))
 
-  /**
-   * Subtracts another [Area].
-   *
-   * @param other The area to subtract.
-   * @return The difference of the areas.
-   * @throws ArithmeticException If the subtraction overflows [Long].
-   */
-  operator fun minus(other: Area): Area = Area(safeAdd(squareNanometers, safeNegate(other.squareNanometers)))
+    /**
+     * Subtracts another [Area].
+     *
+     * @param other The area to subtract.
+     * @return The difference of the areas.
+     * @throws ArithmeticException If the subtraction overflows [Long].
+     */
+    operator fun minus(
+      other: Area,
+    ): Area =
+      Area(safeAdd(squareNanometers, safeNegate(other.squareNanometers)))
 
-  /**
-   * Multiplies this area by a [Long] factor.
-   *
-   * @param factor The scaling factor.
-   * @return The scaled [Area].
-   * @throws ArithmeticException If the multiplication overflows [Long].
-   */
-  operator fun times(factor: Long): Area = Area(safeMultiply(squareNanometers, factor))
+    /**
+     * Multiplies this area by a [Long] factor.
+     *
+     * @param factor The scaling factor.
+     * @return The scaled [Area].
+     * @throws ArithmeticException If the multiplication overflows [Long].
+     */
+    operator fun times(
+      factor: Long,
+    ): Area =
+      Area(safeMultiply(squareNanometers, factor))
 
-  /**
-   * Multiplies this area by a [Double] factor.
-   * The result is rounded to the nearest square nanometer.
-   *
-   * @param factor The scaling factor. Must be finite.
-   * @return The scaled [Area].
-   * @throws IllegalArgumentException If [factor] is not finite.
-   */
-  operator fun times(factor: Double): Area = Area(scaleDouble(squareNanometers, factor))
+    /**
+     * Multiplies this area by a [Double] factor.
+     * The result is rounded to the nearest square nanometer.
+     *
+     * @param factor The scaling factor. Must be finite.
+     * @return The scaled [Area].
+     * @throws IllegalArgumentException If [factor] is not finite.
+     */
+    operator fun times(
+      factor: Double,
+    ): Area =
+      Area(scaleDouble(squareNanometers, factor))
 
-  /**
-   * Divides this area by a [Long] divisor.
-   *
-   * @param divisor The divisor. Must not be zero.
-   * @return The scaled [Area].
-   * @throws IllegalArgumentException If [divisor] is zero.
-   */
-  operator fun div(divisor: Long): Area {
-    require(divisor != 0L) { "Cannot divide an area by zero." }
-    return Area(squareNanometers / divisor)
-  }
-
-  /**
-   * Divides this area by a [Double] divisor.
-   * The result is rounded to the nearest square nanometer.
-   *
-   * @param divisor The divisor. Must be finite and non-zero.
-   * @return The scaled [Area].
-   * @throws IllegalArgumentException If [divisor] is not finite or zero.
-   */
-  operator fun div(divisor: Double): Area {
-    require(divisor.isFinite() && divisor != 0.0) {
-      "Divisor must be finite and non-zero: $divisor"
+    /**
+     * Divides this area by a [Long] divisor.
+     *
+     * @param divisor The divisor. Must not be zero.
+     * @return The scaled [Area].
+     * @throws IllegalArgumentException If [divisor] is zero.
+     */
+    operator fun div(
+      divisor: Long,
+    ): Area {
+      require(divisor != 0L) { "Cannot divide an area by zero." }
+      return Area(squareNanometers / divisor)
     }
-    return Area(scaleDouble(squareNanometers, 1.0 / divisor))
-  }
 
-  /**
-   * Divides this area by another [Area], returning the ratio.
-   *
-   * @param other The divisor. Must not be zero.
-   * @return The ratio as a [Double].
-   * @throws IllegalArgumentException If [other] is zero.
-   */
-  operator fun div(other: Area): Double {
-    require(other.squareNanometers != 0L) { "Cannot divide by a zero area." }
-    return squareNanometers.toDouble() / other.squareNanometers.toDouble()
-  }
+    /**
+     * Divides this area by a [Double] divisor.
+     * The result is rounded to the nearest square nanometer.
+     *
+     * @param divisor The divisor. Must be finite and non-zero.
+     * @return The scaled [Area].
+     * @throws IllegalArgumentException If [divisor] is not finite or zero.
+     */
+    operator fun div(
+      divisor: Double,
+    ): Area {
+      require(divisor.isFinite() && divisor != 0.0) {
+        "Divisor must be finite and non-zero: $divisor"
+      }
+      return Area(scaleDouble(squareNanometers, 1.0 / divisor))
+    }
 
-  override fun compareTo(other: Area): Int = squareNanometers.compareTo(other.squareNanometers)
+    /**
+     * Divides this area by another [Area], returning the ratio.
+     *
+     * @param other The divisor. Must not be zero.
+     * @return The ratio as a [Double].
+     * @throws IllegalArgumentException If [other] is zero.
+     */
+    operator fun div(
+      other: Area,
+    ): Double {
+      require(other.squareNanometers != 0L) { "Cannot divide by a zero area." }
+      return squareNanometers.toDouble() /
+        other.squareNanometers
+          .toDouble()
+    }
 
-  override fun toString(): String {
-    val isNegative = squareNanometers < 0
-    val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
-    val (value, unit) =
-      when {
-        absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER && SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> {
-          absSquareNanometers / SQUARE_NANOMETERS_PER_KILOMETER to AreaUnit.SQUARE_KILOMETER
+    override fun compareTo(
+      other: Area,
+    ): Int =
+      squareNanometers.compareTo(other.squareNanometers)
+
+    override fun toString(): String {
+      val isNegative = squareNanometers < 0
+      val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
+      val (value, unit) =
+        when {
+          absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER &&
+            SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> {
+            absSquareNanometers / SQUARE_NANOMETERS_PER_KILOMETER to
+              AreaUnit.SquareKilometer
+          }
+
+          absSquareNanometers >= SQUARE_NANOMETERS_PER_METER -> {
+            absSquareNanometers / SQUARE_NANOMETERS_PER_METER to
+              AreaUnit.SquareMeter
+          }
+
+          absSquareNanometers >= SQUARE_NANOMETERS_PER_CENTIMETER -> {
+            absSquareNanometers / SQUARE_NANOMETERS_PER_CENTIMETER to
+              AreaUnit.SquareCentimeter
+          }
+
+          absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> {
+            absSquareNanometers / SQUARE_NANOMETERS_PER_MILLIMETER to
+              AreaUnit.SquareMillimeter
+          }
+
+          absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER -> {
+            absSquareNanometers / SQUARE_NANOMETERS_PER_MICROMETER to
+              AreaUnit.SquareMicrometer
+          }
+
+          else -> {
+            absSquareNanometers to AreaUnit.SquareNanometer
+          }
+        }
+      val formatted = formatAreaValue(value)
+      return if (isNegative) {
+        "-$formatted${unit.symbol}"
+      } else {
+        "$formatted${unit.symbol}"
+      }
+    }
+
+    /**
+     * Formats this area as a string with the specified unit and decimal places.
+     *
+     * @param unit The unit to display the value in.
+     *
+     *   null: automatically selects the most appropriate unit based on magnitude
+     * @param decimals The number of decimal places.
+     *
+     *   null: uses unlimited precision
+     *   range: decimals >= 0
+     * @param signMode The sign display mode.
+     * @return A formatted string representation.
+     */
+    fun toString(
+      unit: AreaUnit?,
+      decimals: Int? = 2,
+      signMode: SignMode = SignMode.Always,
+    ): String {
+      require(decimals == null || decimals >= 0) {
+        "decimals must be non-negative: $decimals"
+      }
+      val resolvedUnit = resolveUnit(unit)
+      val isNegative = squareNanometers < 0
+      val absValue = abs(toDouble(resolvedUnit))
+      val formatted =
+        if (decimals !=
+          null
+        ) {
+          formatDecimals(absValue, decimals)
+        } else {
+          absValue.toString()
+        }
+      return "${signMode.prefix(isNegative)}$formatted${resolvedUnit.symbol}"
+    }
+
+    private fun resolveUnit(
+      unit: AreaUnit?,
+    ): AreaUnit {
+      if (unit != null) return unit
+      val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
+      return when {
+        absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER &&
+          SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> {
+          AreaUnit.SquareKilometer
         }
 
         absSquareNanometers >= SQUARE_NANOMETERS_PER_METER -> {
-          absSquareNanometers / SQUARE_NANOMETERS_PER_METER to AreaUnit.SQUARE_METER
+          AreaUnit.SquareMeter
         }
 
         absSquareNanometers >= SQUARE_NANOMETERS_PER_CENTIMETER -> {
-          absSquareNanometers / SQUARE_NANOMETERS_PER_CENTIMETER to AreaUnit.SQUARE_CENTIMETER
+          AreaUnit.SquareCentimeter
         }
 
         absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> {
-          absSquareNanometers / SQUARE_NANOMETERS_PER_MILLIMETER to AreaUnit.SQUARE_MILLIMETER
+          AreaUnit.SquareMillimeter
         }
 
         absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER -> {
-          absSquareNanometers / SQUARE_NANOMETERS_PER_MICROMETER to AreaUnit.SQUARE_MICROMETER
+          AreaUnit.SquareMicrometer
         }
 
         else -> {
-          absSquareNanometers to AreaUnit.SQUARE_NANOMETER
+          AreaUnit.SquareNanometer
         }
       }
-    val formatted = formatAreaValue(value)
-    return if (isNegative) {
-      "-$formatted${unit.symbol}"
-    } else {
-      "$formatted${unit.symbol}"
+    }
+
+    companion object {
+      /**
+       * An area of zero square nanometers.
+       */
+      val ZERO: Area = Area(0L)
+
+      /**
+       * Creates an [Area] from a [Long] value with the specified [unit].
+       *
+       * @param value The magnitude expressed in [unit].
+       * @param unit The [AreaUnit] describing the input value.
+       * @return The created [Area].
+       * @throws ArithmeticException If the conversion overflows [Long].
+       */
+      fun from(
+        value: Long,
+        unit: AreaUnit = AreaUnit.SquareNanometer,
+      ): Area =
+        Area(unit.toSquareNanometers(value))
+
+      /**
+       * Creates an [Area] from a [Double] value with the specified [unit].
+       * The value is rounded to the nearest square nanometer.
+       *
+       * @param value The magnitude expressed in [unit]. Must be finite.
+       * @param unit The [AreaUnit] describing the input value.
+       * @return The created [Area].
+       * @throws IllegalArgumentException If [value] is not finite.
+       */
+      fun from(
+        value: Double,
+        unit: AreaUnit = AreaUnit.SquareNanometer,
+      ): Area =
+        Area(unit.toSquareNanometers(value))
     }
   }
-
-  /**
-   * Formats this area as a string with the specified unit and decimal places.
-   *
-   * @param unit The unit to display the value in.
-   *
-   *   null: automatically selects the most appropriate unit based on magnitude
-   * @param decimals The number of decimal places.
-   *
-   *   null: uses unlimited precision
-   *   range: decimals >= 0
-   * @param signMode The sign display mode.
-   * @return A formatted string representation.
-   */
-  fun toString(
-    unit: AreaUnit?,
-    decimals: Int? = 2,
-    signMode: SignMode = SignMode.Always,
-  ): String {
-    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
-    val resolvedUnit = resolveUnit(unit)
-    val isNegative = squareNanometers < 0
-    val absValue = abs(toDouble(resolvedUnit))
-    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
-    return "${signMode.prefix(isNegative)}$formatted${resolvedUnit.symbol}"
-  }
-
-  private fun resolveUnit(unit: AreaUnit?): AreaUnit {
-    if (unit != null) return unit
-    val absSquareNanometers = absoluteSquareNanometers(squareNanometers)
-    return when {
-      absSquareNanometers >= SQUARE_NANOMETERS_PER_KILOMETER && SQUARE_NANOMETERS_PER_KILOMETER.isFinite() -> AreaUnit.SQUARE_KILOMETER
-      absSquareNanometers >= SQUARE_NANOMETERS_PER_METER -> AreaUnit.SQUARE_METER
-      absSquareNanometers >= SQUARE_NANOMETERS_PER_CENTIMETER -> AreaUnit.SQUARE_CENTIMETER
-      absSquareNanometers >= SQUARE_NANOMETERS_PER_MILLIMETER -> AreaUnit.SQUARE_MILLIMETER
-      absSquareNanometers >= SQUARE_NANOMETERS_PER_MICROMETER -> AreaUnit.SQUARE_MICROMETER
-      else -> AreaUnit.SQUARE_NANOMETER
-    }
-  }
-
-  companion object {
-    /**
-     * An area of zero square nanometers.
-     */
-    val ZERO: Area = Area(0L)
-
-    /**
-     * Creates an [Area] from a [Long] value with the specified [unit].
-     *
-     * @param value The magnitude expressed in [unit].
-     * @param unit The [AreaUnit] describing the input value.
-     * @return The created [Area].
-     * @throws ArithmeticException If the conversion overflows [Long].
-     */
-    fun from(
-      value: Long,
-      unit: AreaUnit = AreaUnit.SQUARE_NANOMETER,
-    ): Area = Area(unit.toSquareNanometers(value))
-
-    /**
-     * Creates an [Area] from a [Double] value with the specified [unit].
-     * The value is rounded to the nearest square nanometer.
-     *
-     * @param value The magnitude expressed in [unit]. Must be finite.
-     * @param unit The [AreaUnit] describing the input value.
-     * @return The created [Area].
-     * @throws IllegalArgumentException If [value] is not finite.
-     */
-    fun from(
-      value: Double,
-      unit: AreaUnit = AreaUnit.SQUARE_NANOMETER,
-    ): Area = Area(unit.toSquareNanometers(value))
-  }
-}
 
 /**
  * Creates an [Area] from this [Long] value expressed in square nanometers.
  */
 val Long.squareNanometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_NANOMETER)
+  get() = Area.from(this, AreaUnit.SquareNanometer)
 
 /**
  * Creates an [Area] from this [Long] value expressed in square micrometers.
  */
 val Long.squareMicrometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_MICROMETER)
+  get() = Area.from(this, AreaUnit.SquareMicrometer)
 
 /**
  * Creates an [Area] from this [Long] value expressed in square millimeters.
  */
 val Long.squareMillimeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_MILLIMETER)
+  get() = Area.from(this, AreaUnit.SquareMillimeter)
 
 /**
  * Creates an [Area] from this [Long] value expressed in square centimeters.
  */
 val Long.squareCentimeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_CENTIMETER)
+  get() = Area.from(this, AreaUnit.SquareCentimeter)
 
 /**
  * Creates an [Area] from this [Long] value expressed in square meters.
  */
 val Long.squareMeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_METER)
+  get() = Area.from(this, AreaUnit.SquareMeter)
 
 /**
  * Creates an [Area] from this [Long] value expressed in square kilometers.
  */
 val Long.squareKilometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_KILOMETER)
+  get() = Area.from(this, AreaUnit.SquareKilometer)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square nanometers.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareNanometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_NANOMETER)
+  get() = Area.from(this, AreaUnit.SquareNanometer)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square micrometers.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareMicrometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_MICROMETER)
+  get() = Area.from(this, AreaUnit.SquareMicrometer)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square millimeters.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareMillimeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_MILLIMETER)
+  get() = Area.from(this, AreaUnit.SquareMillimeter)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square centimeters.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareCentimeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_CENTIMETER)
+  get() = Area.from(this, AreaUnit.SquareCentimeter)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square meters.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareMeters: Area
-  get() = Area.from(this, AreaUnit.SQUARE_METER)
+  get() = Area.from(this, AreaUnit.SquareMeter)
 
 /**
  * Creates an [Area] from this [Double] value expressed in square kilometers.
  * The value is rounded to the nearest square nanometer.
  */
 val Double.squareKilometers: Area
-  get() = Area.from(this, AreaUnit.SQUARE_KILOMETER)
+  get() = Area.from(this, AreaUnit.SquareKilometer)
 
 /**
  * Multiplies a [Double] by an [Area].
@@ -430,25 +501,38 @@ val Double.squareKilometers: Area
  * @param area The area to scale.
  * @return The scaled [Area].
  */
-operator fun Double.times(area: Area): Area = area * this
+operator fun Double.times(
+  area: Area,
+): Area =
+  area * this
 
-private fun AreaUnit.toSquareNanometers(value: Long): Long =
+private fun AreaUnit.toSquareNanometers(
+  value: Long,
+): Long =
   when (this) {
-    AreaUnit.SQUARE_NANOMETER -> {
+    AreaUnit.SquareNanometer -> {
       value
     }
 
     else -> {
       val scaled = value.toDouble() * nanometersSquaredPerUnit
-      ensureInLongRange(scaled, "Area $value $this cannot be represented as square nanometers.")
+      ensureInLongRange(
+        scaled,
+        "Area $value $this cannot be represented as square nanometers.",
+      )
       scaled.roundToLong()
     }
   }
 
-private fun AreaUnit.toSquareNanometers(value: Double): Long {
+private fun AreaUnit.toSquareNanometers(
+  value: Double,
+): Long {
   require(value.isFinite()) { "Area must be finite: $value $this" }
   val scaled = value * nanometersSquaredPerUnit
-  ensureInLongRange(scaled, "Area $value $this cannot be represented as square nanometers.")
+  ensureInLongRange(
+    scaled,
+    "Area $value $this cannot be represented as square nanometers.",
+  )
   return scaled.roundToLong()
 }
 
@@ -483,7 +567,9 @@ private fun safeMultiply(
   return result
 }
 
-private fun safeNegate(value: Long): Long =
+private fun safeNegate(
+  value: Long,
+): Long =
   if (value == Long.MIN_VALUE) {
     throw ArithmeticException("Long overflow negating $value.")
   } else {
@@ -500,14 +586,19 @@ private fun scaleDouble(
   return scaled.roundToLong()
 }
 
-private fun absoluteSquareNanometers(value: Long): Double =
+private fun absoluteSquareNanometers(
+  value: Long,
+): Double =
   if (value == Long.MIN_VALUE) {
-    Long.MAX_VALUE.toDouble()
+    Long.MAX_VALUE
+      .toDouble()
   } else {
     abs(value.toDouble())
   }
 
-private fun formatAreaValue(value: Double): String {
+private fun formatAreaValue(
+  value: Double,
+): String {
   val rounded = value.roundToLong()
   return if (rounded.toDouble() == value) {
     rounded.toString()

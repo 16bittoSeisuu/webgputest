@@ -44,21 +44,26 @@ sealed interface Acceleration3 {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = ax
+  operator fun component1() =
+    ax
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = ay
+  operator fun component2() =
+    ay
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component3() = az
+  operator fun component3() =
+    az
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -105,7 +110,10 @@ interface MutableAcceleration3 :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableAcceleration3.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableAcceleration3.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -119,7 +127,8 @@ interface MutableAcceleration3 :
 /**
  * The zero acceleration (0, 0, 0).
  */
-val Acceleration3.Companion.zero: ImmutableAcceleration3 get() = ACCELERATION3_ZERO
+val Acceleration3.Companion.zero: ImmutableAcceleration3
+  get() = ACCELERATION3_ZERO
 
 // endregion
 
@@ -192,7 +201,8 @@ fun MutableAcceleration3(
   ax: Acceleration = Acceleration.ZERO,
   ay: Acceleration = Acceleration.ZERO,
   az: Acceleration = Acceleration.ZERO,
-): MutableAcceleration3 = MutableAcceleration3Impl(ax, ay, az)
+): MutableAcceleration3 =
+  MutableAcceleration3Impl(ax, ay, az)
 
 /**
  * Creates a [MutableAcceleration3] by copying an existing [Acceleration3].
@@ -200,7 +210,9 @@ fun MutableAcceleration3(
  * @param copyFrom The instance to copy from.
  * @return The created mutable acceleration.
  */
-fun MutableAcceleration3.Companion.copyOf(copyFrom: Acceleration3): MutableAcceleration3 =
+fun MutableAcceleration3.Companion.copyOf(
+  copyFrom: Acceleration3,
+): MutableAcceleration3 =
   MutableAcceleration3(copyFrom.ax, copyFrom.ay, copyFrom.az)
 
 // endregion
@@ -240,7 +252,9 @@ operator fun Acceleration3.unaryMinus(): ImmutableAcceleration3 =
  *
  * @param other The acceleration to add.
  */
-operator fun MutableAcceleration3.plusAssign(other: Acceleration3) =
+operator fun MutableAcceleration3.plusAssign(
+  other: Acceleration3,
+) =
   mutate {
     ax += other.ax
     ay += other.ay
@@ -254,7 +268,9 @@ operator fun MutableAcceleration3.plusAssign(other: Acceleration3) =
  * @param other The acceleration to add.
  * @return A new acceleration containing the component-wise sum.
  */
-operator fun Acceleration3.plus(other: Acceleration3): ImmutableAcceleration3 =
+operator fun Acceleration3.plus(
+  other: Acceleration3,
+): ImmutableAcceleration3 =
   Acceleration3.copyOf(this) {
     this += other
   }
@@ -264,7 +280,9 @@ operator fun Acceleration3.plus(other: Acceleration3): ImmutableAcceleration3 =
  *
  * @param other The acceleration to subtract.
  */
-operator fun MutableAcceleration3.minusAssign(other: Acceleration3) =
+operator fun MutableAcceleration3.minusAssign(
+  other: Acceleration3,
+) =
   mutate {
     ax -= other.ax
     ay -= other.ay
@@ -278,7 +296,9 @@ operator fun MutableAcceleration3.minusAssign(other: Acceleration3) =
  * @param other The acceleration to subtract.
  * @return A new acceleration containing the component-wise difference.
  */
-operator fun Acceleration3.minus(other: Acceleration3): ImmutableAcceleration3 =
+operator fun Acceleration3.minus(
+  other: Acceleration3,
+): ImmutableAcceleration3 =
   Acceleration3.copyOf(this) {
     this -= other
   }
@@ -294,7 +314,9 @@ operator fun Acceleration3.minus(other: Acceleration3): ImmutableAcceleration3 =
  * @throws IllegalArgumentException if [factor] is not finite.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Acceleration3.times(factor: Double): ImmutableAcceleration3 =
+operator fun Acceleration3.times(
+  factor: Double,
+): ImmutableAcceleration3 =
   Acceleration3(
     ax = ax * factor,
     ay = ay * factor,
@@ -309,7 +331,9 @@ operator fun Acceleration3.times(factor: Double): ImmutableAcceleration3 =
  * @return A new acceleration scaled by [factor].
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Acceleration3.times(factor: Long): ImmutableAcceleration3 =
+operator fun Acceleration3.times(
+  factor: Long,
+): ImmutableAcceleration3 =
   Acceleration3(
     ax = ax * factor,
     ay = ay * factor,
@@ -327,7 +351,9 @@ operator fun Acceleration3.times(factor: Long): ImmutableAcceleration3 =
  * @throws IllegalArgumentException if [divisor] is not finite or is zero.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Acceleration3.div(divisor: Double): ImmutableAcceleration3 =
+operator fun Acceleration3.div(
+  divisor: Double,
+): ImmutableAcceleration3 =
   Acceleration3(
     ax = ax / divisor,
     ay = ay / divisor,
@@ -342,7 +368,9 @@ operator fun Acceleration3.div(divisor: Double): ImmutableAcceleration3 =
  * @return A new acceleration divided by [divisor].
  * @throws ArithmeticException if [divisor] is zero.
  */
-operator fun Acceleration3.div(divisor: Long): ImmutableAcceleration3 =
+operator fun Acceleration3.div(
+  divisor: Long,
+): ImmutableAcceleration3 =
   Acceleration3(
     ax = ax / divisor,
     ay = ay / divisor,
@@ -358,7 +386,9 @@ operator fun Acceleration3.div(divisor: Long): ImmutableAcceleration3 =
  * @throws IllegalArgumentException if [duration] is not finite.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Acceleration3.times(duration: Duration): ImmutableVelocity3 {
+operator fun Acceleration3.times(
+  duration: Duration,
+): ImmutableVelocity3 {
   require(duration.isFinite()) { "Duration must be finite: $duration" }
   return Velocity3(
     vx = ax * duration,
@@ -372,23 +402,31 @@ operator fun Acceleration3.times(duration: Duration): ImmutableVelocity3 {
 // region implementations
 
 private val ACCELERATION3_ZERO: ImmutableAcceleration3 =
-  ImmutableAcceleration3Impl(Acceleration.ZERO, Acceleration.ZERO, Acceleration.ZERO)
+  ImmutableAcceleration3Impl(
+    Acceleration.ZERO,
+    Acceleration.ZERO,
+    Acceleration.ZERO,
+  )
 
 private data class ImmutableAcceleration3Impl(
   override var ax: Acceleration,
   override var ay: Acceleration,
   override var az: Acceleration,
 ) : ImmutableAcceleration3 {
-  override fun toString(): String = "Acceleration3(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String =
+    "Acceleration3(ax=$ax, ay=$ay, az=$az)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Acceleration3 -> false
       else -> ax == other.ax && ay == other.ay && az == other.az
     }
 
-  override fun hashCode(): Int = componentsHash(ax, ay, az)
+  override fun hashCode(): Int =
+    componentsHash(ax, ay, az)
 }
 
 private value class Acceleration3MutableWrapper(
@@ -419,7 +457,8 @@ private value class Acceleration3MutableWrapper(
   override val azFlow: StateFlow<Acceleration>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 }
 
 private class MutableAcceleration3Impl(
@@ -464,33 +503,42 @@ private class MutableAcceleration3Impl(
   override val ayFlow: StateFlow<Acceleration> get() = _ayFlow.asStateFlow()
   override val azFlow: StateFlow<Acceleration> get() = _azFlow.asStateFlow()
 
-  override fun mutate(action: MutableAcceleration3.() -> Unit) {
+  override fun mutate(
+    action: MutableAcceleration3.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Acceleration3(ax=$ax, ay=$ay, az=$az)"
+  override fun toString(): String =
+    "Acceleration3(ax=$ax, ay=$ay, az=$az)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Acceleration3 -> false
       else -> ax == other.ax && ay == other.ay && az == other.az
     }
 
-  override fun hashCode(): Int = componentsHash(ax, ay, az)
+  override fun hashCode(): Int =
+    componentsHash(ax, ay, az)
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  private class Ticket(
-    original: MutableAcceleration3Impl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableAcceleration3Impl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean

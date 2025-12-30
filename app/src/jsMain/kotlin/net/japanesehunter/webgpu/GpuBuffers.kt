@@ -35,7 +35,9 @@ interface VertexGpuBuffer : GpuBuffer {
 }
 
 context(alloc: BufferAllocator)
-fun VertexGpuBuffer.Companion.pos3D(data: FloatArray): Resource<VertexGpuBuffer> {
+fun VertexGpuBuffer.Companion.pos3D(
+  data: FloatArray,
+): Resource<VertexGpuBuffer> {
   val res = alloc.static(data, GPUBufferUsage.Vertex, "Vertex Position Buffer")
   return resource {
     val buf = res.bind()
@@ -46,7 +48,9 @@ fun VertexGpuBuffer.Companion.pos3D(data: FloatArray): Resource<VertexGpuBuffer>
 }
 
 context(alloc: BufferAllocator)
-fun VertexGpuBuffer.Companion.rgbaColor(data: FloatArray): Resource<VertexGpuBuffer> {
+fun VertexGpuBuffer.Companion.rgbaColor(
+  data: FloatArray,
+): Resource<VertexGpuBuffer> {
   val res = alloc.static(data, GPUBufferUsage.Vertex, "Vertex Color Buffer")
   return resource {
     val buf = res.bind()
@@ -57,7 +61,9 @@ fun VertexGpuBuffer.Companion.rgbaColor(data: FloatArray): Resource<VertexGpuBuf
 }
 
 context(alloc: BufferAllocator)
-fun VertexGpuBuffer.Companion.uv(data: FloatArray): Resource<VertexGpuBuffer> {
+fun VertexGpuBuffer.Companion.uv(
+  data: FloatArray,
+): Resource<VertexGpuBuffer> {
   val res = alloc.static(data, GPUBufferUsage.Vertex, "Vertex UV Buffer")
   return resource {
     val buf = res.bind()
@@ -79,7 +85,9 @@ interface IndexGpuBuffer : GpuBuffer {
 }
 
 context(alloc: BufferAllocator)
-fun IndexGpuBuffer.Companion.u16(data: ShortArray): Resource<IndexGpuBuffer> {
+fun IndexGpuBuffer.Companion.u16(
+  data: ShortArray,
+): Resource<IndexGpuBuffer> {
   val res = alloc.static(data, GPUBufferUsage.Index, "Index Buffer")
   return resource {
     val buf = res.bind()
@@ -91,13 +99,17 @@ fun IndexGpuBuffer.Companion.u16(data: ShortArray): Resource<IndexGpuBuffer> {
 }
 
 context(alloc: BufferAllocator)
-fun IndexGpuBuffer.Companion.u16(vararg data: Int): Resource<IndexGpuBuffer> {
+fun IndexGpuBuffer.Companion.u16(
+  vararg data: Int,
+): Resource<IndexGpuBuffer> {
   val shortData = ShortArray(data.size) { i -> data[i].toShort() }
   return IndexGpuBuffer.u16(shortData)
 }
 
 context(alloc: BufferAllocator)
-fun IndexGpuBuffer.Companion.u32(data: IntArray): Resource<IndexGpuBuffer> {
+fun IndexGpuBuffer.Companion.u32(
+  data: IntArray,
+): Resource<IndexGpuBuffer> {
   val res = alloc.static(data, GPUBufferUsage.Index, "Index Buffer")
   return resource {
     val buf = res.bind()
@@ -140,7 +152,11 @@ fun InstanceGpuBuffer.Companion.transforms(
   val arrayBuf = FloatArray(16 * initialSize)
   data.forEachIndexed { transformIndex, transform ->
     val modelArray = transform.toFloatArray()
-    modelArray.copyInto(arrayBuf, destinationOffset = transformIndex * modelArray.size)
+    modelArray.copyInto(
+      arrayBuf,
+      destinationOffset =
+        transformIndex * modelArray.size,
+    )
   }
   val res =
     alloc.mutable(
@@ -232,7 +248,9 @@ private fun Transform.toFloatArray(): FloatArray {
   }
 }
 
-private fun Camera.toFloatArray(unit: LengthUnit): FloatArray {
+private fun Camera.toFloatArray(
+  unit: LengthUnit,
+): FloatArray {
   tmpMatrix.update {
     it.apply {
       setIdentity()

@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUVertexFormat private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUVertexFormat private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Uint8x2 = GPUVertexFormat("uint8x2")

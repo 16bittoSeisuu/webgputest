@@ -1,11 +1,15 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUTextureUsage private constructor(
-  val value: Int,
-) {
-  operator fun plus(other: GPUTextureUsage): GPUTextureUsage = GPUTextureUsage(value or other.value)
+value class GPUTextureUsage private constructor(val value: Int) {
+  operator fun plus(
+    other: GPUTextureUsage,
+  ): GPUTextureUsage =
+    GPUTextureUsage(value or other.value)
 
-  fun contains(other: GPUTextureUsage): Boolean = value and other.value == other.value
+  fun contains(
+    other: GPUTextureUsage,
+  ): Boolean =
+    value and other.value == other.value
 
   companion object {
     val None = GPUTextureUsage(0)

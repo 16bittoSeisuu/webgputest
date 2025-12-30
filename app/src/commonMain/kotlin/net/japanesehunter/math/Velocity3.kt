@@ -44,21 +44,26 @@ sealed interface Velocity3 {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = vx
+  operator fun component1() =
+    vx
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = vy
+  operator fun component2() =
+    vy
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component3() = vz
+  operator fun component3() =
+    vz
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -105,7 +110,10 @@ interface MutableVelocity3 :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableVelocity3.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableVelocity3.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -192,7 +200,8 @@ fun MutableVelocity3(
   vx: Speed = Speed.ZERO,
   vy: Speed = Speed.ZERO,
   vz: Speed = Speed.ZERO,
-): MutableVelocity3 = MutableVelocity3Impl(vx, vy, vz)
+): MutableVelocity3 =
+  MutableVelocity3Impl(vx, vy, vz)
 
 /**
  * Creates a [MutableVelocity3] by copying an existing [Velocity3].
@@ -200,7 +209,10 @@ fun MutableVelocity3(
  * @param copyFrom The instance to copy from.
  * @return The created mutable velocity.
  */
-fun MutableVelocity3.Companion.copyOf(copyFrom: Velocity3): MutableVelocity3 = MutableVelocity3(copyFrom.vx, copyFrom.vy, copyFrom.vz)
+fun MutableVelocity3.Companion.copyOf(
+  copyFrom: Velocity3,
+): MutableVelocity3 =
+  MutableVelocity3(copyFrom.vx, copyFrom.vy, copyFrom.vz)
 
 // endregion
 
@@ -239,7 +251,9 @@ operator fun Velocity3.unaryMinus(): ImmutableVelocity3 =
  *
  * @param other The velocity to add.
  */
-operator fun MutableVelocity3.plusAssign(other: Velocity3) =
+operator fun MutableVelocity3.plusAssign(
+  other: Velocity3,
+) =
   mutate {
     vx += other.vx
     vy += other.vy
@@ -253,7 +267,9 @@ operator fun MutableVelocity3.plusAssign(other: Velocity3) =
  * @param other The velocity to add.
  * @return A new velocity containing the component-wise sum.
  */
-operator fun Velocity3.plus(other: Velocity3): ImmutableVelocity3 =
+operator fun Velocity3.plus(
+  other: Velocity3,
+): ImmutableVelocity3 =
   Velocity3.copyOf(this) {
     this += other
   }
@@ -263,7 +279,9 @@ operator fun Velocity3.plus(other: Velocity3): ImmutableVelocity3 =
  *
  * @param other The velocity to subtract.
  */
-operator fun MutableVelocity3.minusAssign(other: Velocity3) =
+operator fun MutableVelocity3.minusAssign(
+  other: Velocity3,
+) =
   mutate {
     vx -= other.vx
     vy -= other.vy
@@ -277,7 +295,9 @@ operator fun MutableVelocity3.minusAssign(other: Velocity3) =
  * @param other The velocity to subtract.
  * @return A new velocity containing the component-wise difference.
  */
-operator fun Velocity3.minus(other: Velocity3): ImmutableVelocity3 =
+operator fun Velocity3.minus(
+  other: Velocity3,
+): ImmutableVelocity3 =
   Velocity3.copyOf(this) {
     this -= other
   }
@@ -293,7 +313,9 @@ operator fun Velocity3.minus(other: Velocity3): ImmutableVelocity3 =
  * @throws IllegalArgumentException if [factor] is not finite.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Velocity3.times(factor: Double): ImmutableVelocity3 =
+operator fun Velocity3.times(
+  factor: Double,
+): ImmutableVelocity3 =
   Velocity3(
     vx = vx * factor,
     vy = vy * factor,
@@ -311,7 +333,9 @@ operator fun Velocity3.times(factor: Double): ImmutableVelocity3 =
  * @throws IllegalArgumentException if [divisor] is not finite or is zero.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Velocity3.div(divisor: Double): ImmutableVelocity3 =
+operator fun Velocity3.div(
+  divisor: Double,
+): ImmutableVelocity3 =
   Velocity3(
     vx = vx / divisor,
     vy = vy / divisor,
@@ -327,7 +351,9 @@ operator fun Velocity3.div(divisor: Double): ImmutableVelocity3 =
  * @throws IllegalArgumentException if [duration] is not finite.
  * @throws ArithmeticException if the calculation overflows.
  */
-operator fun Velocity3.times(duration: Duration): ImmutableLength3 {
+operator fun Velocity3.times(
+  duration: Duration,
+): ImmutableLength3 {
   require(duration.isFinite()) { "Duration must be finite: $duration" }
   return Length3(
     dx = vx * duration,
@@ -340,23 +366,28 @@ operator fun Velocity3.times(duration: Duration): ImmutableLength3 {
 
 // region implementations
 
-private val VELOCITY3_ZERO: ImmutableVelocity3 = ImmutableVelocity3Impl(Speed.ZERO, Speed.ZERO, Speed.ZERO)
+private val VELOCITY3_ZERO: ImmutableVelocity3 =
+  ImmutableVelocity3Impl(Speed.ZERO, Speed.ZERO, Speed.ZERO)
 
 private data class ImmutableVelocity3Impl(
   override var vx: Speed,
   override var vy: Speed,
   override var vz: Speed,
 ) : ImmutableVelocity3 {
-  override fun toString(): String = "Velocity3(vx=$vx, vy=$vy, vz=$vz)"
+  override fun toString(): String =
+    "Velocity3(vx=$vx, vy=$vy, vz=$vz)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Velocity3 -> false
       else -> vx == other.vx && vy == other.vy && vz == other.vz
     }
 
-  override fun hashCode(): Int = componentsHash(vx, vy, vz)
+  override fun hashCode(): Int =
+    componentsHash(vx, vy, vz)
 }
 
 private value class Velocity3MutableWrapper(
@@ -387,7 +418,8 @@ private value class Velocity3MutableWrapper(
   override val vzFlow: StateFlow<Speed>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 }
 
 private class MutableVelocity3Impl(
@@ -432,33 +464,42 @@ private class MutableVelocity3Impl(
   override val vyFlow: StateFlow<Speed> get() = _vyFlow.asStateFlow()
   override val vzFlow: StateFlow<Speed> get() = _vzFlow.asStateFlow()
 
-  override fun mutate(action: MutableVelocity3.() -> Unit) {
+  override fun mutate(
+    action: MutableVelocity3.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Velocity3(vx=$vx, vy=$vy, vz=$vz/)"
+  override fun toString(): String =
+    "Velocity3(vx=$vx, vy=$vy, vz=$vz/)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Velocity3 -> false
       else -> vx == other.vx && vy == other.vy && vz == other.vz
     }
 
-  override fun hashCode(): Int = componentsHash(vx, vy, vz)
+  override fun hashCode(): Int =
+    componentsHash(vx, vy, vz)
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  private class Ticket(
-    original: MutableVelocity3Impl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableVelocity3Impl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean

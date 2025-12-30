@@ -14,7 +14,8 @@ import kotlin.reflect.KClass
 class HashMapEntityRegistry : EntityRegistry {
   private var nextId: Int = 1
   private val aliveEntities: MutableSet<EntityId> = mutableSetOf()
-  private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> = mutableMapOf()
+  private val traitStores: MutableMap<KClass<*>, MutableMap<EntityId, Any>> =
+    mutableMapOf()
 
   internal fun createId(): EntityId {
     val id = EntityId(nextId++)
@@ -27,13 +28,19 @@ class HashMapEntityRegistry : EntityRegistry {
     return EntityHandle(id)
   }
 
-  internal fun destroyById(id: EntityId) {
+  internal fun destroyById(
+    id: EntityId,
+  ) {
     if (aliveEntities.remove(id)) {
-      traitStores.values.forEach { it.remove(id) }
+      traitStores.values
+        .forEach { it.remove(id) }
     }
   }
 
-  internal fun existsById(id: EntityId): Boolean = id in aliveEntities
+  internal fun existsById(
+    id: EntityId,
+  ): Boolean =
+    id in aliveEntities
 
   internal fun <T : Any> addById(
     id: EntityId,
@@ -63,9 +70,12 @@ class HashMapEntityRegistry : EntityRegistry {
   internal fun hasById(
     id: EntityId,
     type: KClass<*>,
-  ): Boolean = traitStores[type]?.containsKey(id) == true
+  ): Boolean =
+    traitStores[type]?.containsKey(id) == true
 
-  internal fun queryIds(vararg types: KClass<*>): Sequence<EntityId> {
+  internal fun queryIds(
+    vararg types: KClass<*>,
+  ): Sequence<EntityId> {
     if (types.isEmpty()) {
       return aliveEntities.asSequence()
     }
@@ -81,7 +91,10 @@ class HashMapEntityRegistry : EntityRegistry {
     }
   }
 
-  override fun query(vararg types: KClass<*>): Sequence<Entity> = queryIds(*types).map { id -> EntityHandle(id) }
+  override fun query(
+    vararg types: KClass<*>,
+  ): Sequence<Entity> =
+    queryIds(*types).map { id -> EntityHandle(id) }
 
   /**
    * Entity handle implementation specific to [HashMapEntityRegistry].
@@ -99,28 +112,34 @@ class HashMapEntityRegistry : EntityRegistry {
    *
    * @param id the internal entity identifier.
    */
-  private inner class EntityHandle(
-    private val id: EntityId,
-  ) : Entity {
+  private inner class EntityHandle(private val id: EntityId) : Entity {
     override val isAlive: Boolean
       get() = existsById(id)
 
-    override fun <T : Any> add(trait: T) {
+    override fun <T : Any> add(
+      trait: T,
+    ) {
       checkAlive()
       this@HashMapEntityRegistry.addById(id, trait)
     }
 
-    override fun <T : Any> get(type: KClass<T>): T? {
+    override fun <T : Any> get(
+      type: KClass<T>,
+    ): T? {
       checkAlive()
       return this@HashMapEntityRegistry.getById(id, type)
     }
 
-    override fun <T : Any> remove(type: KClass<T>): T? {
+    override fun <T : Any> remove(
+      type: KClass<T>,
+    ): T? {
       checkAlive()
       return this@HashMapEntityRegistry.removeById(id, type)
     }
 
-    override fun has(type: KClass<*>): Boolean {
+    override fun has(
+      type: KClass<*>,
+    ): Boolean {
       checkAlive()
       return this@HashMapEntityRegistry.hasById(id, type)
     }
@@ -134,16 +153,20 @@ class HashMapEntityRegistry : EntityRegistry {
       check(isAlive) { "$this has been destroyed" }
     }
 
-    override fun equals(other: Any?): Boolean {
+    override fun equals(
+      other: Any?,
+    ): Boolean {
       if (this === other) return true
       if (other !is EntityHandle) return false
       if (this.outer != other.outer) return false
       return id == other.id
     }
 
-    override fun hashCode(): Int = id.hashCode()
+    override fun hashCode(): Int =
+      id.hashCode()
 
-    override fun toString(): String = "Entity($id)"
+    override fun toString(): String =
+      "Entity($id)"
 
     private val outer: HashMapEntityRegistry
       get() = this@HashMapEntityRegistry

@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUBufferMapState private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUBufferMapState private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val Unmapped = GPUBufferMapState("unmapped")

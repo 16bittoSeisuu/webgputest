@@ -20,7 +20,9 @@ external interface GPURenderBundleEncoder : GPUObjectBase {
   /**
    * Associates a render pipeline with subsequent draw calls recorded in the bundle.
    */
-  fun setPipeline(pipeline: GPURenderPipeline)
+  fun setPipeline(
+    pipeline: GPURenderPipeline,
+  )
 
   /**
    * Binds a pre-created group of resources to a shader slot.
@@ -118,5 +120,7 @@ external interface GPURenderBundleEncoder : GPUObjectBase {
    * @param descriptor Optional label for the resulting bundle.
    * @return A pre-recorded bundle of render commands ready for submission.
    */
-  fun finish(descriptor: GPURenderBundleDescriptor = definedExternally): GPURenderBundle
+  fun finish(
+    descriptor: GPURenderBundleDescriptor = definedExternally,
+  ): GPURenderBundle
 }

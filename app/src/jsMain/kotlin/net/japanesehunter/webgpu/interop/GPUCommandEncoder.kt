@@ -1,7 +1,9 @@
 package net.japanesehunter.webgpu.interop
 
 external interface GPUCommandEncoder : GPUObjectBase {
-  fun beginRenderPass(descriptor: GPURenderPassDescriptor): GPURenderPassEncoder
+  fun beginRenderPass(
+    descriptor: GPURenderPassDescriptor,
+  ): GPURenderPassEncoder
 
   fun copyBufferToBuffer(
     source: GPUBuffer,
@@ -11,5 +13,7 @@ external interface GPUCommandEncoder : GPUObjectBase {
     size: Int,
   )
 
-  fun finish(descriptor: GPUCommandBufferDescriptor = definedExternally): GPUCommandBuffer
+  fun finish(
+    descriptor: GPUCommandBufferDescriptor = definedExternally,
+  ): GPUCommandBuffer
 }

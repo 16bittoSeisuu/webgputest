@@ -1,11 +1,15 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUBufferUsage private constructor(
-  val value: Int,
-) {
-  operator fun plus(other: GPUBufferUsage): GPUBufferUsage = GPUBufferUsage(value or other.value)
+value class GPUBufferUsage private constructor(val value: Int) {
+  operator fun plus(
+    other: GPUBufferUsage,
+  ): GPUBufferUsage =
+    GPUBufferUsage(value or other.value)
 
-  fun contains(other: GPUBufferUsage): Boolean = value and other.value == other.value
+  fun contains(
+    other: GPUBufferUsage,
+  ): Boolean =
+    value and other.value == other.value
 
   companion object {
     val None = GPUBufferUsage(0)

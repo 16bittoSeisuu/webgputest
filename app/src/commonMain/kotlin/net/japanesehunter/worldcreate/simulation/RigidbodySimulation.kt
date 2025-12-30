@@ -28,7 +28,9 @@ import net.japanesehunter.worldcreate.world.BlockAccess
  * @param blockAccess the provider of collision geometry.
  * @return the trait update sink that executes the simulation logic.
  */
-fun rigidbodySimulation(blockAccess: BlockAccess): TraitUpdateSink =
+fun rigidbodySimulation(
+  blockAccess: BlockAccess,
+): TraitUpdateSink =
   buildSystem {
     val position by write(Position)
     val velocity by write(Velocity)
@@ -44,17 +46,22 @@ fun rigidbodySimulation(blockAccess: BlockAccess): TraitUpdateSink =
 
       if (rigidbody.drag > 0.0) {
         val dt = delta.inWholeNanoseconds / 1_000_000_000.0
-        val factor = kotlin.math.exp(-rigidbody.drag * dt)
+        val factor =
+          kotlin.math
+            .exp(-rigidbody.drag * dt)
         velocity.value.vx *= factor
         velocity.value.vy *= factor
         velocity.value.vz *= factor
       }
 
       val displacement = velocity.value * delta
-      val context = MovementContext(position.value, velocity, boundingBox.boxes)
+      val context =
+        MovementContext(position.value, velocity, boundingBox.boxes)
 
       var becameGrounded = false
-      becameGrounded = moveAxis(context, Axis.Y, displacement.dy, blockAccess) || becameGrounded
+      becameGrounded =
+        moveAxis(context, Axis.Y, displacement.dy, blockAccess) ||
+        becameGrounded
       moveAxis(context, Axis.X, displacement.dx, blockAccess)
       moveAxis(context, Axis.Z, displacement.dz, blockAccess)
 
@@ -167,7 +174,9 @@ private fun stopVelocity(
   }
 }
 
-private fun Aabb.toWorldSpace(origin: Point3): Aabb =
+private fun Aabb.toWorldSpace(
+  origin: Point3,
+): Aabb =
   Aabb(
     min =
       Point3(

@@ -20,7 +20,9 @@ interface EventSource<out T> {
    * @param sink The consumer invoked for each emitted event.
    * @return A subscription handle to cancel the subscription.
    */
-  fun subscribe(sink: EventSink<T>): EventSubscription
+  fun subscribe(
+    sink: EventSink<T>,
+  ): EventSubscription
 }
 
 /**
@@ -32,7 +34,9 @@ fun interface EventSink<in T> {
    *
    * @param event The event payload.
    */
-  fun onEvent(event: T)
+  fun onEvent(
+    event: T,
+  )
 }
 
 /**
@@ -62,7 +66,9 @@ fun interface QueryingEventSink<in Ev> {
    * @param registry the entity registry to query during event processing.
    * @return the event sink. null: never returns null
    */
-  operator fun invoke(registry: EntityRegistry): EventSink<Ev>
+  operator fun invoke(
+    registry: EntityRegistry,
+  ): EventSink<Ev>
 }
 
 /**
@@ -79,7 +85,9 @@ fun interface PendingEventSubscription {
    * @param registry the entity registry for query execution.
    * @return the active subscription. null: never returns null
    */
-  operator fun invoke(registry: EntityRegistry): EventSubscription
+  operator fun invoke(
+    registry: EntityRegistry,
+  ): EventSubscription
 }
 
 /**
@@ -91,7 +99,9 @@ fun interface PendingEventSubscription {
  * @param sink the querying event sink factory.
  * @return a pending subscription awaiting registry. null: never returns null
  */
-fun <T> EventSource<T>.subscribe(sink: QueryingEventSink<T>): PendingEventSubscription =
+fun <T> EventSource<T>.subscribe(
+  sink: QueryingEventSink<T>,
+): PendingEventSubscription =
   PendingEventSubscription { registry ->
     subscribe(sink(registry))
   }

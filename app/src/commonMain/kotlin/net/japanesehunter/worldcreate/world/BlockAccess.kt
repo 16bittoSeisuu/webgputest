@@ -17,5 +17,7 @@ interface BlockAccess {
    * @param region the bounding box to query for collisions.
    * @return a list of collision boxes that intersect the region.
    */
-  fun getCollisions(region: Aabb): List<Aabb>
+  fun getCollisions(
+    region: Aabb,
+  ): List<Aabb>
 }

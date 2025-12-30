@@ -14,7 +14,9 @@ interface EntityScope {
    *
    * @param trait the trait instance to add.
    */
-  fun add(trait: Any)
+  fun add(
+    trait: Any,
+  )
 
   /**
    * Removes a trait from the current entity.
@@ -23,7 +25,9 @@ interface EntityScope {
    * @return the removed trait instance.
    *   null: returned when the entity does not have the specified trait
    */
-  fun <W : Any> remove(key: TraitKey<*, W>): W?
+  fun <W : Any> remove(
+    key: TraitKey<*, W>,
+  ): W?
 
   /**
    * Checks whether the current entity has a trait of the specified type.
@@ -31,15 +35,24 @@ interface EntityScope {
    * @param key the trait key identifying the trait to check.
    * @return true if the entity has the trait, false otherwise.
    */
-  fun has(key: TraitKey<*, *>): Boolean
+  fun has(
+    key: TraitKey<*, *>,
+  ): Boolean
 }
 
-internal class EntityScopeImpl(
-  private val entity: Entity,
-) : EntityScope {
-  override fun add(trait: Any) = entity.add(trait)
+internal class EntityScopeImpl(private val entity: Entity) : EntityScope {
+  override fun add(
+    trait: Any,
+  ) =
+    entity.add(trait)
 
-  override fun <W : Any> remove(key: TraitKey<*, W>): W? = entity.remove(key.writableType)
+  override fun <W : Any> remove(
+    key: TraitKey<*, W>,
+  ): W? =
+    entity.remove(key.writableType)
 
-  override fun has(key: TraitKey<*, *>): Boolean = entity.has(key.writableType)
+  override fun has(
+    key: TraitKey<*, *>,
+  ): Boolean =
+    entity.has(key.writableType)
 }

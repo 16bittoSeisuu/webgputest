@@ -7,6 +7,8 @@ fun interface QuadSink {
   )
 
   fun interface OpaqueFaceSink {
-    fun requireFace(face: BlockFace)
+    fun requireFace(
+      face: BlockFace,
+    )
   }
 }

@@ -101,5 +101,7 @@ external interface GPUSupportedLimits {
   val maxComputeWorkgroupsPerDimension: Int
 
   /** Generic access to implementation-defined limits by name. */
-  operator fun get(limitName: String): Int?
+  operator fun get(
+    limitName: String,
+  ): Int?
 }

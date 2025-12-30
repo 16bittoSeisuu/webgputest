@@ -31,7 +31,9 @@ interface Entity {
    * @param trait the trait instance to attach.
    * @throws IllegalStateException if this entity has been destroyed.
    */
-  fun <T : Any> add(trait: T)
+  fun <T : Any> add(
+    trait: T,
+  )
 
   /**
    * Retrieves a trait of the specified type from this entity.
@@ -42,7 +44,9 @@ interface Entity {
    *   null: when the entity does not have this trait
    * @throws IllegalStateException if this entity has been destroyed.
    */
-  fun <T : Any> get(type: KClass<T>): T?
+  fun <T : Any> get(
+    type: KClass<T>,
+  ): T?
 
   /**
    * Removes a trait of the specified type from this entity.
@@ -53,7 +57,9 @@ interface Entity {
    *   null: when the entity did not have this trait
    * @throws IllegalStateException if this entity has been destroyed.
    */
-  fun <T : Any> remove(type: KClass<T>): T?
+  fun <T : Any> remove(
+    type: KClass<T>,
+  ): T?
 
   /**
    * Checks whether this entity has a trait of the specified type.
@@ -62,7 +68,9 @@ interface Entity {
    * @return true if the entity has the trait, false otherwise.
    * @throws IllegalStateException if this entity has been destroyed.
    */
-  fun has(type: KClass<*>): Boolean
+  fun has(
+    type: KClass<*>,
+  ): Boolean
 
   /**
    * Destroys this entity and removes all of its associated traits.
@@ -80,7 +88,8 @@ interface Entity {
    * @param T the type of the trait.
    * @throws IllegalStateException if this entity has been destroyed.
    */
-  operator fun <T : Any> T.unaryPlus(): Unit = add(this)
+  operator fun <T : Any> T.unaryPlus(): Unit =
+    add(this)
 
   /**
    * Determines whether this entity handle is equal to another object.
@@ -91,7 +100,9 @@ interface Entity {
    * @param other the object to compare with.
    * @return true if the objects are equal, false otherwise.
    */
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   /**
    * Returns a hash code value for this entity handle.
@@ -122,7 +133,8 @@ interface Entity {
  *   null: when the entity does not have this trait
  * @throws IllegalStateException if this entity has been destroyed.
  */
-inline fun <reified T : Any> Entity.get(): T? = get(T::class)
+inline fun <reified T : Any> Entity.get(): T? =
+  get(T::class)
 
 /**
  * Removes a trait of the specified type from this entity.
@@ -132,7 +144,8 @@ inline fun <reified T : Any> Entity.get(): T? = get(T::class)
  *   null: when the entity did not have this trait
  * @throws IllegalStateException if this entity has been destroyed.
  */
-inline fun <reified T : Any> Entity.remove(): T? = remove(T::class)
+inline fun <reified T : Any> Entity.remove(): T? =
+  remove(T::class)
 
 /**
  * Checks whether this entity has a trait of the specified type.
@@ -141,4 +154,5 @@ inline fun <reified T : Any> Entity.remove(): T? = remove(T::class)
  * @return true if the entity has the trait, false otherwise.
  * @throws IllegalStateException if this entity has been destroyed.
  */
-inline fun <reified T : Any> Entity.has(): Boolean = has(T::class)
+inline fun <reified T : Any> Entity.has(): Boolean =
+  has(T::class)

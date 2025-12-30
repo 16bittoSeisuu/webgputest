@@ -11,9 +11,7 @@ private interface HealthView {
   val hp: Int
 }
 
-private data class Health(
-  override var hp: Int,
-) : HealthView {
+private data class Health(override var hp: Int) : HealthView {
   companion object : TraitKey<HealthView, Health> by TraitKey()
 }
 

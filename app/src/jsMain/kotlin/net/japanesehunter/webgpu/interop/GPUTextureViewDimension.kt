@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUTextureViewDimension private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUTextureViewDimension private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val D1 = GPUTextureViewDimension("1d")

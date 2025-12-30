@@ -4,5 +4,7 @@ import kotlin.js.Promise
 
 external interface GPUAdapter {
   // always non-null
-  fun requestDevice(options: dynamic = definedExternally): Promise<GPUDevice>
+  fun requestDevice(
+    options: dynamic = definedExternally,
+  ): Promise<GPUDevice>
 }

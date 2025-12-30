@@ -22,17 +22,23 @@ sealed interface Color {
   val b: Proportion
   val a: Proportion
 
-  operator fun component1() = r
+  operator fun component1() =
+    r
 
-  operator fun component2() = g
+  operator fun component2() =
+    g
 
-  operator fun component3() = b
+  operator fun component3() =
+    b
 
-  operator fun component4() = a
+  operator fun component4() =
+    a
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -63,7 +69,10 @@ interface MutableColor :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableColor.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableColor.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -218,26 +227,84 @@ fun MutableColor(
   g: Proportion = Proportion.ZERO,
   b: Proportion = Proportion.ZERO,
   a: Proportion = Proportion.ONE,
-): MutableColor = MutableColorImpl(r, g, b, a)
+): MutableColor =
+  MutableColorImpl(r, g, b, a)
 
 /**
  * Creates a [MutableColor] by copying an existing [Color].
  */
-fun MutableColor.Companion.copyOf(copyFrom: Color): MutableColor = MutableColor(copyFrom.r, copyFrom.g, copyFrom.b, copyFrom.a)
+fun MutableColor.Companion.copyOf(
+  copyFrom: Color,
+): MutableColor =
+  MutableColor(copyFrom.r, copyFrom.g, copyFrom.b, copyFrom.a)
 
 // endregion
 
 // region implementations
 
-private val COLOR_TRANSPARENT: ImmutableColor = ImmutableColorImpl(Proportion.ZERO, Proportion.ZERO, Proportion.ZERO, Proportion.ZERO)
-private val COLOR_BLACK: ImmutableColor = ImmutableColorImpl(Proportion.ZERO, Proportion.ZERO, Proportion.ZERO, Proportion.ONE)
-private val COLOR_WHITE: ImmutableColor = ImmutableColorImpl(Proportion.ONE, Proportion.ONE, Proportion.ONE, Proportion.ONE)
-private val COLOR_RED: ImmutableColor = ImmutableColorImpl(Proportion.ONE, Proportion.ZERO, Proportion.ZERO, Proportion.ONE)
-private val COLOR_GREEN: ImmutableColor = ImmutableColorImpl(Proportion.ZERO, Proportion.ONE, Proportion.ZERO, Proportion.ONE)
-private val COLOR_BLUE: ImmutableColor = ImmutableColorImpl(Proportion.ZERO, Proportion.ZERO, Proportion.ONE, Proportion.ONE)
-private val COLOR_CYAN: ImmutableColor = ImmutableColorImpl(Proportion.ZERO, Proportion.ONE, Proportion.ONE, Proportion.ONE)
-private val COLOR_MAGENTA: ImmutableColor = ImmutableColorImpl(Proportion.ONE, Proportion.ZERO, Proportion.ONE, Proportion.ONE)
-private val COLOR_YELLOW: ImmutableColor = ImmutableColorImpl(Proportion.ONE, Proportion.ONE, Proportion.ZERO, Proportion.ONE)
+private val COLOR_TRANSPARENT: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ZERO,
+  )
+private val COLOR_BLACK: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ONE,
+  )
+private val COLOR_WHITE: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ONE,
+    Proportion.ONE,
+    Proportion.ONE,
+    Proportion.ONE,
+  )
+private val COLOR_RED: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ONE,
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ONE,
+  )
+private val COLOR_GREEN: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ZERO,
+    Proportion.ONE,
+    Proportion.ZERO,
+    Proportion.ONE,
+  )
+private val COLOR_BLUE: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ZERO,
+    Proportion.ZERO,
+    Proportion.ONE,
+    Proportion.ONE,
+  )
+private val COLOR_CYAN: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ZERO,
+    Proportion.ONE,
+    Proportion.ONE,
+    Proportion.ONE,
+  )
+private val COLOR_MAGENTA: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ONE,
+    Proportion.ZERO,
+    Proportion.ONE,
+    Proportion.ONE,
+  )
+private val COLOR_YELLOW: ImmutableColor =
+  ImmutableColorImpl(
+    Proportion.ONE,
+    Proportion.ONE,
+    Proportion.ZERO,
+    Proportion.ONE,
+  )
 
 private data class ImmutableColorImpl(
   override var r: Proportion,
@@ -245,16 +312,20 @@ private data class ImmutableColorImpl(
   override var b: Proportion,
   override var a: Proportion,
 ) : ImmutableColor {
-  override fun toString(): String = "Color(r=$r, g=$g, b=$b, a=$a)"
+  override fun toString(): String =
+    "Color(r=$r, g=$g, b=$b, a=$a)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Color -> false
       else -> channelsEqual(this, other)
     }
 
-  override fun hashCode(): Int = channelsHash(r, g, b, a)
+  override fun hashCode(): Int =
+    channelsHash(r, g, b, a)
 }
 
 private value class ColorMutableWrapper(
@@ -290,9 +361,11 @@ private value class ColorMutableWrapper(
   override val aFlow: StateFlow<Proportion>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 
-  override fun toString(): String = "Color(r=$r, g=$g, b=$b, a=$a)"
+  override fun toString(): String =
+    "Color(r=$r, g=$g, b=$b, a=$a)"
 }
 
 private class MutableColorImpl(
@@ -346,33 +419,42 @@ private class MutableColorImpl(
   override val bFlow: StateFlow<Proportion> get() = _bFlow.asStateFlow()
   override val aFlow: StateFlow<Proportion> get() = _aFlow.asStateFlow()
 
-  override fun mutate(action: MutableColor.() -> Unit) {
+  override fun mutate(
+    action: MutableColor.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Color(r=$r, g=$g, b=$b, a=$a)"
+  override fun toString(): String =
+    "Color(r=$r, g=$g, b=$b, a=$a)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Color -> false
       else -> channelsEqual(this, other)
     }
 
-  override fun hashCode(): Int = channelsHash(r, g, b, a)
+  override fun hashCode(): Int =
+    channelsHash(r, g, b, a)
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  private class Ticket(
-    original: MutableColorImpl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableColorImpl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean
@@ -413,10 +495,26 @@ private fun channelsHash(
   a: Proportion,
 ): Int {
   var result = 17
-  result = 31 * result + r.toDouble().hashCode()
-  result = 31 * result + g.toDouble().hashCode()
-  result = 31 * result + b.toDouble().hashCode()
-  result = 31 * result + a.toDouble().hashCode()
+  result = 31 *
+    result +
+    r
+      .toDouble()
+      .hashCode()
+  result = 31 *
+    result +
+    g
+      .toDouble()
+      .hashCode()
+  result = 31 *
+    result +
+    b
+      .toDouble()
+      .hashCode()
+  result = 31 *
+    result +
+    a
+      .toDouble()
+      .hashCode()
   return result
 }
 

@@ -35,7 +35,9 @@ interface EventSinkBuilder<out Ev> {
    *
    * @param handler the event processing logic
    */
-  fun onEach(handler: (Ev) -> Unit)
+  fun onEach(
+    handler: (Ev) -> Unit,
+  )
 
   /**
    * Declares a required read-only trait binding from an entity property.
@@ -49,7 +51,9 @@ interface EventSinkBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the read-only view
    */
-  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R>
 
   /**
    * Declares an optional read-only trait binding from an entity property.
@@ -63,7 +67,9 @@ interface EventSinkBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the read-only view or null
    */
-  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?>
 
   /**
    * Declares a trait binding with a default value provider.
@@ -95,7 +101,9 @@ interface EventSinkBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the writable trait
    */
-  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W>
 
   /**
    * Declares a writable trait binding with a default value provider.
@@ -128,7 +136,7 @@ interface QueryingEventSinkBuilder<out Ev> : EventSinkBuilder<Ev> {
   /**
    * Creates a query that will be evaluated when each event arrives.
    *
-   * The query builds a plan that is executed against the entity registry for each event.
+   * The query builds a plan executed against the entity registry for each event.
    * Filters in the query can reference event-bound trait values, which are resolved at
    * event processing time.
    *
@@ -164,47 +172,53 @@ interface QueryBuilder : Sequence<Entity> {
    * Creates a binding to read a trait from the current query result entity.
    *
    * The binding resolves to the trait value of whichever entity is being iterated
-   * in the onEach block. Access outside of iteration throws [IllegalStateException].
+   * in the onEach block. Access outside iteration throws [IllegalStateException].
    *
    * @param R the read-only view type
    * @param W the writable trait type
    * @param key the trait key to read
    * @return a property delegate that provides the trait value during iteration
    */
-  fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+  fun <R : Any, W : Any> read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R>
 
   /**
    * Creates an optional binding to read a trait from the current query result entity.
    *
    * The binding resolves to the trait value if present, or null if the entity
-   * does not have the trait. Access outside of iteration throws [IllegalStateException].
+   * does not have the trait. Access outside iteration throws [IllegalStateException].
    *
    * @param R the read-only view type
    * @param W the writable trait type
    * @param key the trait key to read
    * @return a property delegate that provides the trait value or null during iteration
    */
-  fun <R : Any, W : Any> readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+  fun <R : Any, W : Any> readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?>
 
   /**
    * Creates a binding to write a trait from the current query result entity.
    *
    * The binding resolves to the writable trait instance of whichever entity is being
    * iterated in the onEach block. If the entity lacks the trait, an exception is thrown
-   * during iteration. Access outside of iteration throws [IllegalStateException].
+   * during iteration. Access outside iteration throws [IllegalStateException].
    *
    * @param W the writable trait type
    * @param key the trait key to write
    * @return a property delegate that provides the writable trait during iteration
    */
-  fun <W : Any> write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+  fun <W : Any> write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W>
 
   /**
    * Creates a binding to write a trait with a default value from the current query result entity.
    *
    * The binding resolves to the writable trait instance if present. If the entity
    * does not have the trait, the default value provider is evaluated and added to
-   * the entity. Access outside of iteration throws [IllegalStateException].
+   * the entity. Access outside iteration throws [IllegalStateException].
    *
    * @param W the writable trait type
    * @param key the trait key to write
@@ -228,7 +242,9 @@ interface QueryBuilder : Sequence<Entity> {
  * @param block the builder configuration
  * @return an event sink that processes events according to the configured bindings
  */
-inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSink<Ev> {
+inline fun <Ev> buildEventSink(
+  block: EventSinkBuilder<Ev>.() -> Unit,
+): EventSink<Ev> {
   val builder = EventSinkBuilderImpl<Ev>()
   builder.block()
   return builder.build()
@@ -246,7 +262,9 @@ inline fun <Ev> buildEventSink(block: EventSinkBuilder<Ev>.() -> Unit): EventSin
  * @param block the builder configuration with query support
  * @return the querying event sink. null: never returns null
  */
-inline fun <Ev> buildQueryingEventSink(block: QueryingEventSinkBuilder<Ev>.() -> Unit): QueryingEventSink<Ev> {
+inline fun <Ev> buildQueryingEventSink(
+  block: QueryingEventSinkBuilder<Ev>.() -> Unit,
+): QueryingEventSink<Ev> {
   val builder = QueryingEventSinkBuilderImpl<Ev>()
   builder.block()
   return QueryingEventSink(builder::build)
@@ -279,7 +297,9 @@ interface EventInterceptorBuilder<out Ev> {
    *
    * @param handler the event interception logic
    */
-  fun onIntercept(handler: EventInterceptor<Ev>)
+  fun onIntercept(
+    handler: EventInterceptor<Ev>,
+  )
 
   /**
    * Declares a required read-only trait binding from an entity property.
@@ -289,7 +309,9 @@ interface EventInterceptorBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the read-only view
    */
-  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R>
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R>
 
   /**
    * Declares an optional read-only trait binding from an entity property.
@@ -299,7 +321,9 @@ interface EventInterceptorBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the read-only view or null
    */
-  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?>
+  fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?>
 
   /**
    * Declares a trait binding with a default value provider.
@@ -322,7 +346,9 @@ interface EventInterceptorBuilder<out Ev> {
    * @param key the trait key
    * @return a property delegate providing the writable trait
    */
-  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W>
+  fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W>
 
   /**
    * Declares a writable trait binding with a default value provider.
@@ -343,7 +369,8 @@ interface EventInterceptorBuilder<out Ev> {
  *
  * @param Ev the event type this builder handles
  */
-interface QueryingEventInterceptorBuilder<out Ev> : EventInterceptorBuilder<Ev> {
+interface QueryingEventInterceptorBuilder<out Ev> :
+  EventInterceptorBuilder<Ev> {
   /**
    * Creates a query that will be evaluated when each event arrives.
    *
@@ -359,7 +386,9 @@ interface QueryingEventInterceptorBuilder<out Ev> : EventInterceptorBuilder<Ev> 
  * @param block the builder configuration
  * @return an event interceptor that processes events according to the configured bindings
  */
-inline fun <Ev> buildEventInterceptor(block: EventInterceptorBuilder<Ev>.() -> Unit): EventInterceptor<Ev> {
+inline fun <Ev> buildEventInterceptor(
+  block: EventInterceptorBuilder<Ev>.() -> Unit,
+): EventInterceptor<Ev> {
   val builder = EventInterceptorBuilderImpl<Ev>()
   builder.block()
   return builder.build()
@@ -372,7 +401,9 @@ inline fun <Ev> buildEventInterceptor(block: EventInterceptorBuilder<Ev>.() -> U
  * @param block the builder configuration with query support
  * @return the querying event interceptor. null: never returns null
  */
-inline fun <Ev> buildQueryingEventInterceptor(block: QueryingEventInterceptorBuilder<Ev>.() -> Unit): QueryingEventInterceptor<Ev> {
+inline fun <Ev> buildQueryingEventInterceptor(
+  block: QueryingEventInterceptorBuilder<Ev>.() -> Unit,
+): QueryingEventInterceptor<Ev> {
   val builder = QueryingEventInterceptorBuilderImpl<Ev>()
   builder.block()
   return QueryingEventInterceptor(builder::build)
@@ -385,19 +416,30 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
   private var handler: ((Ev) -> Unit)? = null
   private val requiredBindings = mutableListOf<Binding<Ev>>()
 
-  override fun onEach(handler: (Ev) -> Unit) {
+  override fun onEach(
+    handler: (Ev) -> Unit,
+  ) {
     this.handler = handler
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R> {
     val binding = ReadBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
+      binding.resolvedReadView
+        ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+  override fun <
+    E : Entity,
+    R : Any,
+    W : Any,
+  > KProperty1<in Ev, E>.readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?> {
     val binding = ReadOptionalBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
@@ -409,22 +451,30 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     }
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+  override fun <
+    E : Entity,
+    R : Any,
+    W : Any,
+  > KProperty1<in Ev, E>.readOrDefault(
     key: TraitKey<R, W>,
     defaultValue: () -> R,
   ): ReadOnlyProperty<Any?, R> {
     val binding = ReadOrDefaultBinding(this, key, defaultValue)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedReadView ?: error("Trait binding can only be accessed during onEach execution")
+      binding.resolvedReadView
+        ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
-  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W> {
     val binding = WriteBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Trait binding can only be accessed during onEach execution")
+      binding.resolvedWritable
+        ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
@@ -435,7 +485,8 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
     val binding = WriteDefaultBinding(this, key, defaultValue)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Trait binding can only be accessed during onEach execution")
+      binding.resolvedWritable
+        ?: error("Trait binding can only be accessed during onEach execution")
     }
   }
 
@@ -459,13 +510,18 @@ internal class EventSinkBuilderImpl<Ev> : EventSinkBuilder<Ev> {
    *
    * @return true if all required bindings were resolved, false if any required binding failed
    */
-  fun tryResolveBindings(event: Ev): Boolean = requiredBindings.all { it.tryResolve(event) }
+  fun tryResolveBindings(
+    event: Ev,
+  ): Boolean =
+    requiredBindings.all { it.tryResolve(event) }
 
   /**
    * Invokes the handler with the given event.
    * Bindings must be resolved before calling this method.
    */
-  fun invokeHandler(event: Ev) {
+  fun invokeHandler(
+    event: Ev,
+  ) {
     handler?.invoke(event)
   }
 
@@ -490,9 +546,19 @@ internal class QueryingEventSinkBuilderImpl<Ev>(
     return builder
   }
 
-  fun build(registry: EntityQuery): EventSink<Ev> {
-    val queryExecutions = queries.map { QueryExecution(it.requirements, registry) }
-    queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
+  fun build(
+    registry: EntityQuery,
+  ): EventSink<Ev> {
+    val queryExecutions =
+      queries.map {
+        QueryExecution(
+          it.requirements,
+          registry,
+        )
+      }
+    queries.zip(queryExecutions).forEach { (builder, execution) ->
+      builder.setExecution(execution)
+    }
     return EventSink { event ->
       if (!delegate.tryResolveBindings(event)) {
         return@EventSink
@@ -524,15 +590,20 @@ internal class QueryBuilderImpl : QueryBuilder {
     return this
   }
 
-  override fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+  override fun <R : Any, W : Any> read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R> {
     val binding = QueryReadBinding(key)
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedReadView ?: error("Query trait binding can only be accessed during iteration")
+      binding.resolvedReadView
+        ?: error("Query trait binding can only be accessed during iteration")
     }
   }
 
-  override fun <R : Any, W : Any> readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+  override fun <R : Any, W : Any> readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?> {
     val binding = QueryReadOptionalBinding(key)
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
@@ -543,11 +614,14 @@ internal class QueryBuilderImpl : QueryBuilder {
     }
   }
 
-  override fun <W : Any> write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+  override fun <W : Any> write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W> {
     val binding = QueryWriteBinding(key)
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Query trait binding can only be accessed during iteration")
+      binding.resolvedWritable
+        ?: error("Query trait binding can only be accessed during iteration")
     }
   }
 
@@ -558,35 +632,50 @@ internal class QueryBuilderImpl : QueryBuilder {
     val binding = QueryWriteDefaultBinding(key, defaultValue)
     readBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Query trait binding can only be accessed during iteration")
+      binding.resolvedWritable
+        ?: error("Query trait binding can only be accessed during iteration")
     }
   }
 
   override fun iterator(): Iterator<Entity> {
-    val exec = execution ?: error("Query can only be accessed during onEach execution")
-    val iter = QueryIterator(exec.results.iterator(), this)
+    val exec =
+      execution ?: error("Query can only be accessed during onEach execution")
+    val iter =
+      QueryIterator(
+        exec.results
+          .iterator(),
+        this,
+      )
     iteratorStack.add(iter)
     return iter
   }
 
-  internal fun setExecution(execution: QueryExecution?) {
+  internal fun setExecution(
+    execution: QueryExecution?,
+  ) {
     this.execution = execution
   }
 
-  internal fun popIteratorsAbove(target: QueryIterator) {
+  internal fun popIteratorsAbove(
+    target: QueryIterator,
+  ) {
     while (iteratorStack.isNotEmpty() && iteratorStack.last() !== target) {
       iteratorStack.removeLast()
     }
   }
 
-  internal fun popIterator(target: QueryIterator) {
+  internal fun popIterator(
+    target: QueryIterator,
+  ) {
     if (iteratorStack.isNotEmpty() && iteratorStack.last() === target) {
       iteratorStack.removeLast()
     }
     restoreOrClearBindings()
   }
 
-  internal fun updateBindings(entity: Entity) {
+  internal fun updateBindings(
+    entity: Entity,
+  ) {
     readBindings.forEach { it.resolve(entity) }
   }
 
@@ -631,7 +720,9 @@ internal class QueryIterator(
 }
 
 private sealed interface QueryBinding {
-  fun resolve(entity: Entity)
+  fun resolve(
+    entity: Entity,
+  )
 
   fun clear()
 }
@@ -642,7 +733,9 @@ private class QueryReadBinding<R : Any, W : Any>(
   var resolvedReadView: R? = null
     private set
 
-  override fun resolve(entity: Entity) {
+  override fun resolve(
+    entity: Entity,
+  ) {
     val trait = entity.get(key.writableType)
     resolvedReadView =
       if (trait != null) {
@@ -665,7 +758,9 @@ private class QueryReadOptionalBinding<R : Any, W : Any>(
   var isResolved: Boolean = false
     private set
 
-  override fun resolve(entity: Entity) {
+  override fun resolve(
+    entity: Entity,
+  ) {
     val trait = entity.get(key.writableType)
     resolvedReadView =
       if (trait != null) {
@@ -682,13 +777,14 @@ private class QueryReadOptionalBinding<R : Any, W : Any>(
   }
 }
 
-private class QueryWriteBinding<W : Any>(
-  private val key: TraitKey<*, W>,
-) : QueryBinding {
+private class QueryWriteBinding<W : Any>(private val key: TraitKey<*, W>) :
+  QueryBinding {
   var resolvedWritable: W? = null
     private set
 
-  override fun resolve(entity: Entity) {
+  override fun resolve(
+    entity: Entity,
+  ) {
     val trait = entity.get(key.writableType)
     resolvedWritable = trait
   }
@@ -705,14 +801,12 @@ private class QueryWriteDefaultBinding<W : Any>(
   var resolvedWritable: W? = null
     private set
 
-  override fun resolve(entity: Entity) {
+  override fun resolve(
+    entity: Entity,
+  ) {
     val trait = entity.get(key.writableType)
     resolvedWritable =
-      if (trait != null) {
-        trait
-      } else {
-        defaultValue().also { entity.add(it) }
-      }
+      trait ?: defaultValue().also { entity.add(it) }
   }
 
   override fun clear() {
@@ -735,7 +829,10 @@ internal class QueryExecution(
     private set
 
   fun execute() {
-    val types = requirements.map { it.key.writableType }.toTypedArray()
+    val types =
+      requirements
+        .map { it.key.writableType }
+        .toTypedArray()
     val entities = registry.query(*types)
     results =
       entities
@@ -752,7 +849,9 @@ internal class QueryExecution(
   ): Boolean {
     val trait = entity.get(req.key.writableType) ?: return false
 
-    val readView = req.key.provideReadonlyView(trait)
+    val readView =
+      req.key
+        .provideReadonlyView(trait)
 
     val filter = req.filter
     return filter?.invoke(readView) != false
@@ -770,46 +869,73 @@ internal class EventInterceptorBuilderImpl<Ev> : EventInterceptorBuilder<Ev> {
   private var handler: EventInterceptor<Ev>? = null
   private val requiredBindings = mutableListOf<Binding<Ev>>()
 
-  override fun onIntercept(handler: EventInterceptor<Ev>) {
+  override fun onIntercept(
+    handler: EventInterceptor<Ev>,
+  ) {
     this.handler = handler
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R> {
     val binding = ReadBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedReadView ?: error("Trait binding can only be accessed during onIntercept execution")
+      binding.resolvedReadView
+        ?: error(
+          "Trait binding can only be accessed during onIntercept execution",
+        )
     }
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOptional(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R?> {
+  override fun <
+    E : Entity,
+    R : Any,
+    W : Any,
+  > KProperty1<in Ev, E>.readOptional(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R?> {
     val binding = ReadOptionalBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
       if (binding.isResolved) {
         binding.resolvedReadView
       } else {
-        error("Trait binding can only be accessed during onIntercept execution")
+        error(
+          "Trait binding can only be accessed during onIntercept execution",
+        )
       }
     }
   }
 
-  override fun <E : Entity, R : Any, W : Any> KProperty1<in Ev, E>.readOrDefault(
+  override fun <
+    E : Entity,
+    R : Any,
+    W : Any,
+  > KProperty1<in Ev, E>.readOrDefault(
     key: TraitKey<R, W>,
     defaultValue: () -> R,
   ): ReadOnlyProperty<Any?, R> {
     val binding = ReadOrDefaultBinding(this, key, defaultValue)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedReadView ?: error("Trait binding can only be accessed during onIntercept execution")
+      binding.resolvedReadView
+        ?: error(
+          "Trait binding can only be accessed during onIntercept execution",
+        )
     }
   }
 
-  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(key: TraitKey<*, W>): ReadOnlyProperty<Any?, W> {
+  override fun <E : Entity, W : Any> KProperty1<in Ev, E>.write(
+    key: TraitKey<*, W>,
+  ): ReadOnlyProperty<Any?, W> {
     val binding = WriteBinding(this, key)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Trait binding can only be accessed during onIntercept execution")
+      binding.resolvedWritable
+        ?: error(
+          "Trait binding can only be accessed during onIntercept execution",
+        )
     }
   }
 
@@ -820,7 +946,10 @@ internal class EventInterceptorBuilderImpl<Ev> : EventInterceptorBuilder<Ev> {
     val binding = WriteDefaultBinding(this, key, defaultValue)
     requiredBindings.add(binding)
     return ReadOnlyProperty { _, _ ->
-      binding.resolvedWritable ?: error("Trait binding can only be accessed during onIntercept execution")
+      binding.resolvedWritable
+        ?: error(
+          "Trait binding can only be accessed during onIntercept execution",
+        )
     }
   }
 
@@ -841,7 +970,12 @@ internal class EventInterceptorBuilderImpl<Ev> : EventInterceptorBuilder<Ev> {
     }
   }
 
-  internal fun tryResolveBindings(event: Ev): Boolean = requiredBindings.all { it.tryResolve(event) }
+  internal fun tryResolveBindings(
+    event: Ev,
+  ): Boolean =
+    requiredBindings.all {
+      it.tryResolve(event)
+    }
 
   internal fun invokeHandler(
     scope: CancellableScope,
@@ -859,7 +993,8 @@ internal class EventInterceptorBuilderImpl<Ev> : EventInterceptorBuilder<Ev> {
 
 @PublishedApi
 internal class QueryingEventInterceptorBuilderImpl<Ev>(
-  private val delegate: EventInterceptorBuilderImpl<Ev> = EventInterceptorBuilderImpl(),
+  private val delegate: EventInterceptorBuilderImpl<Ev> =
+    EventInterceptorBuilderImpl(),
 ) : QueryingEventInterceptorBuilder<Ev>,
   EventInterceptorBuilder<Ev> by delegate {
   private val queries = mutableListOf<QueryBuilderImpl>()
@@ -870,9 +1005,19 @@ internal class QueryingEventInterceptorBuilderImpl<Ev>(
     return builder
   }
 
-  fun build(registry: EntityQuery): EventInterceptor<Ev> {
-    val queryExecutions = queries.map { QueryExecution(it.requirements, registry) }
-    queries.zip(queryExecutions).forEach { (builder, execution) -> builder.setExecution(execution) }
+  fun build(
+    registry: EntityQuery,
+  ): EventInterceptor<Ev> {
+    val queryExecutions =
+      queries.map {
+        QueryExecution(
+          it.requirements,
+          registry,
+        )
+      }
+    queries.zip(queryExecutions).forEach { (builder, execution) ->
+      builder.setExecution(execution)
+    }
     return EventInterceptor { event ->
       if (!delegate.tryResolveBindings(event)) {
         return@EventInterceptor
@@ -894,7 +1039,9 @@ internal class QueryingEventInterceptorBuilderImpl<Ev>(
 // region Shared Binding classes
 
 private interface Binding<Ev> {
-  fun tryResolve(event: Ev): Boolean
+  fun tryResolve(
+    event: Ev,
+  ): Boolean
 
   fun clear()
 }
@@ -906,7 +1053,9 @@ private class ReadBinding<Ev, R : Any, W : Any>(
   var resolvedReadView: R? = null
     private set
 
-  override fun tryResolve(event: Ev): Boolean {
+  override fun tryResolve(
+    event: Ev,
+  ): Boolean {
     val entity = property.get(event)
     val trait = entity.get(key.writableType) ?: return false
     resolvedReadView = key.provideReadonlyView(trait)
@@ -927,7 +1076,9 @@ private class ReadOptionalBinding<Ev, R : Any, W : Any>(
   var isResolved: Boolean = false
     private set
 
-  override fun tryResolve(event: Ev): Boolean {
+  override fun tryResolve(
+    event: Ev,
+  ): Boolean {
     val entity = property.get(event)
     val trait = entity.get(key.writableType)
     resolvedReadView = trait?.let { key.provideReadonlyView(it) }
@@ -949,7 +1100,9 @@ private class ReadOrDefaultBinding<Ev, R : Any, W : Any>(
   var resolvedReadView: R? = null
     private set
 
-  override fun tryResolve(event: Ev): Boolean {
+  override fun tryResolve(
+    event: Ev,
+  ): Boolean {
     val entity = property.get(event)
     val trait = entity.get(key.writableType)
     resolvedReadView =
@@ -973,7 +1126,9 @@ private class WriteBinding<Ev, W : Any>(
   var resolvedWritable: W? = null
     private set
 
-  override fun tryResolve(event: Ev): Boolean {
+  override fun tryResolve(
+    event: Ev,
+  ): Boolean {
     val entity = property.get(event)
     val trait = entity.get(key.writableType) ?: return false
     resolvedWritable = trait
@@ -993,15 +1148,13 @@ private class WriteDefaultBinding<Ev, W : Any>(
   var resolvedWritable: W? = null
     private set
 
-  override fun tryResolve(event: Ev): Boolean {
+  override fun tryResolve(
+    event: Ev,
+  ): Boolean {
     val entity = property.get(event)
     val trait = entity.get(key.writableType)
     resolvedWritable =
-      if (trait != null) {
-        trait
-      } else {
-        defaultValue().also { entity.add(it) }
-      }
+      trait ?: defaultValue().also { entity.add(it) }
     return true
   }
 

@@ -14,7 +14,9 @@ interface SignMode {
    * @param isNegative Whether the value is negative.
    * @return The prefix string to prepend to the formatted value.
    */
-  fun prefix(isNegative: Boolean): String
+  fun prefix(
+    isNegative: Boolean,
+  ): String
 
   /**
    * Always displays an explicit sign.
@@ -22,7 +24,10 @@ interface SignMode {
    * Negative values are prefixed with `-`, positive and zero values with `+`.
    */
   data object Always : SignMode {
-    override fun prefix(isNegative: Boolean): String = if (isNegative) "-" else "+"
+    override fun prefix(
+      isNegative: Boolean,
+    ): String =
+      if (isNegative) "-" else "+"
   }
 
   /**
@@ -31,7 +36,10 @@ interface SignMode {
    * Negative values are prefixed with `-`, positive and zero values with a space.
    */
   data object Space : SignMode {
-    override fun prefix(isNegative: Boolean): String = if (isNegative) "-" else " "
+    override fun prefix(
+      isNegative: Boolean,
+    ): String =
+      if (isNegative) "-" else " "
   }
 
   /**
@@ -40,6 +48,9 @@ interface SignMode {
    * Negative values are prefixed with `-`, positive and zero values have no prefix.
    */
   data object Negative : SignMode {
-    override fun prefix(isNegative: Boolean): String = if (isNegative) "-" else ""
+    override fun prefix(
+      isNegative: Boolean,
+    ): String =
+      if (isNegative) "-" else ""
   }
 }

@@ -42,17 +42,23 @@ sealed interface Quaternion {
    */
   val w: Double
 
-  operator fun component1() = x
+  operator fun component1() =
+    x
 
-  operator fun component2() = y
+  operator fun component2() =
+    y
 
-  operator fun component3() = z
+  operator fun component3() =
+    z
 
-  operator fun component4() = w
+  operator fun component4() =
+    w
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -100,7 +106,10 @@ interface MutableQuaternion :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableQuaternion.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableQuaternion.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -114,12 +123,14 @@ interface MutableQuaternion :
 /**
  * The zero quaternion (0, 0, 0, 0).
  */
-val Quaternion.Companion.zero: ImmutableQuaternion get() = QUATERNION_ZERO
+val Quaternion.Companion.zero: ImmutableQuaternion get() =
+  QUATERNION_ZERO
 
 /**
  * The identity quaternion (0, 0, 0, 1), representing no rotation.
  */
-val Quaternion.Companion.identity: ImmutableQuaternion get() = QUATERNION_IDENTITY
+val Quaternion.Companion.identity: ImmutableQuaternion get() =
+  QUATERNION_IDENTITY
 
 // endregion
 
@@ -192,7 +203,8 @@ fun MutableQuaternion(
   y: Double = 0.0,
   z: Double = 0.0,
   w: Double = 1.0,
-): MutableQuaternion = MutableQuaternionImpl(x, y, z, w)
+): MutableQuaternion =
+  MutableQuaternionImpl(x, y, z, w)
 
 /**
  * Creates a [MutableQuaternion] by copying an existing one.
@@ -200,7 +212,9 @@ fun MutableQuaternion(
  * @param copyFrom The source quaternion.
  * @return The created [MutableQuaternion].
  */
-fun MutableQuaternion.Companion.copyOf(copyFrom: Quaternion): MutableQuaternion =
+fun MutableQuaternion.Companion.copyOf(
+  copyFrom: Quaternion,
+): MutableQuaternion =
   MutableQuaternion(copyFrom.x, copyFrom.y, copyFrom.z, copyFrom.w)
 
 // endregion
@@ -236,7 +250,9 @@ inline val Quaternion.magnitude: Double
 inline fun MutableQuaternion.normalize() {
   mutate {
     val mag = magnitude
-    require(mag != 0.0 && mag.isFinite()) { "Cannot normalize a zero-length or non-finite quaternion." }
+    require(mag != 0.0 && mag.isFinite()) {
+      "Cannot normalize a zero-length or non-finite quaternion."
+    }
     val inv = 1.0 / mag
     val newX = ensureFiniteComponent(x * inv, "x", "Normalization")
     val newY = ensureFiniteComponent(y * inv, "y", "Normalization")
@@ -262,7 +278,16 @@ inline fun Quaternion.normalized(): ImmutableQuaternion =
  * Converts this quaternion to its conjugate in place. For unit quaternions this is equivalent to an inverse, but no
  * normalization is applied automatically.
  */
-inline fun MutableQuaternion.conjugate() = map({ "Conjugation" }) { index, value -> if (index < 3) -value else value }
+inline fun MutableQuaternion.conjugate() =
+  map({ "Conjugation" }) { index, value ->
+    if (index <
+      3
+    ) {
+      -value
+    } else {
+      value
+    }
+  }
 
 /**
  * Returns a conjugated copy.
@@ -275,7 +300,10 @@ inline fun Quaternion.conjugated(): ImmutableQuaternion =
 /**
  * Negates all components in place.
  */
-inline fun MutableQuaternion.negate() = map({ "Negation" }) { _, value -> -value }
+inline fun MutableQuaternion.negate() =
+  map({
+    "Negation"
+  }) { _, value -> -value }
 
 /**
  * Returns a copy with all components negated.
@@ -288,7 +316,9 @@ inline operator fun Quaternion.unaryMinus(): ImmutableQuaternion =
 /**
  * Adds another quaternion component-wise in place. No normalization is performed.
  */
-inline operator fun MutableQuaternion.plusAssign(other: Quaternion) =
+inline operator fun MutableQuaternion.plusAssign(
+  other: Quaternion,
+) =
   map({ "Addition of $other" }) { index, value ->
     when (index) {
       0 -> value + other.x
@@ -301,7 +331,9 @@ inline operator fun MutableQuaternion.plusAssign(other: Quaternion) =
 /**
  * Returns the sum as a new [ImmutableQuaternion].
  */
-inline operator fun Quaternion.plus(other: Quaternion): ImmutableQuaternion =
+inline operator fun Quaternion.plus(
+  other: Quaternion,
+): ImmutableQuaternion =
   Quaternion.copyOf(this) {
     this += other
   }
@@ -309,7 +341,9 @@ inline operator fun Quaternion.plus(other: Quaternion): ImmutableQuaternion =
 /**
  * Subtracts another quaternion component-wise in place. No normalization is performed.
  */
-inline operator fun MutableQuaternion.minusAssign(other: Quaternion) =
+inline operator fun MutableQuaternion.minusAssign(
+  other: Quaternion,
+) =
   map({ "Subtraction of $other" }) { index, value ->
     when (index) {
       0 -> value - other.x
@@ -322,7 +356,9 @@ inline operator fun MutableQuaternion.minusAssign(other: Quaternion) =
 /**
  * Returns the difference as a new [ImmutableQuaternion].
  */
-inline operator fun Quaternion.minus(other: Quaternion): ImmutableQuaternion =
+inline operator fun Quaternion.minus(
+  other: Quaternion,
+): ImmutableQuaternion =
   Quaternion.copyOf(this) {
     this -= other
   }
@@ -330,15 +366,21 @@ inline operator fun Quaternion.minus(other: Quaternion): ImmutableQuaternion =
 /**
  * Scales this quaternion by a finite scalar in place. Rejects non-finite scalars to prevent NaN propagation.
  */
-inline operator fun MutableQuaternion.timesAssign(scalar: Double) {
-  require(scalar.isFinite()) { "Cannot scale a quaternion by a non-finite value: $scalar" }
+inline operator fun MutableQuaternion.timesAssign(
+  scalar: Double,
+) {
+  require(scalar.isFinite()) {
+    "Cannot scale a quaternion by a non-finite value: $scalar"
+  }
   map({ "Multiplication by $scalar" }) { _, value -> value * scalar }
 }
 
 /**
  * Returns a new quaternion scaled by a finite scalar.
  */
-inline operator fun Quaternion.times(scalar: Double): ImmutableQuaternion =
+inline operator fun Quaternion.times(
+  scalar: Double,
+): ImmutableQuaternion =
   Quaternion.copyOf(this) {
     this *= scalar
   }
@@ -346,15 +388,21 @@ inline operator fun Quaternion.times(scalar: Double): ImmutableQuaternion =
 /**
  * Divides this quaternion by a finite, non-zero scalar in place.
  */
-inline operator fun MutableQuaternion.divAssign(scalar: Double) {
-  require(scalar.isFinite() && scalar != 0.0) { "Cannot divide a quaternion by $scalar." }
+inline operator fun MutableQuaternion.divAssign(
+  scalar: Double,
+) {
+  require(scalar.isFinite() && scalar != 0.0) {
+    "Cannot divide a quaternion by $scalar."
+  }
   map({ "Division by $scalar" }) { _, value -> value / scalar }
 }
 
 /**
  * Returns a new quaternion divided by a finite, non-zero scalar.
  */
-inline operator fun Quaternion.div(scalar: Double): ImmutableQuaternion =
+inline operator fun Quaternion.div(
+  scalar: Double,
+): ImmutableQuaternion =
   Quaternion.copyOf(this) {
     this /= scalar
   }
@@ -363,7 +411,9 @@ inline operator fun Quaternion.div(scalar: Double): ImmutableQuaternion =
  * Multiplies by [other] on the right (Hamilton product), mutating this quaternion. Order matters: `this *= other`
  * differs from `other * this` because quaternion multiplication is not commutative.
  */
-inline operator fun MutableQuaternion.timesAssign(other: Quaternion) {
+inline operator fun MutableQuaternion.timesAssign(
+  other: Quaternion,
+) {
   mutate {
     val newX = w * other.x + x * other.w + y * other.z - z * other.y
     val newY = w * other.y - x * other.z + y * other.w + z * other.x
@@ -379,7 +429,9 @@ inline operator fun MutableQuaternion.timesAssign(other: Quaternion) {
 /**
  * Returns the quaternion product as a new [ImmutableQuaternion].
  */
-inline operator fun Quaternion.times(other: Quaternion): ImmutableQuaternion =
+inline operator fun Quaternion.times(
+  other: Quaternion,
+): ImmutableQuaternion =
   Quaternion.copyOf(this) {
     this *= other
   }
@@ -395,12 +447,20 @@ inline operator fun Quaternion.times(other: Quaternion): ImmutableQuaternion =
  * @param vector The vector to rotate.
  * @return The rotated [ImmutableLength3].
  */
-fun Quaternion.rotate(vector: Length3): ImmutableLength3 {
+fun Quaternion.rotate(
+  vector: Length3,
+): ImmutableLength3 {
   val (qx, qy, qz, qw) = normalized()
   val unit = selectLengthUnitForRotation(vector)
-  val vx = vector.dx.toDouble(unit)
-  val vy = vector.dy.toDouble(unit)
-  val vz = vector.dz.toDouble(unit)
+  val vx =
+    vector.dx
+      .toDouble(unit)
+  val vy =
+    vector.dy
+      .toDouble(unit)
+  val vz =
+    vector.dz
+      .toDouble(unit)
 
   val uvx = qy * vz - qz * vy
   val uvy = qz * vx - qx * vz
@@ -430,12 +490,20 @@ fun Quaternion.rotate(vector: Length3): ImmutableLength3 {
  * @param area The area vector to rotate.
  * @return The rotated [ImmutableArea3].
  */
-fun Quaternion.rotate(area: Area3): ImmutableArea3 {
+fun Quaternion.rotate(
+  area: Area3,
+): ImmutableArea3 {
   val (qx, qy, qz, qw) = normalized()
   val unit = selectAreaUnitForRotation(area)
-  val ax = area.ax.toDouble(unit)
-  val ay = area.ay.toDouble(unit)
-  val az = area.az.toDouble(unit)
+  val ax =
+    area.ax
+      .toDouble(unit)
+  val ay =
+    area.ay
+      .toDouble(unit)
+  val az =
+    area.az
+      .toDouble(unit)
 
   val uvx = qy * az - qz * ay
   val uvy = qz * ax - qx * az
@@ -463,7 +531,9 @@ fun Quaternion.rotate(area: Area3): ImmutableArea3 {
  * @param direction The normalized direction to rotate.
  * @return The rotated [ImmutableDirection3].
  */
-fun Quaternion.rotate(direction: Direction3): ImmutableDirection3 {
+fun Quaternion.rotate(
+  direction: Direction3,
+): ImmutableDirection3 {
   val (qx, qy, qz, qw) = normalized()
   val vx = direction.ux
   val vy = direction.uy
@@ -491,12 +561,18 @@ fun Quaternion.rotate(direction: Direction3): ImmutableDirection3 {
 /**
  * Returns a copy of this [Length3] rotated by [quaternion].
  */
-inline fun Length3.rotatedBy(quaternion: Quaternion): ImmutableLength3 = quaternion.rotate(this)
+inline fun Length3.rotatedBy(
+  quaternion: Quaternion,
+): ImmutableLength3 =
+  quaternion.rotate(this)
 
 /**
  * Returns a copy of this [Direction3] rotated by [quaternion].
  */
-inline fun Direction3.rotatedBy(quaternion: Quaternion): ImmutableDirection3 = quaternion.rotate(this)
+inline fun Direction3.rotatedBy(
+  quaternion: Quaternion,
+): ImmutableDirection3 =
+  quaternion.rotate(this)
 
 /**
  * Converts this rotation into a [Direction16] heading by rotating [forward].
@@ -504,7 +580,9 @@ inline fun Direction3.rotatedBy(quaternion: Quaternion): ImmutableDirection3 = q
  * @param forward The reference forward direction. Defaults to -Z.
  * @throws IllegalArgumentException If the rotated direction has undefined yaw (e.g., points straight up/down).
  */
-fun Quaternion.toDirection16(forward: Direction3 = Direction3.forward): Direction16 {
+fun Quaternion.toDirection16(
+  forward: Direction3 = Direction3.forward,
+): Direction16 {
   val rotated = rotate(forward)
   return rotated.toDirection16()
 }
@@ -512,7 +590,10 @@ fun Quaternion.toDirection16(forward: Direction3 = Direction3.forward): Directio
 /**
  * Returns a copy of this [Area3] rotated by [quaternion].
  */
-inline fun Area3.rotatedBy(quaternion: Quaternion): ImmutableArea3 = quaternion.rotate(this)
+inline fun Area3.rotatedBy(
+  quaternion: Quaternion,
+): ImmutableArea3 =
+  quaternion.rotate(this)
 
 /**
  * Orients this quaternion so its forward axis (-Z) points along [dir] while keeping [up] as the up reference.
@@ -560,7 +641,8 @@ fun MutableQuaternion.lookAlong(
 fun Quaternion.Companion.lookingAlong(
   dir: Direction3,
   up: Direction3 = Direction3.up,
-): ImmutableQuaternion = Quaternion(mutator = { lookAlong(dir, up) })
+): ImmutableQuaternion =
+  Quaternion(mutator = { lookAlong(dir, up) })
 
 /**
  * Maps each component using [action] and writes the result back.
@@ -592,8 +674,10 @@ inline fun MutableQuaternion.map(
 
 // region implementations
 
-private val QUATERNION_ZERO: ImmutableQuaternionImpl = ImmutableQuaternionImpl(0.0, 0.0, 0.0, 0.0)
-private val QUATERNION_IDENTITY: ImmutableQuaternionImpl = ImmutableQuaternionImpl(0.0, 0.0, 0.0, 1.0)
+private val QUATERNION_ZERO: ImmutableQuaternionImpl =
+  ImmutableQuaternionImpl(0.0, 0.0, 0.0, 0.0)
+private val QUATERNION_IDENTITY: ImmutableQuaternionImpl =
+  ImmutableQuaternionImpl(0.0, 0.0, 0.0, 1.0)
 
 private data class ImmutableQuaternionImpl(
   override var x: Double,
@@ -605,16 +689,20 @@ private data class ImmutableQuaternionImpl(
     ensureFiniteComponents(x, y, z, w)
   }
 
-  override fun toString(): String = "Quaternion(x=$x, y=$y, z=$z, w=$w)"
+  override fun toString(): String =
+    "Quaternion(x=$x, y=$y, z=$z, w=$w)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Quaternion -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(x, y, z, w)
+  override fun hashCode(): Int =
+    componentsHash(x, y, z, w)
 }
 
 private value class QuaternionMutableWrapper(
@@ -650,9 +738,11 @@ private value class QuaternionMutableWrapper(
   override val wFlow: StateFlow<Double>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 
-  override fun toString(): String = "Quaternion(x=$x, y=$y, z=$z, w=$w)"
+  override fun toString(): String =
+    "Quaternion(x=$x, y=$y, z=$z, w=$w)"
 }
 
 private class MutableQuaternionImpl(
@@ -663,10 +753,14 @@ private class MutableQuaternionImpl(
 ) : MutableQuaternion {
   private var generation: Int = 0
   private val lock = ReentrantLock()
-  private val _xFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteComponent(x, "x"))
-  private val _yFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteComponent(y, "y"))
-  private val _zFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteComponent(z, "z"))
-  private val _wFlow: MutableStateFlow<Double> = MutableStateFlow(ensureFiniteComponent(w, "w"))
+  private val _xFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteComponent(x, "x"))
+  private val _yFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteComponent(y, "y"))
+  private val _zFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteComponent(z, "z"))
+  private val _wFlow: MutableStateFlow<Double> =
+    MutableStateFlow(ensureFiniteComponent(w, "w"))
 
   override var x: Double
     get() = lock.withLock { _xFlow.value }
@@ -710,33 +804,42 @@ private class MutableQuaternionImpl(
   override val zFlow: StateFlow<Double> get() = _zFlow.asStateFlow()
   override val wFlow: StateFlow<Double> get() = _wFlow.asStateFlow()
 
-  override fun mutate(action: MutableQuaternion.() -> Unit) {
+  override fun mutate(
+    action: MutableQuaternion.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
-  override fun toString(): String = "Quaternion(x=$x, y=$y, z=$z, w=$w)"
+  override fun toString(): String =
+    "Quaternion(x=$x, y=$y, z=$z, w=$w)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Quaternion -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(x, y, z, w)
+  override fun hashCode(): Int =
+    componentsHash(x, y, z, w)
 
-  private class Ticket(
-    original: MutableQuaternionImpl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableQuaternionImpl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean
@@ -795,9 +898,17 @@ private fun createQuaternionImmutable(
   val finiteZ = ensureFiniteComponent(z, "z")
   val finiteW = ensureFiniteComponent(w, "w")
   return when (finiteX) {
-    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 0.0 -> QUATERNION_ZERO
-    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 1.0 -> QUATERNION_IDENTITY
-    else -> ImmutableQuaternionImpl(finiteX, finiteY, finiteZ, finiteW)
+    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 0.0 -> {
+      QUATERNION_ZERO
+    }
+
+    0.0 if finiteY == 0.0 && finiteZ == 0.0 && finiteW == 1.0 -> {
+      QUATERNION_IDENTITY
+    }
+
+    else -> {
+      ImmutableQuaternionImpl(finiteX, finiteY, finiteZ, finiteW)
+    }
   }
 }
 
@@ -831,12 +942,23 @@ internal fun ensureFiniteComponents(
   ensureFiniteComponent(w, "w", actionName)
 }
 
-private fun selectLengthUnitForRotation(vector: Length3): LengthUnit {
+private fun selectLengthUnitForRotation(
+  vector: Length3,
+): LengthUnit {
   val maxNm =
     maxOf(
-      abs(vector.dx.toDouble(LengthUnit.NANOMETER)),
-      abs(vector.dy.toDouble(LengthUnit.NANOMETER)),
-      abs(vector.dz.toDouble(LengthUnit.NANOMETER)),
+      abs(
+        vector.dx
+          .toDouble(LengthUnit.NANOMETER),
+      ),
+      abs(
+        vector.dy
+          .toDouble(LengthUnit.NANOMETER),
+      ),
+      abs(
+        vector.dz
+          .toDouble(LengthUnit.NANOMETER),
+      ),
     )
   return when {
     maxNm >= 1e12 -> LengthUnit.KILOMETER
@@ -858,27 +980,38 @@ private fun selectLengthUnitForRotation(vector: Length3): LengthUnit {
   }
 }
 
-private fun selectAreaUnitForRotation(area: Area3): AreaUnit {
+private fun selectAreaUnitForRotation(
+  area: Area3,
+): AreaUnit {
   val maxNm2 =
     maxOf(
-      abs(area.ax.toDouble(AreaUnit.SQUARE_NANOMETER)),
-      abs(area.ay.toDouble(AreaUnit.SQUARE_NANOMETER)),
-      abs(area.az.toDouble(AreaUnit.SQUARE_NANOMETER)),
+      abs(
+        area.ax
+          .toDouble(AreaUnit.SquareNanometer),
+      ),
+      abs(
+        area.ay
+          .toDouble(AreaUnit.SquareNanometer),
+      ),
+      abs(
+        area.az
+          .toDouble(AreaUnit.SquareNanometer),
+      ),
     )
   return when {
-    maxNm2 >= 1e24 -> AreaUnit.SQUARE_KILOMETER
+    maxNm2 >= 1e24 -> AreaUnit.SquareKilometer
 
     // (1e12 nm)^2
-    maxNm2 >= 1e18 -> AreaUnit.SQUARE_METER
+    maxNm2 >= 1e18 -> AreaUnit.SquareMeter
 
     // (1e9 nm)^2
-    maxNm2 >= 1e12 -> AreaUnit.SQUARE_MILLIMETER
+    maxNm2 >= 1e12 -> AreaUnit.SquareMillimeter
 
     // (1e6 nm)^2
-    maxNm2 >= 1e6 -> AreaUnit.SQUARE_MICROMETER
+    maxNm2 >= 1e6 -> AreaUnit.SquareMicrometer
 
     // (1e3 nm)^2
-    else -> AreaUnit.SQUARE_NANOMETER
+    else -> AreaUnit.SquareNanometer
   }
 }
 

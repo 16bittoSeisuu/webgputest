@@ -13,9 +13,12 @@ open class Key(
     }
   }
 
-  override fun toString(): String = "$namespace:$path"
+  override fun toString(): String =
+    "$namespace:$path"
 
-  override fun equals(other: Any?): Boolean {
+  override fun equals(
+    other: Any?,
+  ): Boolean {
     if (this === other) return true
     if (other !is Key) return false
 
@@ -39,6 +42,9 @@ class MaterialKey(
   path: String,
 ) : Key(namespace, path) {
   companion object {
-    fun vanilla(path: String): MaterialKey = MaterialKey("vanilla", path)
+    fun vanilla(
+      path: String,
+    ): MaterialKey =
+      MaterialKey("vanilla", path)
   }
 }

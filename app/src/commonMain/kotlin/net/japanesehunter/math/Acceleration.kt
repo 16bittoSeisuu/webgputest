@@ -5,7 +5,8 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 
-private const val NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED: Long = 1_000_000_000L
+private const val NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED:
+  Long = 1_000_000_000L
 
 /**
  * Represents the units supported by [Acceleration].
@@ -21,12 +22,15 @@ enum class AccelerationUnit(
   /**
    * The nanometer per second squared unit.
    */
-  NANOMETER_PER_SECOND_SQUARED(1L, "nm/s²"),
+  NanometerPerSecondSquared(1L, "nm/s²"),
 
   /**
    * The meter per second squared unit.
    */
-  METER_PER_SECOND_SQUARED(NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED, "m/s²"),
+  MeterPerSecondSquared(
+    NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED,
+    "m/s²",
+  ),
 }
 
 /**
@@ -52,7 +56,9 @@ value class Acceleration internal constructor(
    * truncated toward zero.
    */
   val inWholeMetersPerSecondSquared: Long
-    get() = nanometersPerSecondSquared / NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED
+    get() =
+      nanometersPerSecondSquared /
+        NANOMETERS_PER_SECOND_SQUARED_PER_METER_PER_SECOND_SQUARED
 
   /**
    * Converts this [Acceleration] to a [Long] value using the specified [unit].
@@ -61,10 +67,17 @@ value class Acceleration internal constructor(
    * @param unit The [AccelerationUnit] to convert to.
    * @return The truncated [Long] representation in [unit].
    */
-  fun toLong(unit: AccelerationUnit): Long =
+  fun toLong(
+    unit: AccelerationUnit,
+  ): Long =
     when (unit) {
-      AccelerationUnit.NANOMETER_PER_SECOND_SQUARED -> inWholeNanometersPerSecondSquared
-      AccelerationUnit.METER_PER_SECOND_SQUARED -> inWholeMetersPerSecondSquared
+      AccelerationUnit.NanometerPerSecondSquared -> {
+        inWholeNanometersPerSecondSquared
+      }
+
+      AccelerationUnit.MeterPerSecondSquared -> {
+        inWholeMetersPerSecondSquared
+      }
     }
 
   /**
@@ -73,7 +86,12 @@ value class Acceleration internal constructor(
    * @param unit The [AccelerationUnit] to convert to.
    * @return The [Double] representation in [unit].
    */
-  fun toDouble(unit: AccelerationUnit): Double = nanometersPerSecondSquared.toDouble() / unit.nanometersPerSecondSquaredPerUnit.toDouble()
+  fun toDouble(
+    unit: AccelerationUnit,
+  ): Double =
+    nanometersPerSecondSquared.toDouble() /
+      unit.nanometersPerSecondSquaredPerUnit
+        .toDouble()
 
   /**
    * Returns the absolute value of this acceleration.
@@ -109,7 +127,8 @@ value class Acceleration internal constructor(
    *
    * @throws ArithmeticException If negation overflows [Long].
    */
-  operator fun unaryMinus(): Acceleration = Acceleration(safeNegate(nanometersPerSecondSquared))
+  operator fun unaryMinus(): Acceleration =
+    Acceleration(safeNegate(nanometersPerSecondSquared))
 
   /**
    * Adds another [Acceleration].
@@ -118,7 +137,12 @@ value class Acceleration internal constructor(
    * @return The sum of the accelerations.
    * @throws ArithmeticException If the sum overflows [Long].
    */
-  operator fun plus(other: Acceleration): Acceleration = Acceleration(safeAdd(nanometersPerSecondSquared, other.nanometersPerSecondSquared))
+  operator fun plus(
+    other: Acceleration,
+  ): Acceleration =
+    Acceleration(
+      safeAdd(nanometersPerSecondSquared, other.nanometersPerSecondSquared),
+    )
 
   /**
    * Subtracts another [Acceleration].
@@ -127,8 +151,15 @@ value class Acceleration internal constructor(
    * @return The difference of the accelerations.
    * @throws ArithmeticException If the subtraction overflows [Long].
    */
-  operator fun minus(other: Acceleration): Acceleration =
-    Acceleration(safeAdd(nanometersPerSecondSquared, safeNegate(other.nanometersPerSecondSquared)))
+  operator fun minus(
+    other: Acceleration,
+  ): Acceleration =
+    Acceleration(
+      safeAdd(
+        nanometersPerSecondSquared,
+        safeNegate(other.nanometersPerSecondSquared),
+      ),
+    )
 
   /**
    * Multiplies this acceleration by a [Long] factor.
@@ -137,7 +168,10 @@ value class Acceleration internal constructor(
    * @return The scaled [Acceleration].
    * @throws ArithmeticException If the multiplication overflows [Long].
    */
-  operator fun times(factor: Long): Acceleration = Acceleration(safeMultiply(nanometersPerSecondSquared, factor))
+  operator fun times(
+    factor: Long,
+  ): Acceleration =
+    Acceleration(safeMultiply(nanometersPerSecondSquared, factor))
 
   /**
    * Multiplies this acceleration by a [Double] factor.
@@ -148,7 +182,9 @@ value class Acceleration internal constructor(
    * @throws ArithmeticException If the result overflows [Long].
    * @throws IllegalArgumentException If [factor] is not finite.
    */
-  operator fun times(factor: Double): Acceleration {
+  operator fun times(
+    factor: Double,
+  ): Acceleration {
     require(factor.isFinite()) { "factor must be finite: $factor" }
     val result = (nanometersPerSecondSquared.toDouble() * factor).roundToLong()
     return Acceleration(result)
@@ -161,12 +197,22 @@ value class Acceleration internal constructor(
    * @return The resulting speed.
    * @throws ArithmeticException If the multiplication overflows [Long].
    */
-  operator fun times(duration: Duration): Speed {
+  operator fun times(
+    duration: Duration,
+  ): Speed {
     val seconds = duration.inWholeSeconds
     val nanos = (duration.inWholeNanoseconds % 1_000_000_000L)
     val wholeSecondSpeed = safeMultiply(nanometersPerSecondSquared, seconds)
-    val nanoSecondSpeed = (nanometersPerSecondSquared.toDouble() * nanos.toDouble() / 1_000_000_000.0).roundToLong()
-    return Speed.from(safeAdd(wholeSecondSpeed, nanoSecondSpeed), SpeedUnit.NANOMETER_PER_SECOND)
+    val nanoSecondSpeed =
+      (
+        nanometersPerSecondSquared.toDouble() *
+          nanos.toDouble() /
+          1_000_000_000.0
+      ).roundToLong()
+    return Speed.from(
+      safeAdd(wholeSecondSpeed, nanoSecondSpeed),
+      SpeedUnit.NanometerPerSecond,
+    )
   }
 
   /**
@@ -176,7 +222,9 @@ value class Acceleration internal constructor(
    * @return The divided [Acceleration].
    * @throws ArithmeticException If [divisor] is zero.
    */
-  operator fun div(divisor: Long): Acceleration {
+  operator fun div(
+    divisor: Long,
+  ): Acceleration {
     require(divisor != 0L) { "divisor must not be zero" }
     return Acceleration(nanometersPerSecondSquared / divisor)
   }
@@ -190,10 +238,14 @@ value class Acceleration internal constructor(
    * @throws ArithmeticException If the result overflows [Long].
    * @throws IllegalArgumentException If [divisor] is not finite or is zero.
    */
-  operator fun div(divisor: Double): Acceleration {
+  operator fun div(
+    divisor: Double,
+  ): Acceleration {
     require(divisor.isFinite()) { "divisor must be finite: $divisor" }
     require(divisor != 0.0) { "divisor must not be zero" }
-    val result = (nanometersPerSecondSquared.toDouble() / divisor).roundToLong()
+    val result =
+      (nanometersPerSecondSquared.toDouble() / divisor)
+        .roundToLong()
     return Acceleration(result)
   }
 
@@ -204,16 +256,25 @@ value class Acceleration internal constructor(
    * @return The ratio as a [Double].
    * @throws ArithmeticException If [other] is zero.
    */
-  operator fun div(other: Acceleration): Double {
-    require(other.nanometersPerSecondSquared != 0L) { "other must not be zero" }
-    return nanometersPerSecondSquared.toDouble() / other.nanometersPerSecondSquared.toDouble()
+  operator fun div(
+    other: Acceleration,
+  ): Double {
+    require(
+      other.nanometersPerSecondSquared != 0L,
+    ) { "other must not be zero" }
+    return nanometersPerSecondSquared.toDouble() /
+      other.nanometersPerSecondSquared
+        .toDouble()
   }
 
-  override fun compareTo(other: Acceleration): Int = nanometersPerSecondSquared.compareTo(other.nanometersPerSecondSquared)
+  override fun compareTo(
+    other: Acceleration,
+  ): Int =
+    nanometersPerSecondSquared.compareTo(other.nanometersPerSecondSquared)
 
   override fun toString(): String {
-    val value = toDouble(AccelerationUnit.METER_PER_SECOND_SQUARED)
-    return "$value ${AccelerationUnit.METER_PER_SECOND_SQUARED.symbol}"
+    val value = toDouble(AccelerationUnit.MeterPerSecondSquared)
+    return "$value ${AccelerationUnit.MeterPerSecondSquared.symbol}"
   }
 
   /**
@@ -234,11 +295,20 @@ value class Acceleration internal constructor(
     decimals: Int? = 2,
     signMode: SignMode = SignMode.Always,
   ): String {
-    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
-    val resolvedUnit = unit ?: AccelerationUnit.METER_PER_SECOND_SQUARED
+    require(decimals == null || decimals >= 0) {
+      "decimals must be non-negative: $decimals"
+    }
+    val resolvedUnit = unit ?: AccelerationUnit.MeterPerSecondSquared
     val isNegative = nanometersPerSecondSquared < 0
     val absValue = abs(toDouble(resolvedUnit))
-    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    val formatted =
+      if (decimals !=
+        null
+      ) {
+        formatDecimals(absValue, decimals)
+      } else {
+        absValue.toString()
+      }
     return "${signMode.prefix(isNegative)}$formatted ${resolvedUnit.symbol}"
   }
 
@@ -259,7 +329,8 @@ value class Acceleration internal constructor(
     fun from(
       value: Long,
       unit: AccelerationUnit,
-    ): Acceleration = Acceleration(safeMultiply(value, unit.nanometersPerSecondSquaredPerUnit))
+    ): Acceleration =
+      Acceleration(safeMultiply(value, unit.nanometersPerSecondSquaredPerUnit))
 
     /**
      * Creates an [Acceleration] from a [Double] value and an [AccelerationUnit].
@@ -276,7 +347,12 @@ value class Acceleration internal constructor(
       unit: AccelerationUnit,
     ): Acceleration {
       require(value.isFinite()) { "value must be finite: $value" }
-      val nanometersPerSecondSquared = (value * unit.nanometersPerSecondSquaredPerUnit.toDouble()).roundToLong()
+      val nanometersPerSecondSquared =
+        (
+          value *
+            unit.nanometersPerSecondSquaredPerUnit
+              .toDouble()
+        ).roundToLong()
       return Acceleration(nanometersPerSecondSquared)
     }
   }
@@ -290,7 +366,7 @@ value class Acceleration internal constructor(
  * @throws IllegalArgumentException If this value is not finite.
  */
 val Double.metersPerSecondSquared: Acceleration
-  get() = from(this, AccelerationUnit.METER_PER_SECOND_SQUARED)
+  get() = from(this, AccelerationUnit.MeterPerSecondSquared)
 
 /**
  * Creates an [Acceleration] from this [Long] value in meters per second squared.
@@ -299,7 +375,7 @@ val Double.metersPerSecondSquared: Acceleration
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Long.metersPerSecondSquared: Acceleration
-  get() = from(this, AccelerationUnit.METER_PER_SECOND_SQUARED)
+  get() = from(this, AccelerationUnit.MeterPerSecondSquared)
 
 /**
  * Creates an [Acceleration] from this [Int] value in meters per second squared.
@@ -308,7 +384,7 @@ val Long.metersPerSecondSquared: Acceleration
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Int.metersPerSecondSquared: Acceleration
-  get() = from(this.toLong(), AccelerationUnit.METER_PER_SECOND_SQUARED)
+  get() = from(this.toLong(), AccelerationUnit.MeterPerSecondSquared)
 
 /**
  * Divides this [Speed] by a [Duration] to produce an [Acceleration].
@@ -317,12 +393,22 @@ val Int.metersPerSecondSquared: Acceleration
  * @return The resulting acceleration.
  * @throws ArithmeticException If [duration] is zero or if the result overflows [Long].
  */
-operator fun Speed.div(duration: Duration): Acceleration {
+operator fun Speed.div(
+  duration: Duration,
+): Acceleration {
   val totalNanos = duration.inWholeNanoseconds
   require(totalNanos != 0L) { "duration must not be zero" }
   val nanometersPerSecondSquared =
-    (this.inWholeNanometersPerSecond.toDouble() * 1_000_000_000.0 / totalNanos.toDouble()).roundToLong()
-  return Acceleration.from(nanometersPerSecondSquared, AccelerationUnit.NANOMETER_PER_SECOND_SQUARED)
+    (
+      this.inWholeNanometersPerSecond
+        .toDouble() *
+        1_000_000_000.0 /
+        totalNanos.toDouble()
+    ).roundToLong()
+  return from(
+    nanometersPerSecondSquared,
+    AccelerationUnit.NanometerPerSecondSquared,
+  )
 }
 
 /**
@@ -332,7 +418,10 @@ operator fun Speed.div(duration: Duration): Acceleration {
  * @return The resulting speed.
  * @throws ArithmeticException If the multiplication overflows [Long].
  */
-operator fun Duration.times(acceleration: Acceleration): Speed = acceleration * this
+operator fun Duration.times(
+  acceleration: Acceleration,
+): Speed =
+  acceleration * this
 
 private fun safeAdd(
   a: Long,
@@ -357,7 +446,9 @@ private fun safeMultiply(
   return result
 }
 
-private fun safeNegate(value: Long): Long =
+private fun safeNegate(
+  value: Long,
+): Long =
   if (value == Long.MIN_VALUE) {
     throw ArithmeticException("Long overflow negating $value.")
   } else {

@@ -55,10 +55,14 @@ class FixedStepTickSource internal constructor(
     require(targetStep.isFinite() && targetStep > Duration.ZERO) {
       "targetStep must be finite and positive: $targetStep"
     }
-    require(maxStepsPerDrive >= 1) { "maxStepsPerDrive must be at least 1: $maxStepsPerDrive" }
+    require(maxStepsPerDrive >= 1) {
+      "maxStepsPerDrive must be at least 1: $maxStepsPerDrive"
+    }
   }
 
-  override fun subscribe(sink: TickSink): EventSubscription {
+  override fun subscribe(
+    sink: TickSink,
+  ): EventSubscription {
     lock.withLock {
       sinks.add(sink)
     }
@@ -69,7 +73,9 @@ class FixedStepTickSource internal constructor(
     }
   }
 
-  internal fun drive(frameDelta: Duration) {
+  internal fun drive(
+    frameDelta: Duration,
+  ) {
     require(frameDelta.isFinite()) { "frameDelta must be finite: $frameDelta" }
     if (frameDelta <= Duration.ZERO) return
 

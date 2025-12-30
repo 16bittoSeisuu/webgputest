@@ -19,7 +19,10 @@ import org.w3c.dom.events.WheelEvent
  * @param action the block to execute with the input context.
  * @return the result of the action block.
  */
-inline fun <R> inputContext(action: context(InputContext) () -> R): R = BrowserInputContext().use { context(it, action) }
+inline fun <R> inputContext(
+  action: context(InputContext) () -> R,
+): R =
+  BrowserInputContext().use { context(it, action) }
 
 /**
  * Provides browser-based input event delivery and key state tracking.
@@ -39,7 +42,9 @@ internal class BrowserInputContext :
 
   private val eventSource =
     object : EventSource<InputEvent> {
-      override fun subscribe(sink: EventSink<InputEvent>): EventSubscription {
+      override fun subscribe(
+        sink: EventSink<InputEvent>,
+      ): EventSubscription {
         sinks.add(sink)
         return EventSubscription { sinks.remove(sink) }
       }
@@ -59,19 +64,35 @@ internal class BrowserInputContext :
 
   private val mouseMoveHandler: (Event) -> Unit = { event ->
     val mouseEvent = event.unsafeCast<MouseEvent>()
-    val dx = mouseEvent.asDynamic().movementX as Double
-    val dy = mouseEvent.asDynamic().movementY as Double
+    val dx =
+      mouseEvent
+        .asDynamic()
+        .movementX as Double
+    val dy =
+      mouseEvent
+        .asDynamic()
+        .movementY as Double
     emit(MouseMove(dx, dy))
   }
 
   private val mouseDownHandler: (Event) -> Unit = { event ->
     val mouseEvent = event.unsafeCast<MouseEvent>()
-    emit(MouseDown(mouseEvent.button.toInt()))
+    emit(
+      MouseDown(
+        mouseEvent.button
+          .toInt(),
+      ),
+    )
   }
 
   private val mouseUpHandler: (Event) -> Unit = { event ->
     val mouseEvent = event.unsafeCast<MouseEvent>()
-    emit(MouseUp(mouseEvent.button.toInt()))
+    emit(
+      MouseUp(
+        mouseEvent.button
+          .toInt(),
+      ),
+    )
   }
 
   private val wheelHandler: (Event) -> Unit = { event ->
@@ -88,11 +109,16 @@ internal class BrowserInputContext :
     window.addEventListener("wheel", wheelHandler)
   }
 
-  override fun events(): EventSource<InputEvent> = eventSource
+  override fun events(): EventSource<InputEvent> =
+    eventSource
 
-  override fun isKeyDown(code: String): Boolean = code in pressedKeySet
+  override fun isKeyDown(
+    code: String,
+  ): Boolean =
+    code in pressedKeySet
 
-  override fun pressedKeys(): Set<String> = pressedKeySet.toSet()
+  override fun pressedKeys(): Set<String> =
+    pressedKeySet.toSet()
 
   override fun close() {
     document.removeEventListener("keydown", keyDownHandler)
@@ -105,7 +131,9 @@ internal class BrowserInputContext :
     sinks.clear()
   }
 
-  private fun emit(event: InputEvent) {
+  private fun emit(
+    event: InputEvent,
+  ) {
     sinks.forEach { it.onEvent(event) }
   }
 }

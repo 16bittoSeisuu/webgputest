@@ -9,9 +9,7 @@ private interface CounterView {
   val count: Int
 }
 
-private data class Counter(
-  override var count: Int,
-) : CounterView {
+private data class Counter(override var count: Int) : CounterView {
   companion object : TraitKey<CounterView, Counter> by TraitKey()
 }
 
@@ -19,17 +17,15 @@ private interface LabelView {
   val label: String
 }
 
-private data class Label(
-  override val label: String,
-) : LabelView {
+private data class Label(override val label: String) : LabelView {
   companion object : TraitKey<LabelView, Label> by TraitKey()
 }
 
-private data class WrappedInt(
-  val value: Int,
-)
+private data class WrappedInt(val value: Int)
 
-private object WrappedIntKey : TraitKey<Int, WrappedInt> by TraitKey({ it.value })
+private object WrappedIntKey : TraitKey<Int, WrappedInt> by TraitKey({
+  it.value
+})
 
 class SystemBuilderTest :
   FunSpec({
@@ -137,7 +133,9 @@ class SystemBuilderTest :
       sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
       writtenValue?.count shouldBe 99
-      registry.getById(entity, Counter::class)?.count shouldBe 99
+      registry
+        .getById(entity, Counter::class)
+        ?.count shouldBe 99
     }
 
     test("write setValue replaces trait in registry") {
@@ -155,7 +153,9 @@ class SystemBuilderTest :
 
       sink.onEvent(TraitUpdateEvent(registry, 16.milliseconds))
 
-      registry.getById(entity, Counter::class)?.count shouldBe 100
+      registry
+        .getById(entity, Counter::class)
+        ?.count shouldBe 100
     }
 
     test("dt is passed to forEach block") {

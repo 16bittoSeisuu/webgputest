@@ -55,7 +55,8 @@ data class BlockPos(
     dx: Int = 0,
     dy: Int = 0,
     dz: Int = 0,
-  ): BlockPos = BlockPos(addExactInt(x, dx), addExactInt(y, dy), addExactInt(z, dz))
+  ): BlockPos =
+    BlockPos(addExactInt(x, dx), addExactInt(y, dy), addExactInt(z, dz))
 
   /**
    * Computes a new position by subtracting another block position component-wise.
@@ -63,7 +64,9 @@ data class BlockPos(
    * @param other The position to subtract.
    * @return The displacement from [other] to this position.
    */
-  operator fun minus(other: BlockPos): ImmutableLength3 =
+  operator fun minus(
+    other: BlockPos,
+  ): ImmutableLength3 =
     Length3(
       dx = subtractExactInt(x, other.x).meters,
       dy = subtractExactInt(y, other.y).meters,
@@ -76,7 +79,8 @@ data class BlockPos(
    * @return The position with each component negated.
    * @throws ArithmeticException If arithmetic overflows or the result exceeds world bounds.
    */
-  operator fun unaryMinus(): BlockPos = BlockPos(negateExactInt(x), negateExactInt(y), negateExactInt(z))
+  operator fun unaryMinus(): BlockPos =
+    BlockPos(negateExactInt(x), negateExactInt(y), negateExactInt(z))
 
   /**
    * Translates this position by a metric distance.
@@ -86,7 +90,10 @@ data class BlockPos(
    * @return The translated block position.
    * @throws ArithmeticException If rounding overflows or the result exceeds world bounds.
    */
-  operator fun plus(distance: Length3): BlockPos = translateBy(distance)
+  operator fun plus(
+    distance: Length3,
+  ): BlockPos =
+    translateBy(distance)
 
   /**
    * Translates this position by the negated metric distance.
@@ -96,7 +103,10 @@ data class BlockPos(
    * @return The translated block position.
    * @throws ArithmeticException If rounding overflows or the result exceeds world bounds.
    */
-  operator fun minus(distance: Length3): BlockPos = translateBy(-distance)
+  operator fun minus(
+    distance: Length3,
+  ): BlockPos =
+    translateBy(-distance)
 
   /**
    * Converts this block position to a [net.japanesehunter.math.Point3] measured in meters.
@@ -110,11 +120,19 @@ data class BlockPos(
       z = z.meters,
     )
 
-  private fun translateBy(distance: Length3): BlockPos {
+  private fun translateBy(
+    distance: Length3,
+  ): BlockPos {
     val dxMeters = roundLengthToMeters(distance.dx)
     val dyMeters = roundLengthToMeters(distance.dy)
     val dzMeters = roundLengthToMeters(distance.dz)
-    return BlockPos(addExactInt(x, dxMeters), addExactInt(y, dyMeters), addExactInt(z, dzMeters))
+    return BlockPos(
+      addExactInt(
+        x,
+        dxMeters,
+      ),
+      addExactInt(y, dyMeters), addExactInt(z, dzMeters),
+    )
   }
 
   companion object {
@@ -126,14 +144,24 @@ data class BlockPos(
     private val maxCoordinate: Int =
       run {
         val meters = World.Companion.MAX_SIZE.inWholeMeters
-        require(meters <= Int.MAX_VALUE.toLong()) { "World size exceeds integer coordinate capacity." }
+        require(
+          meters <=
+            Int.MAX_VALUE
+              .toLong(),
+        ) {
+          "World size exceeds integer coordinate capacity."
+        }
         meters.toInt()
       }
 
-    private fun ensureWithinWorld(value: Int) {
+    private fun ensureWithinWorld(
+      value: Int,
+    ) {
       val magnitude = abs(value.toLong())
       if (magnitude > maxCoordinate.toLong()) {
-        throw ArithmeticException("Block position component $value exceeds world bounds of +/-$maxCoordinate meters.")
+        throw ArithmeticException(
+          "Block position component $value exceeds world bounds of +/-$maxCoordinate meters.",
+        )
       }
     }
 
@@ -159,17 +187,23 @@ data class BlockPos(
       return result.toInt()
     }
 
-    private fun negateExactInt(value: Int): Int {
+    private fun negateExactInt(
+      value: Int,
+    ): Int {
       if (value == Int.MIN_VALUE) {
         throw ArithmeticException("integer overflow")
       }
       return -value
     }
 
-    private fun roundLengthToMeters(length: Length): Int {
+    private fun roundLengthToMeters(
+      length: Length,
+    ): Int {
       val meters = length.toDouble(LengthUnit.METER)
       if (!meters.isFinite()) {
-        throw ArithmeticException("Non-finite length cannot be rounded to meters")
+        throw ArithmeticException(
+          "Non-finite length cannot be rounded to meters",
+        )
       }
       val rounded = meters.roundToLong()
       if (rounded < Int.MIN_VALUE || rounded > Int.MAX_VALUE) {

@@ -11,7 +11,9 @@ data class NearFar(
 ) {
   init {
     require(near.isPositive) { "near must be > 0, was $near" }
-    require(far.isPositive && far > near) { "far must be > near, was $far (near=$near)" }
+    require(far.isPositive && far > near) {
+      "far must be > near, was $far (near=$near)"
+    }
   }
 
   companion object {
@@ -21,7 +23,8 @@ data class NearFar(
     fun from(
       near: Length,
       far: Length,
-    ): NearFar = NearFar(near, far)
+    ): NearFar =
+      NearFar(near, far)
 
     /**
      * Creates a [NearFar] from numeric values using [unit], ensuring `0 < near < far`.
@@ -30,6 +33,7 @@ data class NearFar(
       near: Double,
       far: Double,
       unit: LengthUnit = LengthUnit.NANOMETER,
-    ): NearFar = NearFar(Length.from(near, unit), Length.from(far, unit))
+    ): NearFar =
+      NearFar(Length.from(near, unit), Length.from(far, unit))
   }
 }

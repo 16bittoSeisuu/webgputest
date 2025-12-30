@@ -28,7 +28,9 @@ sealed interface Matrix4x4 {
   /**
    * Returns the element at [index] in column-major order.
    */
-  operator fun get(index: Int): Double
+  operator fun get(
+    index: Int,
+  ): Double
 
   /**
    * Returns a copy of the underlying elements in column-major order.
@@ -37,7 +39,9 @@ sealed interface Matrix4x4 {
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -73,7 +77,10 @@ interface MutableMatrix4x4 : Matrix4x4 {
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableMatrix4x4.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableMatrix4x4.() -> Unit,
+  ) =
+    action(this)
 
   companion object
 }
@@ -245,7 +252,10 @@ fun MutableMatrix4x4(
 /**
  * Creates a [MutableMatrix4x4] by copying an existing one.
  */
-fun MutableMatrix4x4.Companion.copyOf(matrix: Matrix4x4): MutableMatrix4x4 = MutableMatrix4x4Impl(matrix.toDoubleArray())
+fun MutableMatrix4x4.Companion.copyOf(
+  matrix: Matrix4x4,
+): MutableMatrix4x4 =
+  MutableMatrix4x4Impl(matrix.toDoubleArray())
 
 // endregion
 
@@ -254,12 +264,17 @@ fun MutableMatrix4x4.Companion.copyOf(matrix: Matrix4x4): MutableMatrix4x4 = Mut
 /**
  * Returns a new immutable matrix representing `this * other`.
  */
-inline operator fun Matrix4x4.times(other: Matrix4x4): ImmutableMatrix4x4 = multipliedBy(other)
+inline operator fun Matrix4x4.times(
+  other: Matrix4x4,
+): ImmutableMatrix4x4 =
+  multipliedBy(other)
 
 /**
  * Returns the matrix product `this * other` as an [ImmutableMatrix4x4].
  */
-inline infix fun Matrix4x4.multipliedBy(other: Matrix4x4): ImmutableMatrix4x4 {
+inline infix fun Matrix4x4.multipliedBy(
+  other: Matrix4x4,
+): ImmutableMatrix4x4 {
   val a = toDoubleArray()
   val b = other.toDoubleArray()
   val out = DoubleArray(16)
@@ -298,12 +313,15 @@ fun Matrix4x4.toFloatArray(): FloatArray {
 fun MutableMatrix4x4.setTransform(
   transform: Transform,
   unit: LengthUnit = LengthUnit.METER,
-) = mutateElements { writeTransform(it, transform, unit) }
+) =
+  mutateElements { writeTransform(it, transform, unit) }
 
 /**
  * Builds a TRS matrix from [transform], applying `scale -> rotation -> translation`. Column-major, column vectors.
  */
-fun Transform.toMatrix4x4(unit: LengthUnit = LengthUnit.METER): ImmutableMatrix4x4 =
+fun Transform.toMatrix4x4(
+  unit: LengthUnit = LengthUnit.METER,
+): ImmutableMatrix4x4 =
   Matrix4x4 {
     setTransform(this@toMatrix4x4, unit)
   }
@@ -323,7 +341,14 @@ fun MutableMatrix4x4.setIdentity() =
 /**
  * Copies [matrix] into this instance.
  */
-fun MutableMatrix4x4.setFrom(matrix: Matrix4x4) = mutateElements { matrix.toDoubleArray().copyInto(it) }
+fun MutableMatrix4x4.setFrom(
+  matrix: Matrix4x4,
+) =
+  mutateElements {
+    matrix
+      .toDoubleArray()
+      .copyInto(it)
+  }
 
 /**
  * Sets this matrix to the product `a * b`.
@@ -361,13 +386,20 @@ fun MutableMatrix4x4.setProduct(
 fun MutableMatrix4x4.setViewProjRH(
   camera: Camera,
   unit: LengthUnit = LengthUnit.METER,
-) = mutateElements { target ->
-  val view = DoubleArray(16)
-  val proj = DoubleArray(16)
-  writeViewMatrix(view, camera.transform, unit)
-  writePerspectiveMatrix(proj, camera.fov, camera.aspect, camera.nearFar, unit)
-  multiplyInto(target, proj, view)
-}
+) =
+  mutateElements { target ->
+    val view = DoubleArray(16)
+    val proj = DoubleArray(16)
+    writeViewMatrix(view, camera.transform, unit)
+    writePerspectiveMatrix(
+      proj,
+      camera.fov,
+      camera.aspect,
+      camera.nearFar,
+      unit,
+    )
+    multiplyInto(target, proj, view)
+  }
 
 /**
  * Builds a right-handed view-projection matrix (`projection * view`) for [camera] with a `[0, 1]` depth range.
@@ -409,11 +441,11 @@ private val MATRIX4X4_IDENTITY: ImmutableMatrix4x4Impl =
       1.0,
     ),
   )
-private val MATRIX4X4_ZERO: ImmutableMatrix4x4Impl = ImmutableMatrix4x4Impl(DoubleArray(16))
+private val MATRIX4X4_ZERO: ImmutableMatrix4x4Impl =
+  ImmutableMatrix4x4Impl(DoubleArray(16))
 
-private data class ImmutableMatrix4x4Impl(
-  val elements: DoubleArray,
-) : ImmutableMatrix4x4 {
+private data class ImmutableMatrix4x4Impl(val elements: DoubleArray) :
+  ImmutableMatrix4x4 {
   init {
     validateElements(elements)
   }
@@ -422,16 +454,21 @@ private data class ImmutableMatrix4x4Impl(
     row: Int,
     col: Int,
   ): Double {
-    require(row in 0..3 && col in 0..3) { "Indices out of bounds: row=$row col=$col" }
+    require(row in 0..3 && col in 0..3) {
+      "Indices out of bounds: row=$row col=$col"
+    }
     return elements[col * 4 + row]
   }
 
-  override fun get(index: Int): Double {
+  override fun get(
+    index: Int,
+  ): Double {
     require(index in 0..15) { "Index out of bounds: $index" }
     return elements[index]
   }
 
-  override fun toDoubleArray(): DoubleArray = elements.copyOf()
+  override fun toDoubleArray(): DoubleArray =
+    elements.copyOf()
 
   override fun toString(): String =
     buildString {
@@ -445,14 +482,17 @@ private data class ImmutableMatrix4x4Impl(
       append(")")
     }
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Matrix4x4 -> false
       else -> elementsEqual(this, other)
     }
 
-  override fun hashCode(): Int = elementsHash(elements)
+  override fun hashCode(): Int =
+    elementsHash(elements)
 }
 
 private value class Matrix4x4MutableWrapper(
@@ -461,11 +501,16 @@ private value class Matrix4x4MutableWrapper(
   override fun get(
     row: Int,
     col: Int,
-  ): Double = impl[row, col]
+  ): Double =
+    impl[row, col]
 
-  override fun get(index: Int): Double = impl[index]
+  override fun get(
+    index: Int,
+  ): Double =
+    impl[index]
 
-  override fun toDoubleArray(): DoubleArray = impl.toDoubleArray()
+  override fun toDoubleArray(): DoubleArray =
+    impl.toDoubleArray()
 
   override fun set(
     row: Int,
@@ -485,9 +530,7 @@ private value class Matrix4x4MutableWrapper(
   }
 }
 
-private class MutableMatrix4x4Impl(
-  elements: DoubleArray,
-) : MutableMatrix4x4 {
+private class MutableMatrix4x4Impl(elements: DoubleArray) : MutableMatrix4x4 {
   private val lock = ReentrantLock()
   val data: DoubleArray = validateElementsCopy(elements)
 
@@ -495,23 +538,30 @@ private class MutableMatrix4x4Impl(
     row: Int,
     col: Int,
   ): Double {
-    require(row in 0..3 && col in 0..3) { "Indices out of bounds: row=$row col=$col" }
+    require(row in 0..3 && col in 0..3) {
+      "Indices out of bounds: row=$row col=$col"
+    }
     return lock.withLock { data[col * 4 + row] }
   }
 
-  override fun get(index: Int): Double {
+  override fun get(
+    index: Int,
+  ): Double {
     require(index in 0..15) { "Index out of bounds: $index" }
     return lock.withLock { data[index] }
   }
 
-  override fun toDoubleArray(): DoubleArray = lock.withLock { data.copyOf() }
+  override fun toDoubleArray(): DoubleArray =
+    lock.withLock { data.copyOf() }
 
   override fun set(
     row: Int,
     col: Int,
     value: Double,
   ) {
-    require(row in 0..3 && col in 0..3) { "Indices out of bounds: row=$row col=$col" }
+    require(row in 0..3 && col in 0..3) {
+      "Indices out of bounds: row=$row col=$col"
+    }
     val idx = columnMajorIndex(row, col)
     val finite = ensureFiniteMatrixElement(value, "[$row,$col]")
     lock.withLock {
@@ -530,23 +580,31 @@ private class MutableMatrix4x4Impl(
     }
   }
 
-  override fun mutate(action: MutableMatrix4x4.() -> Unit) {
+  override fun mutate(
+    action: MutableMatrix4x4.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Matrix4x4 -> false
       else -> elementsEqual(this, other)
     }
 
-  override fun hashCode(): Int = lock.withLock { elementsHash(data) }
+  override fun hashCode(): Int =
+    lock.withLock { elementsHash(data) }
 
-  override fun toString(): String = toDoubleArray().contentToString()
+  override fun toString(): String =
+    toDoubleArray().contentToString()
 }
 
-private inline fun MutableMatrix4x4.mutateElements(crossinline action: (DoubleArray) -> Unit) =
+private inline fun MutableMatrix4x4.mutateElements(
+  crossinline action: (DoubleArray) -> Unit,
+) =
   mutate {
     when (this) {
       is MutableMatrix4x4Impl -> {
@@ -572,7 +630,8 @@ private inline fun MutableMatrix4x4.mutateElements(crossinline action: (DoubleAr
 private fun columnMajorIndex(
   row: Int,
   col: Int,
-): Int = col * 4 + row
+): Int =
+  col * 4 + row
 
 private fun elementsEqual(
   a: Matrix4x4,
@@ -588,7 +647,9 @@ private fun elementsEqual(
   return true
 }
 
-private fun elementsHash(elements: DoubleArray): Int {
+private fun elementsHash(
+  elements: DoubleArray,
+): Int {
   var result = 17
   var i = 0
   while (i < 16) {
@@ -603,12 +664,18 @@ internal fun ensureFiniteMatrixElement(
   value: Double,
   label: String,
 ): Double {
-  require(value.isFinite()) { "Matrix4x4 element $label must be finite: $value" }
+  require(
+    value.isFinite(),
+  ) { "Matrix4x4 element $label must be finite: $value" }
   return value
 }
 
-private fun validateElements(elements: DoubleArray) {
-  require(elements.size == 16) { "Matrix4x4 requires 16 elements, was ${elements.size}" }
+private fun validateElements(
+  elements: DoubleArray,
+) {
+  require(elements.size == 16) {
+    "Matrix4x4 requires 16 elements, was ${elements.size}"
+  }
   var i = 0
   while (i < 16) {
     ensureFiniteMatrixElement(elements[i], "[$i]")
@@ -616,12 +683,16 @@ private fun validateElements(elements: DoubleArray) {
   }
 }
 
-private fun validateElementsCopy(elements: DoubleArray): DoubleArray {
+private fun validateElementsCopy(
+  elements: DoubleArray,
+): DoubleArray {
   validateElements(elements)
   return elements.copyOf()
 }
 
-private fun createMatrixImmutable(elements: DoubleArray): ImmutableMatrix4x4Impl {
+private fun createMatrixImmutable(
+  elements: DoubleArray,
+): ImmutableMatrix4x4Impl {
   validateElements(elements)
   return when {
     elements.contentEquals(MATRIX4X4_IDENTITY.elements) -> MATRIX4X4_IDENTITY
@@ -631,7 +702,10 @@ private fun createMatrixImmutable(elements: DoubleArray): ImmutableMatrix4x4Impl
 }
 
 @PublishedApi
-internal fun Matrix4x4.Companion.fromColumnMajor(elements: DoubleArray): ImmutableMatrix4x4 = createMatrixImmutable(elements)
+internal fun Matrix4x4.Companion.fromColumnMajor(
+  elements: DoubleArray,
+): ImmutableMatrix4x4 =
+  createMatrixImmutable(elements)
 
 private fun writeViewMatrix(
   target: DoubleArray,
@@ -642,9 +716,13 @@ private fun writeViewMatrix(
   val invSx = 1.0 / transform.scale.sx
   val invSy = 1.0 / transform.scale.sy
   val invSz = 1.0 / transform.scale.sz
-  require(invSx.isFinite() && invSy.isFinite() && invSz.isFinite()) { "Cannot invert a camera transform with zero scale." }
+  require(invSx.isFinite() && invSy.isFinite() && invSz.isFinite()) {
+    "Cannot invert a camera transform with zero scale."
+  }
 
-  val normalizedRotation = transform.rotation.normalized()
+  val normalizedRotation =
+    transform.rotation
+      .normalized()
   val rx = normalizedRotation.x
   val ry = normalizedRotation.y
   val rz = normalizedRotation.z
@@ -685,9 +763,15 @@ private fun writeViewMatrix(
   target[10] = invSz * r22
   target[11] = 0.0
 
-  val tx = transform.translation.dx.toDouble(unit)
-  val ty = transform.translation.dy.toDouble(unit)
-  val tz = transform.translation.dz.toDouble(unit)
+  val tx =
+    transform.translation.dx
+      .toDouble(unit)
+  val ty =
+    transform.translation.dy
+      .toDouble(unit)
+  val tz =
+    transform.translation.dz
+      .toDouble(unit)
 
   val viewTx = -(r00 * tx + r10 * ty + r20 * tz) * invSx
   val viewTy = -(r01 * tx + r11 * ty + r21 * tz) * invSy
@@ -706,12 +790,24 @@ private fun writePerspectiveMatrix(
   nearFar: NearFar,
   unit: LengthUnit,
 ) {
-  require(target.size == 16) { "Projection matrix target must have 16 elements." }
+  require(target.size == 16) {
+    "Projection matrix target must have 16 elements."
+  }
   target.fill(0.0)
 
-  val f = 1.0 / tan(fov.angle.toDouble(AngleUnit.RADIAN) / 2.0)
-  val near = nearFar.near.toDouble(unit)
-  val far = nearFar.far.toDouble(unit)
+  val f =
+    1.0 /
+      tan(
+        fov.angle
+          .toDouble(AngleUnit.RADIAN) /
+          2.0,
+      )
+  val near =
+    nearFar.near
+      .toDouble(unit)
+  val far =
+    nearFar.far
+      .toDouble(unit)
 
   target[0] = f / aspect
   target[5] = f
@@ -727,7 +823,9 @@ private fun multiplyInto(
   a: DoubleArray,
   b: DoubleArray,
 ) {
-  require(target.size == 16 && a.size == 16 && b.size == 16) { "All matrices must have 16 elements." }
+  require(target.size == 16 && a.size == 16 && b.size == 16) {
+    "All matrices must have 16 elements."
+  }
   for (col in 0 until 4) {
     val b0 = b[col * 4 + 0]
     val b1 = b[col * 4 + 1]
@@ -749,14 +847,22 @@ private fun writeTransform(
   unit: LengthUnit,
 ) {
   val (sx, sy, sz) = transform.scale
-  val normalizedRotation = transform.rotation.normalized()
+  val normalizedRotation =
+    transform.rotation
+      .normalized()
   val rx = normalizedRotation.x
   val ry = normalizedRotation.y
   val rz = normalizedRotation.z
   val rw = normalizedRotation.w
-  val tx = transform.translation.dx.toDouble(unit)
-  val ty = transform.translation.dy.toDouble(unit)
-  val tz = transform.translation.dz.toDouble(unit)
+  val tx =
+    transform.translation.dx
+      .toDouble(unit)
+  val ty =
+    transform.translation.dy
+      .toDouble(unit)
+  val tz =
+    transform.translation.dz
+      .toDouble(unit)
 
   val xx = rx * rx
   val yy = ry * ry

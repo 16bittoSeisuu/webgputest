@@ -38,10 +38,14 @@ class SystemBuilder internal constructor() {
    * @param key the trait key
    * @return the delegated property provider
    */
-  fun <R : Any, W : Any> read(key: TraitKey<R, W>): ReadOnlyProperty<Any?, R> {
+  fun <R : Any, W : Any> read(
+    key: TraitKey<R, W>,
+  ): ReadOnlyProperty<Any?, R> {
     requiredTraitTypes.add(key.writableType)
     return ReadOnlyProperty { _, _ ->
-      val entity = currentEntity ?: error("read can only be accessed during forEach execution")
+      val entity =
+        currentEntity
+          ?: error("read can only be accessed during forEach execution")
 
       val trait =
         entity.get(key.writableType)
@@ -59,14 +63,18 @@ class SystemBuilder internal constructor() {
    * @param key the trait key
    * @return the delegated property provider
    */
-  fun <W : Any> write(key: TraitKey<*, W>): ReadWriteProperty<Any?, W> {
+  fun <W : Any> write(
+    key: TraitKey<*, W>,
+  ): ReadWriteProperty<Any?, W> {
     requiredTraitTypes.add(key.writableType)
     return object : ReadWriteProperty<Any?, W> {
       override fun getValue(
         thisRef: Any?,
         property: KProperty<*>,
       ): W {
-        val entity = currentEntity ?: error("write can only be accessed during forEach execution")
+        val entity =
+          currentEntity
+            ?: error("write can only be accessed during forEach execution")
         return entity.get(key.writableType)
           ?: error("Entity $entity missing required trait ${key.writableType}")
       }
@@ -76,7 +84,9 @@ class SystemBuilder internal constructor() {
         property: KProperty<*>,
         value: W,
       ) {
-        val entity = currentEntity ?: error("write can only be accessed during forEach execution")
+        val entity =
+          currentEntity
+            ?: error("write can only be accessed during forEach execution")
         entity.add(value)
       }
     }
@@ -91,7 +101,9 @@ class SystemBuilder internal constructor() {
    *
    * @param block the processing logic with [EntityScope] receiver.
    */
-  fun forEach(block: EntityScope.(Duration) -> Unit) {
+  fun forEach(
+    block: EntityScope.(Duration) -> Unit,
+  ) {
     forEachBlock = block
   }
 
@@ -133,7 +145,9 @@ class SystemBuilder internal constructor() {
       "net.japanesehunter.traits.event.buildQueryingEventSink",
     ),
 )
-fun buildSystem(block: SystemBuilder.() -> Unit): TraitUpdateSink {
+fun buildSystem(
+  block: SystemBuilder.() -> Unit,
+): TraitUpdateSink {
   val builder = SystemBuilder()
   builder.block()
   return TraitUpdateSink { event ->

@@ -51,7 +51,8 @@ data class ChunkPos(
     dx: Int = 0,
     dy: Int = 0,
     dz: Int = 0,
-  ): ChunkPos = ChunkPos(addExactInt(x, dx), addExactInt(y, dy), addExactInt(z, dz))
+  ): ChunkPos =
+    ChunkPos(addExactInt(x, dx), addExactInt(y, dy), addExactInt(z, dz))
 
   /**
    * Computes the metric displacement between this position and another chunk position.
@@ -59,7 +60,9 @@ data class ChunkPos(
    * @param other The position to subtract.
    * @return The displacement from [other] to this position measured in meters.
    */
-  operator fun minus(other: ChunkPos): ImmutableLength3 =
+  operator fun minus(
+    other: ChunkPos,
+  ): ImmutableLength3 =
     Length3(
       dx = chunksToMeters(subtractExactInt(x, other.x)).meters,
       dy = chunksToMeters(subtractExactInt(y, other.y)).meters,
@@ -72,7 +75,8 @@ data class ChunkPos(
    * @return The position with each component negated.
    * @throws ArithmeticException If arithmetic overflows or the result exceeds world bounds.
    */
-  operator fun unaryMinus(): ChunkPos = ChunkPos(negateExactInt(x), negateExactInt(y), negateExactInt(z))
+  operator fun unaryMinus(): ChunkPos =
+    ChunkPos(negateExactInt(x), negateExactInt(y), negateExactInt(z))
 
   /**
    * Translates this chunk position by a metric distance rounded to the nearest chunk boundary.
@@ -81,7 +85,10 @@ data class ChunkPos(
    * @return The translated chunk position.
    * @throws ArithmeticException If rounding overflows or the result exceeds world bounds.
    */
-  operator fun plus(distance: Length3): ChunkPos = translateBy(distance)
+  operator fun plus(
+    distance: Length3,
+  ): ChunkPos =
+    translateBy(distance)
 
   /**
    * Translates this chunk position by the negated metric distance rounded to the nearest chunk boundary.
@@ -90,7 +97,10 @@ data class ChunkPos(
    * @return The translated chunk position.
    * @throws ArithmeticException If rounding overflows or the result exceeds world bounds.
    */
-  operator fun minus(distance: Length3): ChunkPos = translateBy(-distance)
+  operator fun minus(
+    distance: Length3,
+  ): ChunkPos =
+    translateBy(-distance)
 
   /**
    * Converts this chunk position to a point measured in meters at the chunk origin.
@@ -104,11 +114,19 @@ data class ChunkPos(
       z = chunksToMeters(z).meters,
     )
 
-  private fun translateBy(distance: Length3): ChunkPos {
+  private fun translateBy(
+    distance: Length3,
+  ): ChunkPos {
     val dxChunks = roundLengthToChunks(distance.dx)
     val dyChunks = roundLengthToChunks(distance.dy)
     val dzChunks = roundLengthToChunks(distance.dz)
-    return ChunkPos(addExactInt(x, dxChunks), addExactInt(y, dyChunks), addExactInt(z, dzChunks))
+    return ChunkPos(
+      addExactInt(
+        x,
+        dxChunks,
+      ),
+      addExactInt(y, dyChunks), addExactInt(z, dzChunks),
+    )
   }
 
   companion object {
@@ -120,14 +138,20 @@ data class ChunkPos(
     private val maxChunkCoordinate: Int =
       run {
         val max = World.Companion.MAX_CHUNK_COORDINATE
-        require(max <= Int.MAX_VALUE) { "Chunk coordinate exceeds integer capacity." }
+        require(
+          max <= Int.MAX_VALUE,
+        ) { "Chunk coordinate exceeds integer capacity." }
         max
       }
 
-    private fun ensureWithinWorld(value: Int) {
+    private fun ensureWithinWorld(
+      value: Int,
+    ) {
       val magnitude = abs(value.toLong())
       if (magnitude > maxChunkCoordinate.toLong()) {
-        throw ArithmeticException("Chunk position component $value exceeds world bounds of +/-$maxChunkCoordinate chunks.")
+        throw ArithmeticException(
+          "Chunk position component $value exceeds world bounds of +/-$maxChunkCoordinate chunks.",
+        )
       }
     }
 
@@ -153,27 +177,37 @@ data class ChunkPos(
       return result.toInt()
     }
 
-    private fun negateExactInt(value: Int): Int {
+    private fun negateExactInt(
+      value: Int,
+    ): Int {
       if (value == Int.MIN_VALUE) {
         throw ArithmeticException("integer overflow")
       }
       return -value
     }
 
-    private fun roundLengthToChunks(length: Length): Int {
+    private fun roundLengthToChunks(
+      length: Length,
+    ): Int {
       val meters = length.toDouble(LengthUnit.METER)
       if (!meters.isFinite()) {
-        throw ArithmeticException("Non-finite length cannot be rounded to chunks")
+        throw ArithmeticException(
+          "Non-finite length cannot be rounded to chunks",
+        )
       }
       val chunks = meters / World.Companion.CHUNK_LENGTH_BLOCKS
       val rounded = chunks.roundToLong()
       if (rounded < Int.MIN_VALUE || rounded > Int.MAX_VALUE) {
-        throw ArithmeticException("Rounded chunk displacement $rounded exceeds Int range")
+        throw ArithmeticException(
+          "Rounded chunk displacement $rounded exceeds Int range",
+        )
       }
       return rounded.toInt()
     }
 
-    private fun chunksToMeters(chunks: Int): Int {
+    private fun chunksToMeters(
+      chunks: Int,
+    ): Int {
       val meters = chunks.toLong() * World.Companion.CHUNK_LENGTH_BLOCKS
       if (meters < Int.MIN_VALUE || meters > Int.MAX_VALUE) {
         throw ArithmeticException("Chunk conversion to meters overflowed")

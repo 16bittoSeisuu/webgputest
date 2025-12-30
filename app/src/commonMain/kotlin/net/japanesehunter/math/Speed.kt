@@ -5,8 +5,10 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 
-private const val NANOMETERS_PER_SECOND_PER_METER_PER_SECOND: Long = 1_000_000_000L
-private const val NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR: Long = 277_777_778L
+private const val NANOMETERS_PER_SECOND_PER_METER_PER_SECOND: Long =
+  1_000_000_000L
+private const val NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR: Long =
+  277_777_778L
 
 /**
  * Represents the units supported by [Speed].
@@ -22,17 +24,17 @@ enum class SpeedUnit(
   /**
    * The nanometer per second unit.
    */
-  NANOMETER_PER_SECOND(1L, "nm/s"),
+  NanometerPerSecond(1L, "nm/s"),
 
   /**
    * The meter per second unit.
    */
-  METER_PER_SECOND(NANOMETERS_PER_SECOND_PER_METER_PER_SECOND, "m/s"),
+  MeterPerSecond(NANOMETERS_PER_SECOND_PER_METER_PER_SECOND, "m/s"),
 
   /**
    * The kilometer per hour unit.
    */
-  KILOMETER_PER_HOUR(NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR, "km/h"),
+  KilometerPerHour(NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR, "km/h"),
 }
 
 /**
@@ -67,11 +69,22 @@ value class Speed internal constructor(
    * @param unit The [SpeedUnit] to convert to.
    * @return The truncated [Long] representation in [unit].
    */
-  fun toLong(unit: SpeedUnit): Long =
+  fun toLong(
+    unit: SpeedUnit,
+  ): Long =
     when (unit) {
-      SpeedUnit.NANOMETER_PER_SECOND -> nanometersPerSecond
-      SpeedUnit.METER_PER_SECOND -> inWholeMetersPerSecond
-      SpeedUnit.KILOMETER_PER_HOUR -> nanometersPerSecond / NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR
+      SpeedUnit.NanometerPerSecond -> {
+        nanometersPerSecond
+      }
+
+      SpeedUnit.MeterPerSecond -> {
+        inWholeMetersPerSecond
+      }
+
+      SpeedUnit.KilometerPerHour -> {
+        nanometersPerSecond /
+          NANOMETERS_PER_SECOND_PER_KILOMETER_PER_HOUR
+      }
     }
 
   /**
@@ -80,7 +93,12 @@ value class Speed internal constructor(
    * @param unit The [SpeedUnit] to convert to.
    * @return The [Double] representation in [unit].
    */
-  fun toDouble(unit: SpeedUnit): Double = nanometersPerSecond.toDouble() / unit.nanometersPerSecondPerUnit.toDouble()
+  fun toDouble(
+    unit: SpeedUnit,
+  ): Double =
+    nanometersPerSecond.toDouble() /
+      unit.nanometersPerSecondPerUnit
+        .toDouble()
 
   /**
    * Returns the absolute value of this speed.
@@ -116,7 +134,8 @@ value class Speed internal constructor(
    *
    * @throws ArithmeticException If negation overflows [Long].
    */
-  operator fun unaryMinus(): Speed = Speed(safeNegate(nanometersPerSecond))
+  operator fun unaryMinus(): Speed =
+    Speed(safeNegate(nanometersPerSecond))
 
   /**
    * Adds another [Speed].
@@ -125,7 +144,10 @@ value class Speed internal constructor(
    * @return The sum of the speeds.
    * @throws ArithmeticException If the sum overflows [Long].
    */
-  operator fun plus(other: Speed): Speed = Speed(safeAdd(nanometersPerSecond, other.nanometersPerSecond))
+  operator fun plus(
+    other: Speed,
+  ): Speed =
+    Speed(safeAdd(nanometersPerSecond, other.nanometersPerSecond))
 
   /**
    * Subtracts another [Speed].
@@ -134,7 +156,10 @@ value class Speed internal constructor(
    * @return The difference of the speeds.
    * @throws ArithmeticException If the subtraction overflows [Long].
    */
-  operator fun minus(other: Speed): Speed = Speed(safeAdd(nanometersPerSecond, safeNegate(other.nanometersPerSecond)))
+  operator fun minus(
+    other: Speed,
+  ): Speed =
+    Speed(safeAdd(nanometersPerSecond, safeNegate(other.nanometersPerSecond)))
 
   /**
    * Multiplies this speed by a [Long] factor.
@@ -143,7 +168,10 @@ value class Speed internal constructor(
    * @return The scaled [Speed].
    * @throws ArithmeticException If the multiplication overflows [Long].
    */
-  operator fun times(factor: Long): Speed = Speed(safeMultiply(nanometersPerSecond, factor))
+  operator fun times(
+    factor: Long,
+  ): Speed =
+    Speed(safeMultiply(nanometersPerSecond, factor))
 
   /**
    * Multiplies this speed by a [Double] factor.
@@ -154,7 +182,9 @@ value class Speed internal constructor(
    * @throws ArithmeticException If the result overflows [Long].
    * @throws IllegalArgumentException If [factor] is not finite.
    */
-  operator fun times(factor: Double): Speed {
+  operator fun times(
+    factor: Double,
+  ): Speed {
     require(factor.isFinite()) { "factor must be finite: $factor" }
     val result = (nanometersPerSecond.toDouble() * factor).roundToLong()
     return Speed(result)
@@ -167,12 +197,22 @@ value class Speed internal constructor(
    * @return The resulting distance.
    * @throws ArithmeticException If the multiplication overflows [Long].
    */
-  operator fun times(duration: Duration): Length {
+  operator fun times(
+    duration: Duration,
+  ): Length {
     val seconds = duration.inWholeSeconds
     val nanos = (duration.inWholeNanoseconds % 1_000_000_000L)
     val wholeSecondDistance = safeMultiply(nanometersPerSecond, seconds)
-    val nanoSecondDistance = (nanometersPerSecond.toDouble() * nanos.toDouble() / 1_000_000_000.0).roundToLong()
-    return Length.from(safeAdd(wholeSecondDistance, nanoSecondDistance), LengthUnit.NANOMETER)
+    val nanoSecondDistance =
+      (
+        nanometersPerSecond.toDouble() *
+          nanos.toDouble() /
+          1_000_000_000.0
+      ).roundToLong()
+    return Length.from(
+      safeAdd(wholeSecondDistance, nanoSecondDistance),
+      LengthUnit.NANOMETER,
+    )
   }
 
   /**
@@ -182,7 +222,9 @@ value class Speed internal constructor(
    * @return The divided [Speed].
    * @throws ArithmeticException If [divisor] is zero.
    */
-  operator fun div(divisor: Long): Speed {
+  operator fun div(
+    divisor: Long,
+  ): Speed {
     require(divisor != 0L) { "divisor must not be zero" }
     return Speed(nanometersPerSecond / divisor)
   }
@@ -196,7 +238,9 @@ value class Speed internal constructor(
    * @throws ArithmeticException If the result overflows [Long].
    * @throws IllegalArgumentException If [divisor] is not finite or is zero.
    */
-  operator fun div(divisor: Double): Speed {
+  operator fun div(
+    divisor: Double,
+  ): Speed {
     require(divisor.isFinite()) { "divisor must be finite: $divisor" }
     require(divisor != 0.0) { "divisor must not be zero" }
     val result = (nanometersPerSecond.toDouble() / divisor).roundToLong()
@@ -210,16 +254,23 @@ value class Speed internal constructor(
    * @return The ratio as a [Double].
    * @throws ArithmeticException If [other] is zero.
    */
-  operator fun div(other: Speed): Double {
+  operator fun div(
+    other: Speed,
+  ): Double {
     require(other.nanometersPerSecond != 0L) { "other must not be zero" }
-    return nanometersPerSecond.toDouble() / other.nanometersPerSecond.toDouble()
+    return nanometersPerSecond.toDouble() /
+      other.nanometersPerSecond
+        .toDouble()
   }
 
-  override fun compareTo(other: Speed): Int = nanometersPerSecond.compareTo(other.nanometersPerSecond)
+  override fun compareTo(
+    other: Speed,
+  ): Int =
+    nanometersPerSecond.compareTo(other.nanometersPerSecond)
 
   override fun toString(): String {
-    val value = toDouble(SpeedUnit.METER_PER_SECOND)
-    return "$value ${SpeedUnit.METER_PER_SECOND.symbol}"
+    val value = toDouble(SpeedUnit.MeterPerSecond)
+    return "$value ${SpeedUnit.MeterPerSecond.symbol}"
   }
 
   /**
@@ -240,11 +291,20 @@ value class Speed internal constructor(
     decimals: Int? = 2,
     signMode: SignMode = SignMode.Always,
   ): String {
-    require(decimals == null || decimals >= 0) { "decimals must be non-negative: $decimals" }
-    val resolvedUnit = unit ?: SpeedUnit.METER_PER_SECOND
+    require(decimals == null || decimals >= 0) {
+      "decimals must be non-negative: $decimals"
+    }
+    val resolvedUnit = unit ?: SpeedUnit.MeterPerSecond
     val isNegative = nanometersPerSecond < 0
     val absValue = abs(toDouble(resolvedUnit))
-    val formatted = if (decimals != null) formatDecimals(absValue, decimals) else absValue.toString()
+    val formatted =
+      if (decimals !=
+        null
+      ) {
+        formatDecimals(absValue, decimals)
+      } else {
+        absValue.toString()
+      }
     return "${signMode.prefix(isNegative)}$formatted ${resolvedUnit.symbol}"
   }
 
@@ -265,7 +325,8 @@ value class Speed internal constructor(
     fun from(
       value: Long,
       unit: SpeedUnit,
-    ): Speed = Speed(safeMultiply(value, unit.nanometersPerSecondPerUnit))
+    ): Speed =
+      Speed(safeMultiply(value, unit.nanometersPerSecondPerUnit))
 
     /**
      * Creates a [Speed] from a [Double] value and a [SpeedUnit].
@@ -282,7 +343,12 @@ value class Speed internal constructor(
       unit: SpeedUnit,
     ): Speed {
       require(value.isFinite()) { "value must be finite: $value" }
-      val nanometersPerSecond = (value * unit.nanometersPerSecondPerUnit.toDouble()).roundToLong()
+      val nanometersPerSecond =
+        (
+          value *
+            unit.nanometersPerSecondPerUnit
+              .toDouble()
+        ).roundToLong()
       return Speed(nanometersPerSecond)
     }
   }
@@ -296,7 +362,7 @@ value class Speed internal constructor(
  * @throws IllegalArgumentException If this value is not finite.
  */
 val Double.metersPerSecond: Speed
-  get() = from(this, SpeedUnit.METER_PER_SECOND)
+  get() = from(this, SpeedUnit.MeterPerSecond)
 
 /**
  * Creates a [Speed] from this [Long] value in meters per second.
@@ -305,7 +371,7 @@ val Double.metersPerSecond: Speed
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Long.metersPerSecond: Speed
-  get() = from(this, SpeedUnit.METER_PER_SECOND)
+  get() = from(this, SpeedUnit.MeterPerSecond)
 
 /**
  * Creates a [Speed] from this [Int] value in meters per second.
@@ -314,7 +380,7 @@ val Long.metersPerSecond: Speed
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Int.metersPerSecond: Speed
-  get() = from(this.toLong(), SpeedUnit.METER_PER_SECOND)
+  get() = from(this.toLong(), SpeedUnit.MeterPerSecond)
 
 /**
  * Creates a [Speed] from this [Double] value in kilometers per hour.
@@ -324,7 +390,7 @@ val Int.metersPerSecond: Speed
  * @throws IllegalArgumentException If this value is not finite.
  */
 val Double.kilometersPerHour: Speed
-  get() = from(this, SpeedUnit.KILOMETER_PER_HOUR)
+  get() = from(this, SpeedUnit.KilometerPerHour)
 
 /**
  * Creates a [Speed] from this [Long] value in kilometers per hour.
@@ -333,7 +399,7 @@ val Double.kilometersPerHour: Speed
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Long.kilometersPerHour: Speed
-  get() = from(this, SpeedUnit.KILOMETER_PER_HOUR)
+  get() = from(this, SpeedUnit.KilometerPerHour)
 
 /**
  * Creates a [Speed] from this [Int] value in kilometers per hour.
@@ -342,7 +408,7 @@ val Long.kilometersPerHour: Speed
  * @throws ArithmeticException If the conversion overflows [Long].
  */
 val Int.kilometersPerHour: Speed
-  get() = from(this.toLong(), SpeedUnit.KILOMETER_PER_HOUR)
+  get() = from(this.toLong(), SpeedUnit.KilometerPerHour)
 
 /**
  * Divides this [Length] by a [Duration] to produce a [Speed].
@@ -351,11 +417,19 @@ val Int.kilometersPerHour: Speed
  * @return The resulting speed.
  * @throws ArithmeticException If [duration] is zero or if the result overflows [Long].
  */
-operator fun Length.div(duration: Duration): Speed {
+operator fun Length.div(
+  duration: Duration,
+): Speed {
   val totalNanos = duration.inWholeNanoseconds
   require(totalNanos != 0L) { "duration must not be zero" }
-  val nanometersPerSecond = (this.inWholeNanometers.toDouble() * 1_000_000_000.0 / totalNanos.toDouble()).roundToLong()
-  return Speed.from(nanometersPerSecond, SpeedUnit.METER_PER_SECOND)
+  val nanometersPerSecond =
+    (
+      this.inWholeNanometers
+        .toDouble() *
+        1_000_000_000.0 /
+        totalNanos.toDouble()
+    ).roundToLong()
+  return Speed.from(nanometersPerSecond, SpeedUnit.MeterPerSecond)
 }
 
 /**
@@ -365,7 +439,10 @@ operator fun Length.div(duration: Duration): Speed {
  * @return The resulting distance.
  * @throws ArithmeticException If the multiplication overflows [Long].
  */
-operator fun Duration.times(speed: Speed): Length = speed * this
+operator fun Duration.times(
+  speed: Speed,
+): Length =
+  speed * this
 
 private fun safeAdd(
   a: Long,
@@ -390,7 +467,9 @@ private fun safeMultiply(
   return result
 }
 
-private fun safeNegate(value: Long): Long =
+private fun safeNegate(
+  value: Long,
+): Long =
   if (value == Long.MIN_VALUE) {
     throw ArithmeticException("Long overflow negating $value.")
   } else {

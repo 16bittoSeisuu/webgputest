@@ -24,9 +24,7 @@ data class KeyDown(
  *
  * @param code the physical key code following the KeyboardEvent.code convention.
  */
-data class KeyUp(
-  val code: String,
-) : InputEvent
+data class KeyUp(val code: String) : InputEvent
 
 /**
  * Represents mouse pointer movement.
@@ -44,18 +42,14 @@ data class MouseMove(
  *
  * @param button the button index where 0 is the primary button.
  */
-data class MouseDown(
-  val button: Int,
-) : InputEvent
+data class MouseDown(val button: Int) : InputEvent
 
 /**
  * Represents a mouse button release event.
  *
  * @param button the button index where 0 is the primary button.
  */
-data class MouseUp(
-  val button: Int,
-) : InputEvent
+data class MouseUp(val button: Int) : InputEvent
 
 /**
  * Represents a mouse wheel scroll event.

@@ -21,20 +21,35 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
 > {
   val world = this
   val faces = BlockFace.entries
-  val faceOffsetsX = IntArray(faces.size) { i -> faces[i].normal.ux.toInt() }
-  val faceOffsetsY = IntArray(faces.size) { i -> faces[i].normal.uy.toInt() }
-  val faceOffsetsZ = IntArray(faces.size) { i -> faces[i].normal.uz.toInt() }
+  val faceOffsetsX =
+    IntArray(faces.size) { i ->
+      faces[i]
+        .normal.ux
+        .toInt()
+    }
+  val faceOffsetsY =
+    IntArray(faces.size) { i ->
+      faces[i]
+        .normal.uy
+        .toInt()
+    }
+  val faceOffsetsZ =
+    IntArray(faces.size) { i ->
+      faces[i]
+        .normal.uz
+        .toInt()
+    }
   val faceOpposites = Array(faces.size) { i -> faces[i].opposite() }
   val faceBits = IntArray(faces.size) { i -> 1 shl i }
 
-  class IntWriter(
-    initialCapacity: Int,
-  ) {
+  class IntWriter(initialCapacity: Int) {
     private var buf = IntArray(initialCapacity)
     var size: Int = 0
       private set
 
-    fun write(value: Int) {
+    fun write(
+      value: Int,
+    ) {
       val idx = size
       if (idx == buf.size) {
         buf = buf.copyOf(maxOf(16, buf.size * 2))
@@ -54,7 +69,9 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   val vertexInts = IntWriter(initialCapacity = 8 * 1024)
   val indexInts = IntWriter(initialCapacity = 6 * 1024)
   var vertexCount = 0
-  val nanosPerMeter = LengthUnit.METER.nanometersPerUnit.toInt()
+  val nanosPerMeter =
+    LengthUnit.METER.nanometersPerUnit
+      .toInt()
   val nanosToMeters = 1e-9f
 
   fun appendVertex(
@@ -126,7 +143,9 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
   var z = 0
   var requiredOpaqueMask = 0
 
-  fun computeNeighborOpaqueMask(requiredMask: Int): Int {
+  fun computeNeighborOpaqueMask(
+    requiredMask: Int,
+  ): Int {
     if (requiredMask == 0) return 0
     var mask = 0
     val worldSizeX = world.size
@@ -166,19 +185,37 @@ suspend fun List<List<List<BlockState>>>.toMeshGpuBuffer(): Pair<
 
       if (!shouldCull) {
         val min = quad.min
-        val minX = min.x.inWholeNanometers.toInt()
-        val minY = min.y.inWholeNanometers.toInt()
-        val minZ = min.z.inWholeNanometers.toInt()
+        val minX =
+          min.x.inWholeNanometers
+            .toInt()
+        val minY =
+          min.y.inWholeNanometers
+            .toInt()
+        val minZ =
+          min.z.inWholeNanometers
+            .toInt()
 
         val u = quad.u
-        val uX = u.dx.inWholeNanometers.toInt()
-        val uY = u.dy.inWholeNanometers.toInt()
-        val uZ = u.dz.inWholeNanometers.toInt()
+        val uX =
+          u.dx.inWholeNanometers
+            .toInt()
+        val uY =
+          u.dy.inWholeNanometers
+            .toInt()
+        val uZ =
+          u.dz.inWholeNanometers
+            .toInt()
 
         val v = quad.v
-        val vX = v.dx.inWholeNanometers.toInt()
-        val vY = v.dy.inWholeNanometers.toInt()
-        val vZ = v.dz.inWholeNanometers.toInt()
+        val vX =
+          v.dx.inWholeNanometers
+            .toInt()
+        val vY =
+          v.dy.inWholeNanometers
+            .toInt()
+        val vZ =
+          v.dz.inWholeNanometers
+            .toInt()
 
         val x0 = minX + vX
         val y0 = minY + vY

@@ -1,7 +1,6 @@
 package net.japanesehunter.traits
 
 import net.japanesehunter.worldcreate.world.EventSink
-import net.japanesehunter.worldcreate.world.EventSubscription
 import kotlin.time.Duration
 
 /**
@@ -31,9 +30,7 @@ interface TraitTickEvent {
  *   range: 0 <= dt < Infinity
  * @throws IllegalArgumentException if dt is negative or not finite
  */
-class MutableTraitTickEvent(
-  dt: Duration,
-) : TraitTickEvent {
+class MutableTraitTickEvent(dt: Duration) : TraitTickEvent {
   override var dt: Duration = dt
     set(value) {
       require(!value.isNegative()) { "dt must be non-negative: $value" }
@@ -46,7 +43,8 @@ class MutableTraitTickEvent(
     require(dt.isFinite()) { "dt must be finite: $dt" }
   }
 
-  override fun toString(): String = "MutableTraitTickEvent(dt=$dt)"
+  override fun toString(): String =
+    "MutableTraitTickEvent(dt=$dt)"
 }
 
 /**

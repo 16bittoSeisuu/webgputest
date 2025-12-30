@@ -41,21 +41,26 @@ sealed interface Direction3 {
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component1() = ux
+  operator fun component1() =
+    ux
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component2() = uy
+  operator fun component2() =
+    uy
 
   /**
    * Component operator for destructuring declarations.
    */
-  operator fun component3() = uz
+  operator fun component3() =
+    uz
 
   override fun toString(): String
 
-  override fun equals(other: Any?): Boolean
+  override fun equals(
+    other: Any?,
+  ): Boolean
 
   override fun hashCode(): Int
 
@@ -97,7 +102,10 @@ interface MutableDirection3 :
   /**
    * Runs [action] while holding the internal lock when available so compound operations stay consistent.
    */
-  fun mutate(action: MutableDirection3.() -> Unit) = action(this)
+  fun mutate(
+    action: MutableDirection3.() -> Unit,
+  ) =
+    action(this)
 
   override fun observe(): ObserveTicket
 
@@ -111,7 +119,8 @@ interface MutableDirection3 :
 /**
  * A unit vector pointing along negative z (-Z).
  */
-val Direction3.Companion.forward: ImmutableDirection3 get() = DIRECTION3_FORWARD
+val Direction3.Companion.forward: ImmutableDirection3
+  get() = DIRECTION3_FORWARD
 
 /**
  * A unit vector pointing along positive z (+Z).
@@ -223,7 +232,8 @@ fun MutableDirection3(
   ux: Double = 0.0,
   uy: Double = 0.0,
   uz: Double = -1.0,
-): MutableDirection3 = MutableDirection3Impl(ux, uy, uz)
+): MutableDirection3 =
+  MutableDirection3Impl(ux, uy, uz)
 
 /**
  * Creates a [MutableDirection3] by copying an existing one.
@@ -231,7 +241,10 @@ fun MutableDirection3(
  * @param copyFrom The source direction.
  * @return The created [MutableDirection3].
  */
-fun MutableDirection3.Companion.copyOf(copyFrom: Direction3): MutableDirection3 = MutableDirection3(copyFrom.ux, copyFrom.uy, copyFrom.uz)
+fun MutableDirection3.Companion.copyOf(
+  copyFrom: Direction3,
+): MutableDirection3 =
+  MutableDirection3(copyFrom.ux, copyFrom.uy, copyFrom.uz)
 
 /**
  * Converts a [Length3] displacement into a normalized [Direction3].
@@ -240,11 +253,19 @@ fun MutableDirection3.Companion.copyOf(copyFrom: Direction3): MutableDirection3 
  * @return The normalized [Direction3].
  * @throws IllegalArgumentException If the displacement is zero-length or non-finite.
  */
-fun Direction3.Companion.from(displacement: Length3): ImmutableDirection3 {
+fun Direction3.Companion.from(
+  displacement: Length3,
+): ImmutableDirection3 {
   val unit = selectLengthUnitForDirection(displacement)
-  val ux = displacement.dx.toDouble(unit)
-  val uy = displacement.dy.toDouble(unit)
-  val uz = displacement.dz.toDouble(unit)
+  val ux =
+    displacement.dx
+      .toDouble(unit)
+  val uy =
+    displacement.dy
+      .toDouble(unit)
+  val uz =
+    displacement.dz
+      .toDouble(unit)
   val normalized = normalizeDirectionComponents(ux, uy, uz, "Direction3.from")
   return Direction3(
     ux = normalized.ux,
@@ -259,7 +280,8 @@ fun Direction3.Companion.from(displacement: Length3): ImmutableDirection3 {
  * @return The normalized [Direction3].
  * @throws IllegalArgumentException If the displacement is zero-length or non-finite.
  */
-inline fun Length3.toDirection(): ImmutableDirection3 = Direction3.from(this)
+inline fun Length3.toDirection(): ImmutableDirection3 =
+  Direction3.from(this)
 
 /**
  * Maps this direction to the nearest [Direction16] based on yaw around the Y-axis.
@@ -280,7 +302,10 @@ fun Direction3.toDirection16(): Direction16 {
 /**
  * Returns the dot product of this direction with [other].
  */
-inline infix fun Direction3.dot(other: Direction3): Double = ux * other.ux + uy * other.uy + uz * other.uz
+inline infix fun Direction3.dot(
+  other: Direction3,
+): Double =
+  ux * other.ux + uy * other.uy + uz * other.uz
 
 /**
  * Returns the cross product of this direction with [other], normalized to unit length.
@@ -289,7 +314,9 @@ inline infix fun Direction3.dot(other: Direction3): Double = ux * other.ux + uy 
  * @return A new [ImmutableDirection3] perpendicular to both directions.
  * @throws IllegalArgumentException If the directions are collinear or non-finite.
  */
-inline infix fun Direction3.cross(other: Direction3): ImmutableDirection3 =
+inline infix fun Direction3.cross(
+  other: Direction3,
+): ImmutableDirection3 =
   Direction3(
     ux = uy * other.uz - uz * other.uy,
     uy = uz * other.ux - ux * other.uz,
@@ -304,7 +331,9 @@ inline infix fun Direction3.cross(other: Direction3): ImmutableDirection3 =
  * @return A new [ImmutableDirection3] perpendicular to both directions using left-handed orientation.
  * @throws IllegalArgumentException If the directions are collinear or non-finite.
  */
-inline infix fun Direction3.crossLH(other: Direction3): ImmutableDirection3 =
+inline infix fun Direction3.crossLH(
+  other: Direction3,
+): ImmutableDirection3 =
   Direction3(
     ux = uz * other.uy - uy * other.uz,
     uy = ux * other.uz - uz * other.ux,
@@ -314,12 +343,18 @@ inline infix fun Direction3.crossLH(other: Direction3): ImmutableDirection3 =
 /**
  * Negates all components of this mutable direction.
  */
-inline fun MutableDirection3.negate() = map({ "Negation" }) { _, value -> -value }
+inline fun MutableDirection3.negate() =
+  map({
+    "Negation"
+  }) { _, value -> -value }
 
 /**
  * Returns a new [ImmutableDirection3] with all components negated.
  */
-inline operator fun Direction3.unaryMinus(): ImmutableDirection3 = Direction3.copyOf(this) { negate() }
+inline operator fun Direction3.unaryMinus(): ImmutableDirection3 =
+  Direction3.copyOf(this) {
+    negate()
+  }
 
 /**
  * Maps each component using [action] and writes the normalized result back.
@@ -365,28 +400,38 @@ internal fun MutableDirection3.setNormalized(
 
 // region implementations
 
-private val DIRECTION3_FORWARD: ImmutableDirection3Impl = ImmutableDirection3Impl(0.0, 0.0, -1.0)
-private val DIRECTION3_BACK: ImmutableDirection3Impl = ImmutableDirection3Impl(0.0, 0.0, 1.0)
-private val DIRECTION3_UP: ImmutableDirection3Impl = ImmutableDirection3Impl(0.0, 1.0, 0.0)
-private val DIRECTION3_DOWN: ImmutableDirection3Impl = ImmutableDirection3Impl(0.0, -1.0, 0.0)
-private val DIRECTION3_RIGHT: ImmutableDirection3Impl = ImmutableDirection3Impl(1.0, 0.0, 0.0)
-private val DIRECTION3_LEFT: ImmutableDirection3Impl = ImmutableDirection3Impl(-1.0, 0.0, 0.0)
+private val DIRECTION3_FORWARD: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(0.0, 0.0, -1.0)
+private val DIRECTION3_BACK: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(0.0, 0.0, 1.0)
+private val DIRECTION3_UP: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(0.0, 1.0, 0.0)
+private val DIRECTION3_DOWN: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(0.0, -1.0, 0.0)
+private val DIRECTION3_RIGHT: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(1.0, 0.0, 0.0)
+private val DIRECTION3_LEFT: ImmutableDirection3Impl =
+  ImmutableDirection3Impl(-1.0, 0.0, 0.0)
 
 private data class ImmutableDirection3Impl(
   override var ux: Double,
   override var uy: Double,
   override var uz: Double,
 ) : ImmutableDirection3 {
-  override fun toString(): String = "Direction3(ux=$ux, uy=$uy, uz=$uz)"
+  override fun toString(): String =
+    "Direction3(ux=$ux, uy=$uy, uz=$uz)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Direction3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(ux, uy, uz)
+  override fun hashCode(): Int =
+    componentsHash(ux, uy, uz)
 
   fun setNormalized(
     ux: Double,
@@ -427,7 +472,8 @@ private value class Direction3MutableWrapper(
   override val uzFlow: StateFlow<Double>
     get() = throw UnsupportedOperationException()
 
-  override fun observe(): ObserveTicket = throw UnsupportedOperationException()
+  override fun observe(): ObserveTicket =
+    throw UnsupportedOperationException()
 }
 
 private class MutableDirection3Impl(
@@ -442,7 +488,8 @@ private class MutableDirection3Impl(
   private val _uzFlow: MutableStateFlow<Double>
 
   init {
-    val normalized = normalizeDirectionComponents(ux, uy, uz, "MutableDirection3 init")
+    val normalized =
+      normalizeDirectionComponents(ux, uy, uz, "MutableDirection3 init")
     _uxFlow = MutableStateFlow(normalized.ux)
     _uyFlow = MutableStateFlow(normalized.uy)
     _uzFlow = MutableStateFlow(normalized.uz)
@@ -474,22 +521,29 @@ private class MutableDirection3Impl(
   override val uyFlow: StateFlow<Double> get() = _uyFlow.asStateFlow()
   override val uzFlow: StateFlow<Double> get() = _uzFlow.asStateFlow()
 
-  override fun mutate(action: MutableDirection3.() -> Unit) {
+  override fun mutate(
+    action: MutableDirection3.() -> Unit,
+  ) {
     lock.withLock { action(this) }
   }
 
-  override fun toString(): String = "Direction3(ux=$ux, uy=$uy, uz=$uz)"
+  override fun toString(): String =
+    "Direction3(ux=$ux, uy=$uy, uz=$uz)"
 
-  override fun equals(other: Any?): Boolean =
+  override fun equals(
+    other: Any?,
+  ): Boolean =
     when {
       this === other -> true
       other !is Direction3 -> false
       else -> componentsEqual(this, other)
     }
 
-  override fun hashCode(): Int = componentsHash(ux, uy, uz)
+  override fun hashCode(): Int =
+    componentsHash(ux, uy, uz)
 
-  override fun observe(): ObserveTicket = Ticket(this)
+  override fun observe(): ObserveTicket =
+    Ticket(this)
 
   fun updateNormalized(
     ux: Double,
@@ -504,16 +558,18 @@ private class MutableDirection3Impl(
     _uzFlow.value = normalized.uz
   }
 
-  private class Ticket(
-    original: MutableDirection3Impl,
-  ) : ObserveTicket {
+  private class Ticket(original: MutableDirection3Impl) : ObserveTicket {
     private val weakOriginal by WeakProperty(original)
-    private val knownGeneration: Int = original.lock.withLock { original.generation }
+    private val knownGeneration: Int =
+      original.lock.withLock {
+        original.generation
+      }
 
     override val isDirty: Boolean
       get() =
         weakOriginal?.let {
-          it.lock.withLock { it.generation != knownGeneration }
+          it.lock
+            .withLock { it.generation != knownGeneration }
         } ?: false
 
     override val isActive: Boolean
@@ -563,15 +619,36 @@ private fun createDirectionImmutable(
   uy: Double,
   uz: Double,
 ): ImmutableDirection3Impl {
-  val normalized = normalizeDirectionComponents(ux, uy, uz, "Direction3 creation")
+  val normalized =
+    normalizeDirectionComponents(ux, uy, uz, "Direction3 creation")
   return when {
-    normalized.ux == 0.0 && normalized.uy == 0.0 && normalized.uz == -1.0 -> DIRECTION3_FORWARD
-    normalized.ux == 0.0 && normalized.uy == 0.0 && normalized.uz == 1.0 -> DIRECTION3_BACK
-    normalized.ux == 0.0 && normalized.uy == 1.0 && normalized.uz == 0.0 -> DIRECTION3_UP
-    normalized.ux == 0.0 && normalized.uy == -1.0 && normalized.uz == 0.0 -> DIRECTION3_DOWN
-    normalized.ux == 1.0 && normalized.uy == 0.0 && normalized.uz == 0.0 -> DIRECTION3_RIGHT
-    normalized.ux == -1.0 && normalized.uy == 0.0 && normalized.uz == 0.0 -> DIRECTION3_LEFT
-    else -> ImmutableDirection3Impl(normalized.ux, normalized.uy, normalized.uz)
+    normalized.ux == 0.0 && normalized.uy == 0.0 && normalized.uz == -1.0 -> {
+      DIRECTION3_FORWARD
+    }
+
+    normalized.ux == 0.0 && normalized.uy == 0.0 && normalized.uz == 1.0 -> {
+      DIRECTION3_BACK
+    }
+
+    normalized.ux == 0.0 && normalized.uy == 1.0 && normalized.uz == 0.0 -> {
+      DIRECTION3_UP
+    }
+
+    normalized.ux == 0.0 && normalized.uy == -1.0 && normalized.uz == 0.0 -> {
+      DIRECTION3_DOWN
+    }
+
+    normalized.ux == 1.0 && normalized.uy == 0.0 && normalized.uz == 0.0 -> {
+      DIRECTION3_RIGHT
+    }
+
+    normalized.ux == -1.0 && normalized.uy == 0.0 && normalized.uz == 0.0 -> {
+      DIRECTION3_LEFT
+    }
+
+    else -> {
+      ImmutableDirection3Impl(normalized.ux, normalized.uy, normalized.uz)
+    }
   }
 }
 
@@ -630,12 +707,23 @@ private data class DirectionComponents(
   val uz: Double,
 )
 
-private fun selectLengthUnitForDirection(displacement: Length3): LengthUnit {
+private fun selectLengthUnitForDirection(
+  displacement: Length3,
+): LengthUnit {
   val maxNm =
     maxOf(
-      abs(displacement.dx.toDouble(LengthUnit.NANOMETER)),
-      abs(displacement.dy.toDouble(LengthUnit.NANOMETER)),
-      abs(displacement.dz.toDouble(LengthUnit.NANOMETER)),
+      abs(
+        displacement.dx
+          .toDouble(LengthUnit.NANOMETER),
+      ),
+      abs(
+        displacement.dy
+          .toDouble(LengthUnit.NANOMETER),
+      ),
+      abs(
+        displacement.dz
+          .toDouble(LengthUnit.NANOMETER),
+      ),
     )
   return when {
     maxNm >= 1e12 -> LengthUnit.KILOMETER

@@ -26,7 +26,9 @@ interface InputContext {
    * @param code the physical key code following the KeyboardEvent.code convention.
    * @return true if the key is pressed.
    */
-  fun isKeyDown(code: String): Boolean
+  fun isKeyDown(
+    code: String,
+  ): Boolean
 
   /**
    * Returns a snapshot of all currently pressed key codes.

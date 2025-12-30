@@ -18,7 +18,9 @@ private const val CAMERA_UNIFORM_SIZE_BYTES = 144
 private const val ROTATION_STRIDE_FLOATS = 4
 
 context(alloc: BufferAllocator)
-fun MovableCamera.toGpuBuffer(unit: LengthUnit = LengthUnit.METER): Resource<CameraGpuBuffer> {
+fun MovableCamera.toGpuBuffer(
+  unit: LengthUnit = LengthUnit.METER,
+): Resource<CameraGpuBuffer> {
   val res =
     alloc.mutable(
       data = toCameraUniformBytes(unit),
@@ -35,11 +37,23 @@ fun MovableCamera.toGpuBuffer(unit: LengthUnit = LengthUnit.METER): Resource<Cam
   }
 }
 
-fun Camera.projectionMatrix(unit: LengthUnit = LengthUnit.METER): FloatArray {
+fun Camera.projectionMatrix(
+  unit: LengthUnit = LengthUnit.METER,
+): FloatArray {
   val out = FloatArray(16) { 0f }
-  val f = 1.0 / tan(fov.angle.toDouble(AngleUnit.RADIAN) / 2.0)
-  val near = nearFar.near.toDouble(unit)
-  val far = nearFar.far.toDouble(unit)
+  val f =
+    1.0 /
+      tan(
+        fov.angle
+          .toDouble(AngleUnit.RADIAN) /
+          2.0,
+      )
+  val near =
+    nearFar.near
+      .toDouble(unit)
+  val far =
+    nearFar.far
+      .toDouble(unit)
   val invRange = 1.0 / (near - far)
 
   out[0] = (f / aspect).toFloat()
@@ -59,7 +73,9 @@ fun Camera.viewRotationMatrix(): FloatArray {
     "Cannot invert a camera transform with zero scale."
   }
 
-  val rotation = transform.rotation.normalized()
+  val rotation =
+    transform.rotation
+      .normalized()
   val rx = rotation.x
   val ry = rotation.y
   val rz = rotation.z
@@ -105,11 +121,15 @@ fun Camera.viewRotationMatrix(): FloatArray {
   return out
 }
 
-private fun MovableCamera.toCameraUniformBytes(unit: LengthUnit): ByteArray {
+private fun MovableCamera.toCameraUniformBytes(
+  unit: LengthUnit,
+): ByteArray {
   val buffer = ByteArray(CAMERA_UNIFORM_SIZE_BYTES)
   var pos = 0
 
-  fun writeIntLe(value: Int) {
+  fun writeIntLe(
+    value: Int,
+  ) {
     buffer[pos + 0] = (value ushr 0 and 0xFF).toByte()
     buffer[pos + 1] = (value ushr 8 and 0xFF).toByte()
     buffer[pos + 2] = (value ushr 16 and 0xFF).toByte()
@@ -117,7 +137,9 @@ private fun MovableCamera.toCameraUniformBytes(unit: LengthUnit): ByteArray {
     pos += Int.SIZE_BYTES
   }
 
-  fun writeFloatLe(value: Float) {
+  fun writeFloatLe(
+    value: Float,
+  ) {
     writeIntLe(value.toRawBits())
   }
 
@@ -128,18 +150,33 @@ private fun MovableCamera.toCameraUniformBytes(unit: LengthUnit): ByteArray {
   val blockX = translation.dx.inWholeMeters
   val blockY = translation.dy.inWholeMeters
   val blockZ = translation.dz.inWholeMeters
-  require(blockX in Int.MIN_VALUE..Int.MAX_VALUE) { "Camera block_pos.x out of Int range: $blockX" }
-  require(blockY in Int.MIN_VALUE..Int.MAX_VALUE) { "Camera block_pos.y out of Int range: $blockY" }
-  require(blockZ in Int.MIN_VALUE..Int.MAX_VALUE) { "Camera block_pos.z out of Int range: $blockZ" }
+  require(blockX in Int.MIN_VALUE..Int.MAX_VALUE) {
+    "Camera block_pos.x out of Int range: $blockX"
+  }
+  require(blockY in Int.MIN_VALUE..Int.MAX_VALUE) {
+    "Camera block_pos.y out of Int range: $blockY"
+  }
+  require(blockZ in Int.MIN_VALUE..Int.MAX_VALUE) {
+    "Camera block_pos.z out of Int range: $blockZ"
+  }
 
   writeIntLe(blockX.toInt())
   writeIntLe(blockY.toInt())
   writeIntLe(blockZ.toInt())
   writeIntLe(0)
 
-  val localX = (translation.dx - blockX.meters).toDouble(unit).toFloat()
-  val localY = (translation.dy - blockY.meters).toDouble(unit).toFloat()
-  val localZ = (translation.dz - blockZ.meters).toDouble(unit).toFloat()
+  val localX =
+    (translation.dx - blockX.meters)
+      .toDouble(unit)
+      .toFloat()
+  val localY =
+    (translation.dy - blockY.meters)
+      .toDouble(unit)
+      .toFloat()
+  val localZ =
+    (translation.dz - blockZ.meters)
+      .toDouble(unit)
+      .toFloat()
 
   writeFloatLe(localX)
   writeFloatLe(localY)

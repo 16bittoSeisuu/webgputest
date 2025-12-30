@@ -1,9 +1,8 @@
 package net.japanesehunter.webgpu.interop
 
-value class GPUTextureFormat private constructor(
-  val value: String,
-) {
-  override fun toString(): String = value
+value class GPUTextureFormat private constructor(val value: String) {
+  override fun toString(): String =
+    value
 
   companion object {
     val R8Unorm = GPUTextureFormat("r8unorm")

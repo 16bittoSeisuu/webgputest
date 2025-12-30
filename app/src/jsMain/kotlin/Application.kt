@@ -47,13 +47,16 @@ fun application(
               "Application timeout $timeout exceeded, shutting down..."
             }
             val shutdownTime = timeSource.markNow()
-            coroutine.coroutineContext[Job]?.cancelAndJoin()
+            coroutine.coroutineContext[Job]
+              ?.cancelAndJoin()
             logger.debug { "Shut down in ${shutdownTime.elapsedNow()}" }
           }
         }
       }
     } catch (e: Throwable) {
-      logger.error(e) { "Application crashed with exception, message: ${e.message}" }
+      logger.error(
+        e,
+      ) { "Application crashed with exception, message: ${e.message}" }
       throw e
     } finally {
       logger.debug { "Application lasted for ${appTime.elapsedNow()}" }

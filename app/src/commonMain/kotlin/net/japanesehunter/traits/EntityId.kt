@@ -12,6 +12,4 @@ package net.japanesehunter.traits
  *
  * @param value the underlying integer identifier.
  */
-internal value class EntityId(
-  val value: Int,
-)
+internal value class EntityId(val value: Int)

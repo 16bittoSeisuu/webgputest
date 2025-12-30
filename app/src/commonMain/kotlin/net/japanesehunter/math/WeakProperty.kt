@@ -9,9 +9,8 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 @OptIn(ExperimentalAtomicApi::class)
-internal class WeakProperty<V>(
-  value: V,
-) : PropertyDelegateProvider<Any, ReadWriteProperty<Any, V?>> {
+internal class WeakProperty<V>(value: V) :
+  PropertyDelegateProvider<Any, ReadWriteProperty<Any, V?>> {
   private var tmp: AtomicReference<V?> = AtomicReference(value)
   private val map = WeakMap<Any, V>()
 
@@ -29,7 +28,8 @@ internal class WeakProperty<V>(
       override fun getValue(
         thisRef: Any,
         property: KProperty<*>,
-      ): V? = map[thisRef]
+      ): V? =
+        map[thisRef]
 
       override fun setValue(
         thisRef: Any,
