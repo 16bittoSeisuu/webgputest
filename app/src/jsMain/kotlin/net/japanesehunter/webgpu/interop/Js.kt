@@ -4,6 +4,7 @@ import org.w3c.dom.ImageBitmap
 import org.w3c.files.Blob
 import kotlin.js.Promise
 
+@IgnorableReturnValue
 external fun requestAnimationFrame(
   callback: (timestamp: Double) -> Unit,
 ): Int

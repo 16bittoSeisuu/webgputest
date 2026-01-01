@@ -86,7 +86,7 @@ fun main() =
             nearFar = NearFar(0.1.meters, 128.meters),
             aspect = canvasAspect,
           ).apply {
-            autoFit()
+            install(autoFit())
           }
         val cameraHud = CameraHud()
 
@@ -120,7 +120,13 @@ fun main() =
           }
 
         context(registry) {
-          tickSource.subscribe(rigidbodySimulation(blockAccess))
+          val subscription =
+            tickSource.subscribe(
+              rigidbodySimulation(blockAccess),
+            )
+          onClose {
+            subscription.close()
+          }
         }
 
         val playerHud = PlayerHud(player)
@@ -254,12 +260,14 @@ private suspend inline fun <R> webgpuContext(
   resource.onClose {
     device.destroy()
   }
-  canvas.configure(
-    GPUCanvasConfiguration(
-      device = device,
-      format = canvas.preferredFormat,
-    ),
-  )
+  val configuration =
+    canvas.configure(
+      GPUCanvasConfiguration(
+        device = device,
+        format = canvas.preferredFormat,
+      ),
+    )
+  resource.install(configuration)
   val allocator = device.createBufferAllocator()
   return context(adapter, device, allocator) {
     action()

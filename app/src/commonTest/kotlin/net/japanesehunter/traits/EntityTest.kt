@@ -192,12 +192,13 @@ class EntityTest :
 
     test("query without types returns all entities") {
       val registry = HashMapEntityRegistry()
-      registry.createEntity()
-      registry.createEntity()
-      registry.createEntity()
-      registry
-        .query()
-        .count() shouldBe 3
+      val _ = registry.createEntity()
+      val _ = registry.createEntity()
+      val _ = registry.createEntity()
+      val _ =
+        registry
+          .query()
+          .count() shouldBe 3
     }
 
     test("query with multiple types requires all") {

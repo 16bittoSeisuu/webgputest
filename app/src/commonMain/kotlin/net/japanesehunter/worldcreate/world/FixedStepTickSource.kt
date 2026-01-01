@@ -38,7 +38,7 @@ fun createFixedStepTickSource(
  * When the driver provides a large frame delta, the source performs at most a bounded number of steps and
  * discards any remaining accumulated time to avoid unbounded catch-up.
  *
- * Exceptions thrown by subscribed sinks are caught and ignored so other sinks still receive events.
+ * Exceptions thrown by subscribed sinks are caught and ignored, so other sinks still receive events.
  *
  * Subscription management is thread-safe.
  * Tick emission is sequential and uses a single thread.
@@ -98,9 +98,10 @@ class FixedStepTickSource internal constructor(
         }
 
       for (sink in sinksSnapshot) {
-        runCatching {
-          sink.onEvent(targetStep)
-        }
+        val _ =
+          runCatching {
+            sink.onEvent(targetStep)
+          }
       }
     }
   }

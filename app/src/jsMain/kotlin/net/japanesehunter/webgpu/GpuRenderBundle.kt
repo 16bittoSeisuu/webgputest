@@ -45,7 +45,7 @@ suspend inline fun buildRenderBundle(
   action: GpuRenderBundleEncoder.() -> GpuRenderBundleEncoder.FragmentCodeDone,
 ): GPURenderBundle =
   GpuRenderBundleEncoder().run {
-    action()
+    val _ = action()
     build(device, sampleCount, depthStencilFormat, cullMode, label)
   }
 

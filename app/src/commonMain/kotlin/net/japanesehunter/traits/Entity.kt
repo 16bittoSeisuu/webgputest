@@ -57,6 +57,7 @@ interface Entity {
    *   null: when the entity did not have this trait
    * @throws IllegalStateException if this entity has been destroyed.
    */
+  @IgnorableReturnValue
   fun <T : Any> remove(
     type: KClass<T>,
   ): T?
@@ -75,7 +76,7 @@ interface Entity {
   /**
    * Destroys this entity and removes all of its associated traits.
    *
-   * After destruction, all subsequent operations on this handle will throw
+   * After destruction, all following operations on this handle will throw
    * [IllegalStateException].
    */
   fun destroy()
