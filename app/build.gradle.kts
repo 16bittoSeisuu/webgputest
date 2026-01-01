@@ -1,9 +1,5 @@
-@file:OptIn(ExperimentalWasmDsl::class)
-
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
@@ -56,12 +52,13 @@ kotlin {
       "-Xcontext-parameters",
       "-Xexpect-actual-classes",
       "-Xnested-type-aliases",
+      "-Xreturn-value-checker=full",
     )
     allWarningsAsErrors = false
   }
 }
 
-tasks.withType<KotlinJsTest>().configureEach {
+tasks.withType<Test>().configureEach {
   testLogging {
     showStandardStreams = true
 
