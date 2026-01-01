@@ -2,7 +2,7 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 
 [versions]
-kotlin = "2.3.0-RC"
+kotlin = "2.3.0"
 kotlin-logging = "7.0.13"
 kotest = "6.0.5"
 ksp = "2.3.3"
