@@ -6,7 +6,9 @@ import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.meters as meters_unit
 
 data object Length : Dimension<Length>, LengthProvider {
-  override val canonicalUnit: QuantityUnit<Length> = meters_unit
+  override val canonicalUnit: QuantityUnit<Length> by lazy {
+    meters_unit
+  }
 
   override val zero: LengthQuantity = super.zero
 
