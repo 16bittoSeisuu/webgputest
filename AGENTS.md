@@ -2,13 +2,15 @@
 
 ## Kotlin
 
-このリポジトリでの作業は、まず [docs/kotlin-coding-rules.md](docs/kotlin-coding-rules.md) を前提に進めてください。
-Kotlinの書式、命名、コメント、KDoc、テストの作り方などの規約は、基本的にこのドキュメントに集約しています。
+* このリポジトリでのコード編集を含む作業は、[docs/kotlin-coding-rules.md](docs/kotlin-coding-rules.md)
+  を**必ず**読み、それに従って行ってください（最重要）。
+* Kotlinの書式、命名、コメント、KDoc、テストの作り方などの規約は、基本的にこのドキュメントに集約しています。
 
 ### 最終確認
 
-ソースコードに変更を入れたら、次を実行してください。
-
+* Kotlinファイルを編集したとき、## Kotlinに従ったことを確認してください。
+* ソースコードに変更を入れたら、**必ず**次を実行してください。
+  これ以外でコンパイルチェックやテストやフォーマットすることは許可されません。
 ```bash
 cd <project root> && ./gradlew check
 cd <project root>/app/src && ktlint -F
