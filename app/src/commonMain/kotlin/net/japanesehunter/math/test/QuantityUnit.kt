@@ -19,14 +19,14 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
   }
 
   fun derive(
-    thisToNewFactor: Double,
+    newToThisFactor: Double,
     name: String,
     symbol: String,
   ): QuantityUnit<D> =
     copy(
       name = name,
       symbol = symbol,
-      thisToCanonicalFactor = thisToCanonicalFactor * thisToNewFactor,
+      thisToCanonicalFactor = thisToCanonicalFactor * newToThisFactor,
     )
 
   override fun toString(): String =
