@@ -1,59 +1,59 @@
 package net.japanesehunter.math.test
 
-interface Quantity<D : Dimension, U : QuantityUnit<D>> {
+interface Quantity<D : Dimension<D>> {
   fun toDouble(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Double
 
   fun toFloat(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Float =
     toDouble(unit).toFloat()
 
   fun toLong(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Long
 
   fun roundToLong(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Long
 
   fun toInt(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Int =
     toLong(unit).toInt()
 
   fun toShort(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Short =
     toLong(unit).toShort()
 
   fun toByte(
-    unit: U,
+    unit: QuantityUnit<D>,
   ): Byte =
     toLong(unit).toByte()
 
   operator fun plus(
-    other: Quantity<D, U>,
-  ): Quantity<D, U>
+    other: Quantity<D>,
+  ): Quantity<D>
 
   operator fun minus(
-    other: Quantity<D, U>,
-  ): Quantity<D, U> =
+    other: Quantity<D>,
+  ): Quantity<D> =
     plus(-other)
 
   operator fun times(
     scalar: Double,
-  ): Quantity<D, U>
+  ): Quantity<D>
 
   operator fun div(
     scalar: Double,
-  ): Quantity<D, U> =
+  ): Quantity<D> =
     times(1.0 / scalar)
 
-  operator fun unaryPlus(): Quantity<D, U> =
+  operator fun unaryPlus(): Quantity<D> =
     this
 
-  operator fun unaryMinus(): Quantity<D, U> =
+  operator fun unaryMinus(): Quantity<D> =
     times(-1.0)
 }
