@@ -5,7 +5,7 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
   val dimension: D,
   // TODO: remove this comment
   // e.g., for nanometers, this is 1e-9
-  val canonicalToThis: Double,
+  val thisToCanonicalFactor: Double,
   val name: String,
   val symbol: String,
 ) {
@@ -19,16 +19,16 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
   }
 
   fun derive(
-    factorToThis: Double,
+    thisToNewFactor: Double,
     name: String,
     symbol: String,
   ): QuantityUnit<D> =
     copy(
       name = name,
       symbol = symbol,
-      canonicalToThis = canonicalToThis * factorToThis,
+      thisToCanonicalFactor = thisToCanonicalFactor * thisToNewFactor,
     )
 
   override fun toString(): String =
-    "QuantityUnit(1$symbol($name)=$canonicalToThis$dimension)"
+    "QuantityUnit(1$symbol($name)=$thisToCanonicalFactor$dimension)"
 }
