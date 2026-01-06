@@ -3,7 +3,9 @@ package net.japanesehunter.math.test
 @ConsistentCopyVisibility
 data class QuantityUnit<D : Dimension<D>> private constructor(
   val dimension: D,
-  val fromCanonical: Double,
+  // TODO: remove this comment
+  // e.g., for nanometers, this is 1e-9
+  val canonicalToThis: Double,
   val name: String,
   val symbol: String,
 ) {
@@ -24,9 +26,9 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
     copy(
       name = name,
       symbol = symbol,
-      fromCanonical = fromCanonical * factorToThis,
+      canonicalToThis = canonicalToThis * factorToThis,
     )
 
   override fun toString(): String =
-    "QuantityUnit(1$symbol($name)=$fromCanonical$dimension)"
+    "QuantityUnit(1$symbol($name)=$canonicalToThis$dimension)"
 }
