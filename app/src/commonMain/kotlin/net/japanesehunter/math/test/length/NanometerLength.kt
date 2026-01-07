@@ -1,8 +1,12 @@
 package net.japanesehunter.math.test.length
 
+import net.japanesehunter.math.test.ExactMath
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
+import net.japanesehunter.math.test.ScaledLong
 import kotlin.math.abs
+import kotlin.math.roundToLong
+import net.japanesehunter.math.test.length.nanometers as nanometers_unit
 
 /**
  * Fixed-point implementation of [LengthQuantity] backed by a signed nanometer count in a [Long].
@@ -15,93 +19,36 @@ import kotlin.math.abs
  * Values constructed from floating point inputs may be rounded internally.
  * Converting such values back to the source unit is not guaranteed to reproduce the input.
  *
- * @property nanometers The length value expressed in nanometers.
+ * @property nanometerCount The length value expressed in nanometers.
  */
-value class NanometerLength internal constructor(
-  private val nanometers: Long,
+value class NanometerLength private constructor(
+  private val nanometerCount: Long,
 ) : LengthQuantity {
   companion object : LengthProvider {
-    private const val NANOMETERS_PER_METER: Long = 1_000_000_000L
-
-    private fun requireFinite(
-      value: Double,
-    ) {
-      require(value.isFinite()) {
-        "The receiver must be finite."
-      }
-    }
-
     private fun nanometersPerUnit(
       unit: QuantityUnit<Length>,
     ): Long =
-      roundToLongAwayFromZero(
-        unit.thisToCanonicalFactor * NANOMETERS_PER_METER.toDouble(),
-      )
-
-    private fun checkedAdd(
-      a: Long,
-      b: Long,
-    ): Long {
-      if (b > 0 && a > Long.MAX_VALUE - b) {
-        throw ArithmeticException("Overflow.")
-      }
-      if (b < 0 && a < Long.MIN_VALUE - b) {
-        throw ArithmeticException("Overflow.")
-      }
-      return a + b
-    }
-
-    private fun checkedMultiply(
-      a: Long,
-      b: Long,
-    ): Long {
-      if (a == 0L || b == 0L) {
-        return 0L
-      }
-      val r = a * b
-      if (r / b != a) {
-        throw ArithmeticException("Overflow.")
-      }
-      return r
-    }
-
-    private fun roundToLongAwayFromZero(
-      value: Double,
-    ): Long {
-      if (!value.isFinite()) {
-        throw IllegalArgumentException("The value must be finite.")
-      }
-      if (value >
-        Long.MAX_VALUE
-          .toDouble() ||
-        value <
-        Long.MIN_VALUE
-          .toDouble()
-      ) {
-        throw ArithmeticException("Overflow.")
-      }
-      val truncated = value.toLong()
-      val frac = value - truncated.toDouble()
-      if (abs(frac) < 0.5) {
-        return truncated
-      }
-      if (abs(frac) > 0.5) {
-        return if (value > 0.0) truncated + 1 else truncated - 1
-      }
-      return if (value > 0.0) truncated + 1 else truncated - 1
-    }
+      (unit.thisToCanonicalFactor / nanometers_unit.thisToCanonicalFactor)
+        .also { factor ->
+          require(factor.isFinite() && factor > 0.0) {
+            "The unit factor must be a positive finite number, but was $factor."
+          }
+        }.roundToLong()
 
     private fun toNanometers(
       value: Double,
       unit: QuantityUnit<Length>,
     ): Long =
-      roundToLongAwayFromZero(value * nanometersPerUnit(unit).toDouble())
+      ScaledLong.scaleToLong(
+        value = nanometersPerUnit(unit),
+        factor = value,
+      )
 
     private fun toNanometers(
       value: Long,
       unit: QuantityUnit<Length>,
     ): Long =
-      checkedMultiply(value, nanometersPerUnit(unit))
+      ExactMath.multiplyExact(value, nanometersPerUnit(unit))
 
     override fun Long.times(
       unit: LengthUnit,
@@ -111,7 +58,9 @@ value class NanometerLength internal constructor(
     override fun Double.times(
       unit: LengthUnit,
     ): LengthQuantity {
-      requireFinite(this)
+      require(isFinite()) {
+        "The receiver must be finite, but was $this."
+      }
       return NanometerLength(toNanometers(this, unit))
     }
   }
@@ -119,16 +68,17 @@ value class NanometerLength internal constructor(
   override fun toDouble(
     unit: QuantityUnit<Length>,
   ): Double {
-    val metersValue = nanometers.toDouble() / NANOMETERS_PER_METER.toDouble()
-    return metersValue / unit.thisToCanonicalFactor
+    val canonicalValue =
+      nanometerCount.toDouble() * nanometers_unit.thisToCanonicalFactor
+    return canonicalValue / unit.thisToCanonicalFactor
   }
 
   override fun roundToLong(
     unit: QuantityUnit<Length>,
   ): Long {
     val perUnit = nanometersPerUnit(unit)
-    val q = nanometers / perUnit
-    val r = nanometers % perUnit
+    val q = nanometerCount / perUnit
+    val r = nanometerCount % perUnit
     if (r == 0L) {
       return q
     }
@@ -136,14 +86,14 @@ value class NanometerLength internal constructor(
     if (twiceAbsR < perUnit) {
       return q
     }
-    return if (nanometers > 0L) q + 1L else q - 1L
+    return if (nanometerCount > 0L) q + 1L else q - 1L
   }
 
   override fun toLong(
     unit: QuantityUnit<Length>,
   ): Long {
     val perUnit = nanometersPerUnit(unit)
-    return nanometers / perUnit
+    return nanometerCount / perUnit
   }
 
   override fun plus(
@@ -152,23 +102,22 @@ value class NanometerLength internal constructor(
     val otherNm =
       when (other) {
         is NanometerLength -> {
-          other.nanometers
+          other.nanometerCount
         }
 
         else -> {
           toNanometers(other.toDouble(meters), meters)
         }
       }
-    return NanometerLength(checkedAdd(nanometers, otherNm))
+    return NanometerLength(ExactMath.addExact(nanometerCount, otherNm))
   }
 
   override fun times(
     scalar: Double,
   ): LengthQuantity {
     require(scalar.isFinite()) {
-      "The scalar must be finite."
+      "The scalar must be finite, but was $scalar."
     }
-    val scaled = nanometers.toDouble() * scalar
-    return NanometerLength(roundToLongAwayFromZero(scaled))
+    return NanometerLength(ScaledLong.scaleToLong(nanometerCount, scalar))
   }
 }

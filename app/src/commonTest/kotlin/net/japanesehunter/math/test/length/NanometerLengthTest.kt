@@ -3,8 +3,10 @@ package net.japanesehunter.math.test.length
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import net.japanesehunter.math.test.length.NanometerLength.Companion.inches
 import net.japanesehunter.math.test.length.NanometerLength.Companion.meters
 import net.japanesehunter.math.test.length.NanometerLength.Companion.millimeters
+import net.japanesehunter.math.test.length.NanometerLength.Companion.nanometers
 
 class NanometerLengthTest :
   FunSpec({
@@ -28,6 +30,45 @@ class NanometerLengthTest :
       (-1)
         .meters
         .toLong(meters) shouldBe -1L
+    }
+
+    test("toLong(nanometers) returns the underlying value") {
+      123
+        .nanometers
+        .toLong(nanometers) shouldBe 123L
+      (-123)
+        .nanometers
+        .toLong(nanometers) shouldBe -123L
+    }
+
+    test("toLong(inches) truncates toward zero") {
+      3
+        .millimeters
+        .toLong(inches) shouldBe 0L
+      (-3)
+        .millimeters
+        .toLong(inches) shouldBe 0L
+    }
+
+    test("roundToLong(inches) rounds ties away from zero") {
+      13
+        .millimeters
+        .roundToLong(inches) shouldBe 1L
+      (-13)
+        .millimeters
+        .roundToLong(inches) shouldBe -1L
+    }
+
+    test("plus throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Long.MAX_VALUE.nanometers + 1.nanometers
+      }
+    }
+
+    test("times rejects non-finite scalar") {
+      shouldThrow<IllegalArgumentException> {
+        1.nanometers * Double.NaN
+      }
     }
   })
 
