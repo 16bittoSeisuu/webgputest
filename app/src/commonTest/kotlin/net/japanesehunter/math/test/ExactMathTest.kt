@@ -91,6 +91,18 @@ class ExactMathTest :
       }
     }
 
+    test("scaleExact returns correctly for negative left operand") {
+      (-123L) scaleExact (10.0) shouldBe -1230L
+    }
+
+    test("scaleExact returns correctly for negative right operand") {
+      (123L) scaleExact (-10.0) shouldBe -1230L
+    }
+
+    test("scaleExact returns correctly for negative operands") {
+      (-123L) scaleExact (-10.0) shouldBe 1230L
+    }
+
     test("scaleExact doesn't take too long") {
       withTimeout(1.seconds) {
         for (_ in 0 until 1_000) {
