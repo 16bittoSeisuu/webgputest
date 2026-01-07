@@ -3,7 +3,6 @@ package net.japanesehunter.math.test.length
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import net.japanesehunter.math.test.length.NanometerLength.Companion.inches
 import net.japanesehunter.math.test.length.NanometerLength.Companion.meters
 import net.japanesehunter.math.test.length.NanometerLength.Companion.millimeters
 import net.japanesehunter.math.test.length.NanometerLength.Companion.nanometers
@@ -30,6 +29,15 @@ class NanometerLengthTest :
       (-1)
         .meters
         .toLong(meters) shouldBe -1L
+    }
+
+    test("meters to nanometers is exact for Long DSL") {
+      1
+        .meters
+        .toLong(nanometers) shouldBe 1_000_000_000L
+      (-1)
+        .meters
+        .toLong(nanometers) shouldBe -1_000_000_000L
     }
 
     test("toLong(nanometers) returns the underlying value") {
