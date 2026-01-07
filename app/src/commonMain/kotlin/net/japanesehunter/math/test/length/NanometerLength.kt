@@ -2,7 +2,7 @@ package net.japanesehunter.math.test.length
 
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
-import kotlin.jvm.JvmInline
+import kotlin.math.abs
 
 /**
  * Fixed-point implementation of [LengthQuantity] backed by a signed nanometer count in a [Long].
