@@ -91,21 +91,28 @@ value class NanometerLength internal constructor(
       return if (value > 0.0) truncated + 1 else truncated - 1
     }
 
+    private fun toNanometers(
+      value: Double,
+      unit: QuantityUnit<Length>,
+    ): Long =
+      roundToLongAwayFromZero(value * nanometersPerUnit(unit).toDouble())
+
+    private fun toNanometers(
+      value: Long,
+      unit: QuantityUnit<Length>,
+    ): Long =
+      checkedMultiply(value, nanometersPerUnit(unit))
+
     override fun Long.times(
       unit: LengthUnit,
-    ): LengthQuantity {
-      val perUnit = nanometersPerUnit(unit)
-      val nm = checkedMultiply(this, perUnit)
-      return NanometerLength(nm)
-    }
+    ): LengthQuantity =
+      NanometerLength(toNanometers(this, unit))
 
     override fun Double.times(
       unit: LengthUnit,
     ): LengthQuantity {
       requireFinite(this)
-      val perUnit = nanometersPerUnit(unit).toDouble()
-      val nm = roundToLongAwayFromZero(this * perUnit)
-      return NanometerLength(nm)
+      return NanometerLength(toNanometers(this, unit))
     }
   }
 
@@ -149,9 +156,7 @@ value class NanometerLength internal constructor(
         }
 
         else -> {
-          roundToLongAwayFromZero(
-            other.toDouble(meters) * NANOMETERS_PER_METER.toDouble(),
-          )
+          toNanometers(other.toDouble(meters), meters)
         }
       }
     return NanometerLength(checkedAdd(nanometers, otherNm))
