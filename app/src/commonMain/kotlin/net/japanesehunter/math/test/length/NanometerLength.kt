@@ -1,9 +1,10 @@
 package net.japanesehunter.math.test.length
 
-import net.japanesehunter.math.test.ExactMath
+import net.japanesehunter.math.test.ExactMath.plusExact
+import net.japanesehunter.math.test.ExactMath.scaleExact
+import net.japanesehunter.math.test.ExactMath.timesExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
-import net.japanesehunter.math.test.ScaledLong
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import net.japanesehunter.math.test.length.nanometers as nanometers_unit
@@ -39,16 +40,13 @@ value class NanometerLength private constructor(
       value: Double,
       unit: QuantityUnit<Length>,
     ): Long =
-      ScaledLong.scaleToLong(
-        value = nanometersPerUnit(unit),
-        factor = value,
-      )
+      nanometersPerUnit(unit) scaleExact value
 
     private fun toNanometers(
       value: Long,
       unit: QuantityUnit<Length>,
     ): Long =
-      ExactMath.multiplyExact(value, nanometersPerUnit(unit))
+      value timesExact nanometersPerUnit(unit)
 
     override fun Long.times(
       unit: LengthUnit,
@@ -109,7 +107,7 @@ value class NanometerLength private constructor(
           toNanometers(other.toDouble(meters), meters)
         }
       }
-    return NanometerLength(ExactMath.addExact(nanometerCount, otherNm))
+    return NanometerLength(nanometerCount plusExact otherNm)
   }
 
   override fun times(
@@ -118,6 +116,6 @@ value class NanometerLength private constructor(
     require(scalar.isFinite()) {
       "The scalar must be finite, but was $scalar."
     }
-    return NanometerLength(ScaledLong.scaleToLong(nanometerCount, scalar))
+    return NanometerLength(nanometerCount scaleExact scalar)
   }
 }
