@@ -52,10 +52,12 @@ interface Displacement1<D : Dimension<D>> {
    *
    * @param scalar The scalar multiplier.
    * - Must be finite
-  * @return A displacement whose [dx] equals `this.dx * scalar`.
+   * @return A displacement whose [dx] equals `this.dx * scalar`.
    * @throws IllegalArgumentException
    * - If [scalar] is NaN
    * - If [scalar] is positive infinity or negative infinity
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
    */
   operator fun times(
     scalar: Double,
@@ -67,11 +69,13 @@ interface Displacement1<D : Dimension<D>> {
    * @param scalar The scalar divisor.
    * - Must be finite
    * - Must not be 0.0
-  * @return A displacement whose [dx] equals `this.dx / scalar`.
+   * @return A displacement whose [dx] equals `this.dx / scalar`.
    * @throws IllegalArgumentException
    * - If [scalar] is 0.0
    * - If [scalar] is NaN
    * - If [scalar] is positive infinity or negative infinity
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large (for example when dividing by a very small nonzero scalar)
    */
   operator fun div(
     scalar: Double,
