@@ -7,7 +7,7 @@ package net.japanesehunter.math.test
  *
  * A dimension provides a canonical unit used as the normalization target for conversions.
  *
- * @param D The concrete self type of the dimension.
+ * @param D The concrete self-type of the dimension.
  */
 interface Dimension<D : Dimension<D>> {
   /**

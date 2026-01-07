@@ -15,7 +15,7 @@ interface Point1<D : Dimension<D>> {
    * Translates this point by adding a displacement.
    *
    * @param other The displacement to add.
-   * @return A point [q] such that `(q - this).dx` equals `other.dx`.
+   * @return A point `q` such that `(q - this).dx` equals `other.dx`.
    */
   operator fun plus(
     other: Displacement1<D>,
@@ -25,7 +25,7 @@ interface Point1<D : Dimension<D>> {
    * Translates this point by subtracting a displacement.
    *
    * @param other The displacement to subtract.
-   * @return A point [q] such that `(this - q).dx` equals `other.dx`.
+   * @return A point `q` such that `(this - q).dx` equals `other.dx`.
    */
   operator fun minus(
     other: Displacement1<D>,
