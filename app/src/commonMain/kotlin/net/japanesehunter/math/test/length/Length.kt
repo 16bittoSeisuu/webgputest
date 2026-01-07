@@ -11,25 +11,10 @@ import net.japanesehunter.math.test.length.meters as meters_unit
  * ## Description
  *
  * The canonical unit of this dimension is [meters].
- * This object also provides the construction DSL defined in [LengthProvider].
  */
-data object Length : Dimension<Length>, LengthProvider {
+data object Length : Dimension<Length> {
   override val canonicalUnit: QuantityUnit<Length> by lazy {
     meters_unit
-  }
-
-  override val zero: LengthQuantity = super.zero
-
-  override fun Long.times(
-    unit: LengthUnit,
-  ): LengthQuantity {
-    TODO("Not yet implemented")
-  }
-
-  override fun Double.times(
-    unit: LengthUnit,
-  ): LengthQuantity {
-    TODO("Not yet implemented")
   }
 }
 
