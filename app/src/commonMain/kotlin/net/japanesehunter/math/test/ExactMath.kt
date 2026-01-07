@@ -39,9 +39,16 @@ object ExactMath {
   infix fun Long.minusExact(
     other: Long,
   ): Long =
-    plusExact(
-      -other,
-    )
+    run {
+      val result = this - other
+      val overflow = (this xor other) and (this xor result)
+      if (0L > overflow) {
+        throw ArithmeticException(
+          "Overflow while subtracting $other from $this.",
+        )
+      }
+      result
+    }
 
   /**
    * Multiplies this [Long] value by the given [other] [Long] value exactly,

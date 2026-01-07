@@ -56,8 +56,11 @@ interface LengthQuantity : Quantity<Length> {
 
   override fun div(
     scalar: Double,
-  ): LengthQuantity =
-    times(1.0 / scalar)
+  ): LengthQuantity {
+    require(scalar != 0.0) { "Tried to divide by zero." }
+    require(scalar.isFinite()) { "Tried to divide by non-finite scalar." }
+    return times(1.0 / scalar)
+  }
 
   override fun unaryPlus(): LengthQuantity =
     this

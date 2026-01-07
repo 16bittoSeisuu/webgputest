@@ -79,8 +79,11 @@ interface Displacement1<D : Dimension<D>> {
    */
   operator fun div(
     scalar: Double,
-  ): Displacement1<D> =
-    times(1.0 / scalar)
+  ): Displacement1<D> {
+    require(scalar != 0.0) { "Tried to divide by zero." }
+    require(scalar.isFinite()) { "Tried to divide by non-finite scalar." }
+    return times(1.0 / scalar)
+  }
 
   /**
    * Returns this displacement itself.

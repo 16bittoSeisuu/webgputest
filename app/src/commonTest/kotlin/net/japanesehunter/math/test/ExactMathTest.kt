@@ -45,6 +45,18 @@ class ExactMathTest :
       (-13L) minusExact 3L shouldBe -16L
     }
 
+    test("minusExact throws on overflow with Long.MIN_VALUE subtrahend") {
+      shouldThrow<ArithmeticException> {
+        0L minusExact Long.MIN_VALUE
+      }
+    }
+
+    test(
+      "minusExact returns the correct difference with Long.MIN_VALUE subtrahend",
+    ) {
+      (-1L) minusExact Long.MIN_VALUE shouldBe Long.MAX_VALUE
+    }
+
     test("multiplyExact throws on overflow") {
       shouldThrow<ArithmeticException> {
         Long.MAX_VALUE timesExact 2L
@@ -57,20 +69,20 @@ class ExactMathTest :
 
     test("scaleExact returns the exact product") {
       123_456_789_123_456_789L scaleExact 10.0 shouldBe
-        1_234_567_891_234_567_890L
+              1_234_567_891_234_567_890L
     }
 
     test("scaleExact returns the exact quotient and truncates towards zero") {
       123_456_789_123_456_789L scaleExact 0.2 shouldBe
-        24_691_357_824_691_357L
+              24_691_357_824_691_357L
     }
 
     test(
       "scaleExact returns the exact quotient with negative scale and " +
-        "truncates towards zero",
+              "truncates towards zero",
     ) {
       (-123_456_789_123_456_789L) scaleExact 0.2 shouldBe
-        -24_691_357_824_691_357L
+              -24_691_357_824_691_357L
     }
 
     test("scaleExact throws on non-finite scale") {
@@ -121,5 +133,3 @@ class ExactMathTest :
       }
     }
   })
-
-
