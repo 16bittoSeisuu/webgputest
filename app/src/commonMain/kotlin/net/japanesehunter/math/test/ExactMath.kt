@@ -86,6 +86,11 @@ object ExactMath {
     if (this == 0L || other == 0.0) {
       return 0L
     }
+    // Fast path for integer scales (e.g. 10.0, 99.0, -3.0)
+    val longScale = other.toLong()
+    if (longScale.toDouble() == other) {
+      return this timesExact longScale
+    }
     val parsed = ParsedDecimal.parse(other.toString())
     if (parsed.significand == 0UL) {
       return 0L

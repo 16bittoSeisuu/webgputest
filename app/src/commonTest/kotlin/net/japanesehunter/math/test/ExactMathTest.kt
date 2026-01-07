@@ -61,16 +61,16 @@ class ExactMathTest :
     }
 
     test("scaleExact returns the exact quotient and truncates towards zero") {
-      123_456_789_123_456_789L scaleExact 0.1 shouldBe
-        12_345_678_912_345_678L
+      123_456_789_123_456_789L scaleExact 0.2 shouldBe
+        24_691_357_824_691_357L
     }
 
     test(
       "scaleExact returns the exact quotient with negative scale and " +
         "truncates towards zero",
     ) {
-      (-123_456_789_123_456_789L) scaleExact 0.1 shouldBe
-        -12_345_678_912_345_678L
+      (-123_456_789_123_456_789L) scaleExact 0.2 shouldBe
+        -24_691_357_824_691_357L
     }
 
     test("scaleExact throws on non-finite scale") {
@@ -98,6 +98,13 @@ class ExactMathTest :
             val _ = 1_000_000_000_000_000L scaleExact 99.0
           }
           yield()
+        }
+      }
+      withTimeout(1.seconds) {
+        for (_ in 0 until 1_000) {
+          for (_ in 0 until 100) {
+            val _ = 1_000_000_000_000_000L scaleExact 99.9
+          }
         }
       }
     }
