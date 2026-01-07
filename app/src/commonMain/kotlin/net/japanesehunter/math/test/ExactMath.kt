@@ -2,6 +2,8 @@
 
 package net.japanesehunter.math.test
 
+import kotlin.math.sign
+
 /**
  * Provides arithmetic operations that throw on overflow.
  */
@@ -86,7 +88,7 @@ object ExactMath {
     if (this == 0L || other == 0.0) {
       return 0L
     }
-    // Fast path for integer scales (e.g. 10.0, 99.0, -3.0)
+    // Fast path for integer scales
     val longScale = other.toLong()
     if (longScale.toDouble() == other) {
       return this timesExact longScale
@@ -96,13 +98,7 @@ object ExactMath {
       return 0L
     }
 
-    val receiverSign =
-      if (0L <= this) {
-        1
-      } else {
-        -1
-      }
-    val resultSign = receiverSign * parsed.sign
+    val resultSign = this.sign * parsed.sign
     val absReceiver = absAsULong(this)
 
     var value =
@@ -120,8 +116,7 @@ object ExactMath {
               "Overflow while scaling $this by $other.",
             )
       }
-    }
-    if (parsed.exponent10 < 0) {
+    } else if (parsed.exponent10 < 0) {
       repeat(-parsed.exponent10) {
         value = value.div10()
       }

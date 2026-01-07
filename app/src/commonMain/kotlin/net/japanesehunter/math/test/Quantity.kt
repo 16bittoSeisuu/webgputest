@@ -201,8 +201,10 @@ interface Quantity<D : Dimension<D>> {
    */
   operator fun div(
     scalar: Double,
-  ): Quantity<D> =
-    times(1.0 / scalar)
+  ): Quantity<D> {
+    require(scalar != 0.0) { "Tried to divide by zero." }
+    return times(1.0 / scalar)
+  }
 
   /**
    * Returns this quantity itself.

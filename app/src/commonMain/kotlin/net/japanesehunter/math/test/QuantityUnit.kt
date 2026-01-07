@@ -1,6 +1,9 @@
 package net.japanesehunter.math.test
 
 import net.japanesehunter.math.test.QuantityUnit.Companion.base
+import kotlin.math.abs
+import kotlin.math.roundToLong
+import kotlin.math.ulp
 
 
 /**
@@ -85,6 +88,26 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
       symbol = symbol,
       thisToCanonicalFactor = thisToCanonicalFactor * newToThisFactor,
     )
+  }
+
+  // TODO: KDoc
+  infix fun per(
+    other: QuantityUnit<D>,
+  ): Double {
+    val ret = other.thisToCanonicalFactor / thisToCanonicalFactor
+    if (ret.isInfinite()) {
+      throw ArithmeticException(
+        "The derived unit's canonical conversion factor overflows Double.",
+      )
+    }
+    val nearest =
+      ret
+        .roundToLong()
+        .toDouble()
+    if (abs(ret - nearest) <= nearest.ulp * 2.0) {
+      return nearest
+    }
+    return ret
   }
 
   override fun toString(): String =

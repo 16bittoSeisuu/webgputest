@@ -3,6 +3,7 @@ package net.japanesehunter.math.test.length
 import net.japanesehunter.math.test.Dimension
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
+import net.japanesehunter.math.test.length.meters
 import net.japanesehunter.math.test.length.meters as meters_unit
 
 /**

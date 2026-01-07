@@ -1,8 +1,8 @@
 package net.japanesehunter.math.test.length
 
+import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
-import net.japanesehunter.math.test.ExactMath.timesExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import kotlin.math.abs
@@ -26,32 +26,10 @@ value class NanometerLength private constructor(
   private val nanometerCount: Long,
 ) : LengthQuantity {
   companion object : LengthProvider {
-    private fun nanometersPerUnit(
-      unit: QuantityUnit<Length>,
-    ): Long =
-      (unit.thisToCanonicalFactor / nanometers_unit.thisToCanonicalFactor)
-        .also { factor ->
-          require(factor.isFinite() && factor > 0.0) {
-            "The unit factor must be a positive finite number, but was $factor."
-          }
-        }.roundToLong()
-
-    private fun toNanometers(
-      value: Double,
-      unit: QuantityUnit<Length>,
-    ): Long =
-      nanometersPerUnit(unit) scaleExact value
-
-    private fun toNanometers(
-      value: Long,
-      unit: QuantityUnit<Length>,
-    ): Long =
-      value timesExact nanometersPerUnit(unit)
-
     override fun Long.times(
       unit: LengthUnit,
     ): LengthQuantity =
-      NanometerLength(toNanometers(this, unit))
+      NanometerLength(this scaleExact (nanometers_unit per unit))
 
     override fun Double.times(
       unit: LengthUnit,
@@ -59,28 +37,26 @@ value class NanometerLength private constructor(
       require(isFinite()) {
         "The receiver must be finite, but was $this."
       }
-      return NanometerLength(toNanometers(this, unit))
+      return NanometerLength((this * (nanometers_unit per unit)).roundToLong())
     }
   }
 
   override fun toDouble(
     unit: QuantityUnit<Length>,
-  ): Double {
-    val canonicalValue =
-      nanometerCount.toDouble() * nanometers_unit.thisToCanonicalFactor
-    return canonicalValue / unit.thisToCanonicalFactor
-  }
+  ): Double =
+    nanometerCount.toDouble() * (unit per nanometers_unit)
 
   override fun roundToLong(
     unit: QuantityUnit<Length>,
   ): Long {
-    val perUnit = nanometersPerUnit(unit)
-    val q = nanometerCount / perUnit
+    val perUnit =
+      (nanometers_unit per unit)
+    val q = nanometerCount scaleExact (unit per nanometers_unit)
     val r = nanometerCount % perUnit
-    if (r == 0L) {
+    if (r == 0.0) {
       return q
     }
-    val twiceAbsR = abs(r) * 2L
+    val twiceAbsR = abs(r) * 2.0
     if (twiceAbsR < perUnit) {
       return q
     }
@@ -90,25 +66,21 @@ value class NanometerLength private constructor(
   override fun toLong(
     unit: QuantityUnit<Length>,
   ): Long {
-    val perUnit = nanometersPerUnit(unit)
-    return nanometerCount / perUnit
+    if (unit == nanometers_unit) {
+      return nanometerCount
+    }
+    return nanometerCount scaleExact (unit per nanometers_unit)
   }
 
   override fun plus(
     other: Quantity<Length>,
-  ): LengthQuantity {
-    val otherNm =
-      when (other) {
-        is NanometerLength -> {
-          other.nanometerCount
-        }
+  ): LengthQuantity =
+    NanometerLength(nanometerCount plusExact other.toLong(nanometers_unit))
 
-        else -> {
-          toNanometers(other.toDouble(meters), meters)
-        }
-      }
-    return NanometerLength(nanometerCount plusExact otherNm)
-  }
+  override fun minus(
+    other: Quantity<Length>,
+  ): LengthQuantity =
+    NanometerLength(nanometerCount minusExact other.toLong(nanometers_unit))
 
   override fun times(
     scalar: Double,
@@ -118,4 +90,9 @@ value class NanometerLength private constructor(
     }
     return NanometerLength(nanometerCount scaleExact scalar)
   }
+
+  override fun div(
+    scalar: Double,
+  ): LengthQuantity =
+    super.div(scalar)
 }
