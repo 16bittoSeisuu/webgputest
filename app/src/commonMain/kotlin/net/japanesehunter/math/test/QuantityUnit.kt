@@ -24,8 +24,6 @@ import net.japanesehunter.math.test.QuantityUnit.Companion.base
 @ConsistentCopyVisibility
 data class QuantityUnit<D : Dimension<D>> private constructor(
   val dimension: D,
-  // TODO: remove this comment
-  // e.g., for nanometers, this is 1e-9
   val thisToCanonicalFactor: Double,
   val name: String,
   val symbol: String,
@@ -66,20 +64,28 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
    * - When this unit is seconds, passing 60.0 creates minutes.
    *
    * @param newToThisFactor The factor to convert the new unit to this unit.
+   * - Must be a positive finite number (> 0.0)
    * @param name The new unit name.
    * @param symbol The new unit symbol.
    * @return The derived unit.
+   * @throws IllegalArgumentException
+   * - If [newToThisFactor] is NaN or infinite.
+   * - If [newToThisFactor] is zero or negative.
    */
   fun derive(
     newToThisFactor: Double,
     name: String,
     symbol: String,
-  ): QuantityUnit<D> =
-    copy(
+  ): QuantityUnit<D> {
+    require(newToThisFactor.isFinite() && newToThisFactor > 0.0) {
+      "The conversion factor must be a positive finite number, but was $newToThisFactor."
+    }
+    return copy(
       name = name,
       symbol = symbol,
       thisToCanonicalFactor = thisToCanonicalFactor * newToThisFactor,
     )
+  }
 
   override fun toString(): String =
     "QuantityUnit(1$symbol($name)=$thisToCanonicalFactor$dimension)"
