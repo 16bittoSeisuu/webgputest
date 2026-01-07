@@ -3,6 +3,9 @@ package net.japanesehunter.math.test
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import korlibs.time.seconds
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
@@ -85,6 +88,17 @@ class ExactMathTest :
     test("scaleExact throws on overflow") {
       shouldThrow<ArithmeticException> {
         Long.MAX_VALUE scaleExact 2.0
+      }
+    }
+
+    test("scaleExact doesn't take too long") {
+      withTimeout(1.seconds) {
+        for (_ in 0 until 1_000) {
+          for (_ in 0 until 1_000) {
+            val _ = 1_000_000_000_000_000L scaleExact 99.0
+          }
+          yield()
+        }
       }
     }
   })
