@@ -23,6 +23,11 @@ interface Quantity<D : Dimension<D>> {
   ): Int =
     toLong(unit).toInt()
 
+  fun roundToInt(
+    unit: QuantityUnit<D>,
+  ): Int =
+    roundToLong(unit).toInt()
+
   fun toShort(
     unit: QuantityUnit<D>,
   ): Short =
