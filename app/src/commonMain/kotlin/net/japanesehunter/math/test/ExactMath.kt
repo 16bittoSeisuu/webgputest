@@ -208,7 +208,7 @@ object ExactMath {
 
         val base =
           if (eIndex != -1) {
-            text.substring(0, eIndex)
+            text.take(eIndex)
           } else {
             text
           }
@@ -239,7 +239,7 @@ object ExactMath {
         val significand =
           digits.fold(0UL) { acc, c ->
             val digit = c.code - '0'.code
-            require(0 <= digit && digit <= 9) {
+            require(digit in 0..9) {
               "Invalid decimal digit in scale: $value"
             }
             acc * 10UL + digit.toULong()
@@ -351,35 +351,27 @@ object ExactMath {
       )
     }
 
+    @OptIn(ExperimentalUnsignedTypes::class)
     private fun timesSmall(
       factor: UInt,
     ): UInt128? {
       var carry = 0UL
 
-      val prod0 = w0.toULong() * factor.toULong() + carry
-      val next0 = (prod0 and 0xffffffffUL).toUInt()
-      carry = prod0 shr 32
-
-      val prod1 = w1.toULong() * factor.toULong() + carry
-      val next1 = (prod1 and 0xffffffffUL).toUInt()
-      carry = prod1 shr 32
-
-      val prod2 = w2.toULong() * factor.toULong() + carry
-      val next2 = (prod2 and 0xffffffffUL).toUInt()
-      carry = prod2 shr 32
-
-      val prod3 = w3.toULong() * factor.toULong() + carry
-      val next3 = (prod3 and 0xffffffffUL).toUInt()
-      carry = prod3 shr 32
-
+      val w = uintArrayOf(w0, w1, w2, w3)
+      val next =
+        UIntArray(4) {
+          val prod = w[it].toULong() * factor.toULong() + carry
+          carry = prod shr 32
+          (prod and 0xffffffffUL).toUInt()
+        }
       if (carry != 0UL) {
         return null
       }
       return UInt128(
-        w3 = next3,
-        w2 = next2,
-        w1 = next1,
-        w0 = next0,
+        w3 = next[3],
+        w2 = next[2],
+        w1 = next[1],
+        w0 = next[0],
       )
     }
 
