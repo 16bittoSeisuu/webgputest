@@ -5,6 +5,14 @@ import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.meters as meters_unit
 
+/**
+ * Defines the length dimension.
+ *
+ * ## Description
+ *
+ * The canonical unit of this dimension is [meters].
+ * This object also provides the construction DSL defined in [LengthProvider].
+ */
 data object Length : Dimension<Length>, LengthProvider {
   override val canonicalUnit: QuantityUnit<Length> by lazy {
     meters_unit
@@ -25,6 +33,15 @@ data object Length : Dimension<Length>, LengthProvider {
   }
 }
 
+/**
+ * Represents a quantity whose dimension is [Length].
+ *
+ * ## Description
+ *
+ * Implementations must satisfy the contract of [Quantity].
+ * Equality must be based on the represented physical amount, not on the source numeric type
+ * or the unit used at construction.
+ */
 interface LengthQuantity : Quantity<Length> {
   override fun toDouble(
     unit: QuantityUnit<Length>,
