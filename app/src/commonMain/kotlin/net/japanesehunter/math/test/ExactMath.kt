@@ -52,7 +52,20 @@ object ExactMath {
   inline infix fun Long.timesExact(
     other: Long,
   ): Long {
-    TODO()
+    if (this == 0L || other == 0L) {
+      return 0L
+    }
+    if (this == -1L && other == Long.MIN_VALUE) {
+      throw ArithmeticException("Overflow while multiplying $this and $other.")
+    }
+    if (other == -1L && this == Long.MIN_VALUE) {
+      throw ArithmeticException("Overflow while multiplying $this and $other.")
+    }
+    val result = this * other
+    if (result / other != this) {
+      throw ArithmeticException("Overflow while multiplying $this and $other.")
+    }
+    return result
   }
 
   /**
@@ -66,13 +79,343 @@ object ExactMath {
    * @throws ArithmeticException If the scaled result overflows the range of a [Long].
    * @throws IllegalArgumentException If the scale factor is not finite.
    */
-  inline infix fun Long.scaleExact(
+  infix fun Long.scaleExact(
     other: Double,
   ): Long {
     require(other.isFinite()) { "Scale must be finite but was: $other" }
     if (this == 0L || other == 0.0) {
       return 0L
     }
-    TODO()
+    val parsed = ParsedDecimal.parse(other.toString())
+    if (parsed.significand == 0UL) {
+      return 0L
+    }
+
+    val receiverSign =
+      if (0L <= this) {
+        1
+      } else {
+        -1
+      }
+    val resultSign = receiverSign * parsed.sign
+    val absReceiver = absAsULong(this)
+
+    var value =
+      UInt128
+        .fromUlong(absReceiver)
+        .timesUlong(parsed.significand)
+        ?: throw ArithmeticException("Overflow while scaling $this by $other.")
+
+    if (0 < parsed.exponent10) {
+      repeat(parsed.exponent10) {
+        value =
+          value
+            .times10()
+            ?: throw ArithmeticException(
+              "Overflow while scaling $this by $other.",
+            )
+      }
+    }
+    if (parsed.exponent10 < 0) {
+      repeat(-parsed.exponent10) {
+        value = value.div10()
+      }
+    }
+
+    return toLongExact(
+      absoluteValue = value,
+      sign = resultSign,
+      receiver = this,
+      scale = other,
+    )
+  }
+
+  private fun absAsULong(
+    value: Long,
+  ): ULong =
+    if (0L <= value) {
+      value.toULong()
+    } else if (value == Long.MIN_VALUE) {
+      1UL shl 63
+    } else {
+      (-value).toULong()
+    }
+
+  private fun toLongExact(
+    absoluteValue: UInt128,
+    sign: Int,
+    receiver: Long,
+    scale: Double,
+  ): Long {
+    if (0 < sign) {
+      if (absoluteValue.isGreaterThanUlong(
+          Long.MAX_VALUE
+            .toULong(),
+        )
+      ) {
+        throw ArithmeticException(
+          "Overflow while scaling $receiver by $scale.",
+        )
+      }
+      return absoluteValue
+        .toUlong()
+        .toLong()
+    }
+
+    val minValueAbs = (1UL shl 63)
+    if (absoluteValue.isGreaterThanUlong(minValueAbs)) {
+      throw ArithmeticException("Overflow while scaling $receiver by $scale.")
+    }
+    if (absoluteValue.toUlong() == minValueAbs) {
+      return Long.MIN_VALUE
+    }
+    return -absoluteValue
+      .toUlong()
+      .toLong()
+  }
+
+  private data class ParsedDecimal(
+    val sign: Int,
+    val significand: ULong,
+    val exponent10: Int,
+  ) {
+    companion object {
+      fun parse(
+        value: String,
+      ): ParsedDecimal {
+        var text = value
+        var sign = 1
+        if (text.startsWith("-")) {
+          sign = -1
+          text = text.drop(1)
+        } else if (text.startsWith("+")) {
+          text = text.drop(1)
+        }
+
+        val eIndex =
+          text
+            .indexOf('e')
+            .let { lower ->
+              if (lower != -1) {
+                lower
+              } else {
+                text.indexOf('E')
+              }
+            }
+
+        val base =
+          if (eIndex != -1) {
+            text.substring(0, eIndex)
+          } else {
+            text
+          }
+        val expFromE =
+          if (eIndex != -1) {
+            text
+              .substring(eIndex + 1)
+              .toInt()
+          } else {
+            0
+          }
+
+        val dotIndex = base.indexOf('.')
+        val decimalPlaces =
+          if (dotIndex != -1) {
+            base.length - dotIndex - 1
+          } else {
+            0
+          }
+
+        val digits =
+          if (dotIndex != -1) {
+            base.removeRange(dotIndex, dotIndex + 1)
+          } else {
+            base
+          }
+
+        val significand =
+          digits.fold(0UL) { acc, c ->
+            val digit = c.code - '0'.code
+            require(0 <= digit && digit <= 9) {
+              "Invalid decimal digit in scale: $value"
+            }
+            acc * 10UL + digit.toULong()
+          }
+
+        return ParsedDecimal(
+          sign = sign,
+          significand = significand,
+          exponent10 = expFromE - decimalPlaces,
+        )
+      }
+    }
+  }
+
+  private data class UInt128(
+    val w3: UInt,
+    val w2: UInt,
+    val w1: UInt,
+    val w0: UInt,
+  ) {
+    fun isGreaterThanUlong(
+      limit: ULong,
+    ): Boolean {
+      if (w3 != 0u || w2 != 0u) {
+        return true
+      }
+      val limitW1 = (limit shr 32).toUInt()
+      val limitW0 = (limit and 0xffffffffUL).toUInt()
+      if (limitW1 < w1) {
+        return true
+      }
+      if (w1 < limitW1) {
+        return false
+      }
+      return limitW0 < w0
+    }
+
+    fun toUlong(): ULong {
+      require(w3 == 0u && w2 == 0u) { "Value does not fit into ULong." }
+      return (w1.toULong() shl 32) or w0.toULong()
+    }
+
+    fun times10(): UInt128? =
+      timesSmall(10u)
+
+    fun div10(): UInt128 =
+      divSmall(10u)
+
+    fun timesUlong(
+      other: ULong,
+    ): UInt128? {
+      val otherW1 = (other shr 32).toUInt()
+      val otherW0 = (other and 0xffffffffUL).toUInt()
+      if (otherW1 == 0u) {
+        return timesSmall(otherW0)
+      }
+      val left = timesSmall(otherW0) ?: return null
+      val rightBase = timesSmall(otherW1) ?: return null
+      val right = rightBase.shiftLeft32() ?: return null
+      return left.plus(right)
+    }
+
+    fun plus(
+      other: UInt128,
+    ): UInt128? {
+      val sum0 =
+        w0.toULong() +
+                other.w0
+                  .toULong()
+      val carry0 = sum0 shr 32
+      val sum1 =
+        w1.toULong() +
+                other.w1
+                  .toULong() +
+                carry0
+      val carry1 = sum1 shr 32
+      val sum2 =
+        w2.toULong() +
+                other.w2
+                  .toULong() +
+                carry1
+      val carry2 = sum2 shr 32
+      val sum3 =
+        w3.toULong() +
+                other.w3
+                  .toULong() +
+                carry2
+      if (0x1_0000_0000UL <= sum3) {
+        return null
+      }
+      return UInt128(
+        w3 = sum3.toUInt(),
+        w2 = sum2.toUInt(),
+        w1 = sum1.toUInt(),
+        w0 = sum0.toUInt(),
+      )
+    }
+
+    private fun shiftLeft32(): UInt128? {
+      if (w3 != 0u) {
+        return null
+      }
+      return UInt128(
+        w3 = w2,
+        w2 = w1,
+        w1 = w0,
+        w0 = 0u,
+      )
+    }
+
+    private fun timesSmall(
+      factor: UInt,
+    ): UInt128? {
+      var carry = 0UL
+
+      val prod0 = w0.toULong() * factor.toULong() + carry
+      val next0 = (prod0 and 0xffffffffUL).toUInt()
+      carry = prod0 shr 32
+
+      val prod1 = w1.toULong() * factor.toULong() + carry
+      val next1 = (prod1 and 0xffffffffUL).toUInt()
+      carry = prod1 shr 32
+
+      val prod2 = w2.toULong() * factor.toULong() + carry
+      val next2 = (prod2 and 0xffffffffUL).toUInt()
+      carry = prod2 shr 32
+
+      val prod3 = w3.toULong() * factor.toULong() + carry
+      val next3 = (prod3 and 0xffffffffUL).toUInt()
+      carry = prod3 shr 32
+
+      if (carry != 0UL) {
+        return null
+      }
+      return UInt128(
+        w3 = next3,
+        w2 = next2,
+        w1 = next1,
+        w0 = next0,
+      )
+    }
+
+    private fun divSmall(
+      divisor: UInt,
+    ): UInt128 {
+      var remainder = 0UL
+
+      fun step(
+        word: UInt,
+      ): UInt {
+        val current = (remainder shl 32) + word.toULong()
+        val q = current / divisor.toULong()
+        remainder = current % divisor.toULong()
+        return q.toUInt()
+      }
+
+      val q3 = step(w3)
+      val q2 = step(w2)
+      val q1 = step(w1)
+      val q0 = step(w0)
+
+      return UInt128(
+        w3 = q3,
+        w2 = q2,
+        w1 = q1,
+        w0 = q0,
+      )
+    }
+
+    companion object {
+      fun fromUlong(
+        value: ULong,
+      ): UInt128 =
+        UInt128(
+          w3 = 0u,
+          w2 = 0u,
+          w1 = (value shr 32).toUInt(),
+          w0 = (value and 0xffffffffUL).toUInt(),
+        )
+    }
   }
 }
