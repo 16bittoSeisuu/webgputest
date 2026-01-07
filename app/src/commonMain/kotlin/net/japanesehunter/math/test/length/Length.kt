@@ -12,12 +12,6 @@ data object Length : Dimension<Length>, LengthProvider {
 
   override val zero: LengthQuantity = super.zero
 
-  // TODO: we need to prevent overflow with BigDecimals
-  override fun Number.times(
-    unit: LengthUnit,
-  ): LengthQuantity =
-    toDouble() * unit
-
   override fun Long.times(
     unit: LengthUnit,
   ): LengthQuantity {

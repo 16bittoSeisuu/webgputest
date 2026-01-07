@@ -13,11 +13,6 @@ import net.japanesehunter.math.test.length.nanometers as nanometer_unit
 interface LengthProvider {
   // region operators
 
-  operator fun Number.times(
-    unit: LengthUnit,
-  ): LengthQuantity =
-    toDouble() * unit
-
   operator fun Int.times(
     unit: LengthUnit,
   ): LengthQuantity =
@@ -41,8 +36,6 @@ interface LengthProvider {
   // region SI
   // region meters
 
-  val Number.meters: LengthQuantity get() = times(meter_unit)
-
   val Int.meters: LengthQuantity get() = times(meter_unit)
 
   val Long.meters: LengthQuantity get() = times(meter_unit)
@@ -53,8 +46,6 @@ interface LengthProvider {
 
   // endregion
   // region kilometers
-
-  val Number.kilometers: LengthQuantity get() = times(kilometer_unit)
 
   val Int.kilometers: LengthQuantity get() = times(kilometer_unit)
 
@@ -67,8 +58,6 @@ interface LengthProvider {
   // endregion
   // region centimeters
 
-  val Number.centimeters: LengthQuantity get() = times(centimeter_unit)
-
   val Int.centimeters: LengthQuantity get() = times(centimeter_unit)
 
   val Long.centimeters: LengthQuantity get() = times(centimeter_unit)
@@ -79,8 +68,6 @@ interface LengthProvider {
 
   // endregion
   // region millimeters
-
-  val Number.millimeters: LengthQuantity get() = times(millimeter_unit)
 
   val Int.millimeters: LengthQuantity get() = times(millimeter_unit)
 
@@ -93,8 +80,6 @@ interface LengthProvider {
   // endregion
   // region micrometers
 
-  val Number.micrometers: LengthQuantity get() = times(micrometer_unit)
-
   val Int.micrometers: LengthQuantity get() = times(micrometer_unit)
 
   val Long.micrometers: LengthQuantity get() = times(micrometer_unit)
@@ -105,8 +90,6 @@ interface LengthProvider {
 
   // endregion
   // region nanometers
-
-  val Number.nanometers: LengthQuantity get() = times(nanometer_unit)
 
   val Int.nanometers: LengthQuantity get() = times(nanometer_unit)
 
@@ -121,8 +104,6 @@ interface LengthProvider {
   // region Imperial
   // region miles
 
-  val Number.miles: LengthQuantity get() = times(mile_unit)
-
   val Int.miles: LengthQuantity get() = times(mile_unit)
 
   val Long.miles: LengthQuantity get() = times(mile_unit)
@@ -133,8 +114,6 @@ interface LengthProvider {
 
   // endregion
   // region feet
-
-  val Number.feet: LengthQuantity get() = times(feet_unit)
 
   val Int.feet: LengthQuantity get() = times(feet_unit)
 
@@ -147,8 +126,6 @@ interface LengthProvider {
   // endregion
   // region inches
 
-  val Number.inches: LengthQuantity get() = times(inch_unit)
-
   val Int.inches: LengthQuantity get() = times(inch_unit)
 
   val Long.inches: LengthQuantity get() = times(inch_unit)
@@ -160,4 +137,3 @@ interface LengthProvider {
   // endregion
   // endregion
 }
-
