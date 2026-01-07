@@ -79,7 +79,7 @@ object ExactMath {
    * @throws ArithmeticException If the scaled result overflows the range of a [Long].
    * @throws IllegalArgumentException If the scale factor is not finite.
    */
-  infix fun Long.scaleExact(
+  inline infix fun Long.scaleExact(
     other: Double,
   ): Long {
     require(other.isFinite()) { "Scale must be finite but was: $other" }
@@ -102,8 +102,8 @@ object ExactMath {
 
     var value =
       UInt128
-        .fromUlong(absReceiver)
-        .timesUlong(parsed.significand)
+        .fromULong(absReceiver)
+        .times(parsed.significand)
         ?: throw ArithmeticException("Overflow while scaling $this by $other.")
 
     if (0 < parsed.exponent10) {
@@ -130,7 +130,8 @@ object ExactMath {
     )
   }
 
-  private fun absAsULong(
+  @PublishedApi
+  internal fun absAsULong(
     value: Long,
   ): ULong =
     if (0L <= value) {
@@ -141,14 +142,15 @@ object ExactMath {
       (-value).toULong()
     }
 
-  private fun toLongExact(
+  @PublishedApi
+  internal fun toLongExact(
     absoluteValue: UInt128,
     sign: Int,
     receiver: Long,
     scale: Double,
   ): Long {
     if (0 < sign) {
-      if (absoluteValue.isGreaterThanUlong(
+      if (absoluteValue.isGreaterThanULong(
           Long.MAX_VALUE
             .toULong(),
         )
@@ -158,23 +160,24 @@ object ExactMath {
         )
       }
       return absoluteValue
-        .toUlong()
+        .toULong()
         .toLong()
     }
 
     val minValueAbs = (1UL shl 63)
-    if (absoluteValue.isGreaterThanUlong(minValueAbs)) {
+    if (absoluteValue.isGreaterThanULong(minValueAbs)) {
       throw ArithmeticException("Overflow while scaling $receiver by $scale.")
     }
-    if (absoluteValue.toUlong() == minValueAbs) {
+    if (absoluteValue.toULong() == minValueAbs) {
       return Long.MIN_VALUE
     }
     return -absoluteValue
-      .toUlong()
+      .toULong()
       .toLong()
   }
 
-  private data class ParsedDecimal(
+  @PublishedApi
+  internal data class ParsedDecimal(
     val sign: Int,
     val significand: ULong,
     val exponent10: Int,
@@ -251,13 +254,14 @@ object ExactMath {
     }
   }
 
-  private data class UInt128(
+  @PublishedApi
+  internal data class UInt128(
     val w3: UInt,
     val w2: UInt,
     val w1: UInt,
     val w0: UInt,
   ) {
-    fun isGreaterThanUlong(
+    fun isGreaterThanULong(
       limit: ULong,
     ): Boolean {
       if (w3 != 0u || w2 != 0u) {
@@ -274,7 +278,7 @@ object ExactMath {
       return limitW0 < w0
     }
 
-    fun toUlong(): ULong {
+    fun toULong(): ULong {
       require(w3 == 0u && w2 == 0u) { "Value does not fit into ULong." }
       return (w1.toULong() shl 32) or w0.toULong()
     }
@@ -285,7 +289,7 @@ object ExactMath {
     fun div10(): UInt128 =
       divSmall(10u)
 
-    fun timesUlong(
+    operator fun times(
       other: ULong,
     ): UInt128? {
       val otherW1 = (other shr 32).toUInt()
@@ -304,26 +308,26 @@ object ExactMath {
     ): UInt128? {
       val sum0 =
         w0.toULong() +
-                other.w0
-                  .toULong()
+          other.w0
+            .toULong()
       val carry0 = sum0 shr 32
       val sum1 =
         w1.toULong() +
-                other.w1
-                  .toULong() +
-                carry0
+          other.w1
+            .toULong() +
+          carry0
       val carry1 = sum1 shr 32
       val sum2 =
         w2.toULong() +
-                other.w2
-                  .toULong() +
-                carry1
+          other.w2
+            .toULong() +
+          carry1
       val carry2 = sum2 shr 32
       val sum3 =
         w3.toULong() +
-                other.w3
-                  .toULong() +
-                carry2
+          other.w3
+            .toULong() +
+          carry2
       if (0x1_0000_0000UL <= sum3) {
         return null
       }
@@ -407,7 +411,7 @@ object ExactMath {
     }
 
     companion object {
-      fun fromUlong(
+      fun fromULong(
         value: ULong,
       ): UInt128 =
         UInt128(
