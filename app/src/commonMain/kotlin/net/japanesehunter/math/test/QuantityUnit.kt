@@ -90,7 +90,21 @@ data class QuantityUnit<D : Dimension<D>> private constructor(
     )
   }
 
-  // TODO: KDoc
+  /**
+   * Returns a conversion factor between this unit and [other].
+   *
+   * ## Description
+   *
+   * The returned value equals `other / this` in terms of canonical conversion factors.
+   * Multiplying a value expressed in [other] by the returned factor converts it into this unit.
+   *
+   * If the mathematically exact factor is very close to an integer, this function returns
+   * that integer value as a [Double].
+   *
+   * @param other The source unit.
+   * @return The factor to convert values in [other] into this unit.
+   * @throws ArithmeticException If the factor overflows [Double] and becomes infinite.
+   */
   infix fun per(
     other: QuantityUnit<D>,
   ): Double {
