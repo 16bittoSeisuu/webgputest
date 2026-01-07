@@ -19,6 +19,20 @@ import net.japanesehunter.math.test.QuantityUnit
 value class NanometerLength internal constructor(
   private val nanometers: Long,
 ) : LengthQuantity {
+  companion object : LengthProvider {
+    override fun Long.times(
+      unit: LengthUnit,
+    ): LengthQuantity {
+      TODO("Not yet implemented")
+    }
+
+    override fun Double.times(
+      unit: LengthUnit,
+    ): LengthQuantity {
+      TODO("Not yet implemented")
+    }
+  }
+
   override fun toDouble(
     unit: QuantityUnit<Length>,
   ): Double {
