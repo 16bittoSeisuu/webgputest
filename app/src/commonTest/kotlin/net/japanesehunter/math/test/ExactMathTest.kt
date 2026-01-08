@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldBe
 import korlibs.time.seconds
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
+import net.japanesehunter.math.test.ExactMath.descaleExact
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
@@ -150,6 +151,85 @@ class ExactMathTest :
           }
         }
       }
+    }
+    // endregion
+    // region descaleExact
+    test("descaleExact returns the exact quotient") {
+      123_456_789_123_456_789L descaleExact 5.0 shouldBe
+        24_691_357_824_691_357L
+    }
+
+    test(
+      "descaleExact returns the exact quotient and " +
+        "truncates towards zero",
+    ) {
+      123_456_789_123_456_789L descaleExact 5.5 shouldBe
+        22_446_688_931_537_598L
+    }
+
+    test(
+      "descaleExact returns the exact quotient with negative divisor and " +
+        "truncates towards zero",
+    ) {
+      (-123_456_789_123_456_789L) descaleExact 5.0 shouldBe
+        -24_691_357_824_691_357L
+    }
+
+    test("descaleExact returns the exact quotient with negative dividend") {
+      (-123_456_789_123_456_789L) descaleExact (-5.0) shouldBe
+        24_691_357_824_691_357L
+    }
+
+    test("descaleExact throws on NaN divisor") {
+      shouldThrow<IllegalArgumentException> {
+        123L descaleExact Double.NaN
+      }
+    }
+
+    test("descaleExact throws on positive infinity divisor") {
+      shouldThrow<IllegalArgumentException> {
+        123L descaleExact Double.POSITIVE_INFINITY
+      }
+    }
+
+    test("descaleExact throws on negative infinity divisor") {
+      shouldThrow<IllegalArgumentException> {
+        123L descaleExact Double.NEGATIVE_INFINITY
+      }
+    }
+
+    test("descaleExact throws on zero divisor") {
+      shouldThrow<IllegalArgumentException> {
+        123L descaleExact 0.0
+      }
+    }
+
+    test("descaleExact throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Long.MAX_VALUE descaleExact 0.5
+      }
+    }
+
+    test("descaleExact throws on overflow with small divisor") {
+      shouldThrow<ArithmeticException> {
+        Long.MAX_VALUE descaleExact Double.MIN_VALUE
+      }
+    }
+
+    test("descaleExact returns zero when dividend is zero") {
+      0L descaleExact 5.0 shouldBe 0L
+    }
+
+    test("descaleExact returns correctly for negative dividend") {
+      (-123L) descaleExact (5.0) shouldBe -24L
+    }
+
+    test("descaleExact returns correctly for negative divisor") {
+      (123L) descaleExact (-5.0) shouldBe -24L
+    }
+
+    test("descaleExact returns correctly for negative operands") {
+      (-123L) descaleExact (-5.0) shouldBe 24L
     }
     // endregion
   })

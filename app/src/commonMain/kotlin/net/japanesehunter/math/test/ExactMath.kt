@@ -150,6 +150,39 @@ object ExactMath {
     )
   }
 
+  /**
+   * Divides this [Long] value by the specified [Double] divisor, returning the result as a [Long].
+   *
+   * The division operation is performed exactly, without rounding, and the result is truncated toward zero.
+   * Throws an [ArithmeticException] if the divided result overflows the range of a [Long].
+   *
+   * @param other The divisor by which to divide the [Long] value. Must be a finite, non-zero [Double].
+   * @return The divided [Long] value. The result is truncated toward zero.
+   * @throws ArithmeticException If the divided result overflows the range of a [Long], or if the divisor is too small and causes overflow during calculation.
+   * @throws IllegalArgumentException If the divisor is not finite, is zero, or is infinite.
+   */
+  inline infix fun Long.descaleExact(
+    other: Double,
+  ): Long {
+    require(other.isFinite()) {
+      "Divisor must be finite but was: $other"
+    }
+    require(other != 0.0) {
+      "Divisor must not be zero"
+    }
+    if (this == 0L) {
+      return 0L
+    }
+    val reciprocal = 1.0 / other
+    if (reciprocal.isInfinite()) {
+      throw ArithmeticException(
+        "Divisor is too small and causes overflow: $other",
+      )
+    }
+    return this scaleExact reciprocal
+  }
+
+  // region internal
   @PublishedApi
   internal fun absAsULong(
     value: Long,
@@ -434,4 +467,5 @@ object ExactMath {
         )
     }
   }
+  // endregion
 }
