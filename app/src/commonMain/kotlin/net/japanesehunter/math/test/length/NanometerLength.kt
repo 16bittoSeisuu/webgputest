@@ -2,6 +2,7 @@ package net.japanesehunter.math.test.length
 
 import net.japanesehunter.math.test.ExactMath.descaleExact
 import net.japanesehunter.math.test.ExactMath.minusExact
+import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.Quantity
@@ -92,4 +93,7 @@ value class NanometerLength private constructor(
     scalar: Double,
   ): LengthQuantity =
     NanometerLength(nanometerCount descaleExact scalar)
+
+  override fun unaryMinus(): LengthQuantity =
+    NanometerLength(nanometerCount.negateExact())
 }
