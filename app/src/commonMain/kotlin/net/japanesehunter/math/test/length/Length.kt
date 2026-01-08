@@ -1,6 +1,7 @@
 package net.japanesehunter.math.test.length
 
 import net.japanesehunter.math.test.Dimension
+import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.meters
@@ -56,11 +57,8 @@ interface LengthQuantity : Quantity<Length> {
 
   override fun div(
     scalar: Double,
-  ): LengthQuantity {
-    require(scalar != 0.0) { "Tried to divide by zero." }
-    require(scalar.isFinite()) { "Tried to divide by non-finite scalar." }
-    return times(1.0 / scalar)
-  }
+  ): LengthQuantity =
+    times(scalar.reciprocalExact())
 
   override fun unaryPlus(): LengthQuantity =
     this

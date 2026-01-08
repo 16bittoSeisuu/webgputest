@@ -1,5 +1,7 @@
 package net.japanesehunter.math.test
 
+import net.japanesehunter.math.test.ExactMath.reciprocalExact
+
 /**
  * Represents a dimensioned quantity.
  *
@@ -201,11 +203,8 @@ interface Quantity<D : Dimension<D>> {
    */
   operator fun div(
     scalar: Double,
-  ): Quantity<D> {
-    require(scalar != 0.0) { "Tried to divide by zero." }
-    require(scalar.isFinite()) { "Tried to divide by non-finite scalar." }
-    return times(1.0 / scalar)
-  }
+  ): Quantity<D> =
+    times(scalar.reciprocalExact())
 
   /**
    * Returns this quantity itself.
