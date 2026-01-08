@@ -203,6 +203,7 @@ interface Quantity<D : Dimension<D>> {
     scalar: Double,
   ): Quantity<D> {
     require(scalar != 0.0) { "Tried to divide by zero." }
+    require(scalar.isFinite()) { "Tried to divide by non-finite scalar." }
     return times(1.0 / scalar)
   }
 
