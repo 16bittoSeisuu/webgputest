@@ -55,14 +55,71 @@ interface LengthQuantity : Quantity<Length> {
     scalar: Double,
   ): LengthQuantity
 
+  override fun times(
+    scalar: Long,
+  ): LengthQuantity
+
+  override fun times(
+    scalar: Float,
+  ): LengthQuantity =
+    times(scalar.toDouble())
+
+  override fun times(
+    scalar: Int,
+  ): LengthQuantity =
+    times(scalar.toLong())
+
+  override fun times(
+    scalar: Short,
+  ): LengthQuantity =
+    times(scalar.toLong())
+
+  override fun times(
+    scalar: Byte,
+  ): LengthQuantity =
+    times(scalar.toLong())
+
   override fun div(
     scalar: Double,
   ): LengthQuantity =
     times(scalar.reciprocalExact())
+
+  override fun div(
+    scalar: Long,
+  ): LengthQuantity =
+    TODO()
+
+  override fun div(
+    scalar: Float,
+  ): LengthQuantity =
+    div(scalar.toDouble())
+
+  override fun div(
+    scalar: Int,
+  ): LengthQuantity =
+    div(scalar.toLong())
+
+  override fun div(
+    scalar: Short,
+  ): LengthQuantity =
+    div(scalar.toLong())
+
+  override fun div(
+    scalar: Byte,
+  ): LengthQuantity =
+    div(scalar.toLong())
 
   override fun unaryPlus(): LengthQuantity =
     this
 
   override fun unaryMinus(): LengthQuantity =
     times(-1.0)
+
+  override fun toString(): String
+
+  override fun equals(
+    other: Any?,
+  ): Boolean
+
+  override fun hashCode(): Int
 }

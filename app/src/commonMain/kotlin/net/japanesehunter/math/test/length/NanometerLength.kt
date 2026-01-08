@@ -89,10 +89,22 @@ value class NanometerLength private constructor(
   ): LengthQuantity =
     NanometerLength(nanometerCount scaleExact scalar)
 
+  override fun times(
+    scalar: Long,
+  ): LengthQuantity {
+    TODO()
+  }
+
   override fun div(
     scalar: Double,
   ): LengthQuantity =
     NanometerLength(nanometerCount descaleExact scalar)
+
+  override fun div(
+    scalar: Long,
+  ): LengthQuantity {
+    TODO()
+  }
 
   override fun unaryMinus(): LengthQuantity =
     NanometerLength(nanometerCount.negateExact())

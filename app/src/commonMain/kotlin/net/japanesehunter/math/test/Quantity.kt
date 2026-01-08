@@ -1,5 +1,6 @@
 package net.japanesehunter.math.test
 
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.test.ExactMath.reciprocalExact
 
 /**
@@ -25,6 +26,111 @@ import net.japanesehunter.math.test.ExactMath.reciprocalExact
  * @param D The dimension of the quantity.
  */
 interface Quantity<D : Dimension<D>> {
+  companion object {
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * - Must be finite
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws IllegalArgumentException
+     * - If [quantity] is NaN
+     * - If [quantity] is positive infinity or negative infinity
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Double.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * - Must be finite
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Float.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Proportion.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Long.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Int.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Short.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+
+    /**
+     * Scales given [quantity] by the receiver.
+     *
+     * @receiver The scalar multiplier.
+     * @param quantity The quantity representing this value multiplied by the receiver.
+     * @return A quantity representing this value multiplied by the receiver.
+     * @throws ArithmeticException
+     * - If scaling overflows internally because the scaled magnitude becomes too large
+     */
+    operator fun <D : Dimension<D>> Byte.times(
+      quantity: Quantity<D>,
+    ): Quantity<D> =
+      quantity * this
+  }
+
   /**
    * Converts this quantity into a [Double] value expressed in [unit].
    *
@@ -188,6 +294,85 @@ interface Quantity<D : Dimension<D>> {
   ): Quantity<D>
 
   /**
+   * Scales this quantity by [scalar].
+   *
+   * @param scalar The scalar multiplier.
+   * @return A quantity representing this value multiplied by [scalar].
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   */
+  operator fun times(
+    scalar: Long,
+  ): Quantity<D>
+
+  /**
+   * Scales this quantity by the given [scalar].
+   *
+   * @param scalar The scalar multiplier as a Float.
+   * - Must be finite
+   * @return A quantity representing this value multiplied by [scalar].
+   * @throws IllegalArgumentException
+   * - If [scalar] is NaN
+   * - If [scalar] is positive infinity or negative infinity
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   */
+  operator fun times(
+    scalar: Float,
+  ): Quantity<D> =
+    times(scalar.toDouble())
+
+  /**
+   * Scales this quantity by the given [proportion].
+   *
+   * @param proportion The proportion multiplier.
+   * @return A quantity representing this value multiplied by [proportion].
+   */
+  operator fun times(
+    proportion: Proportion,
+  ): Quantity<D> =
+    times(proportion.toDouble())
+
+  /**
+   * Scales this quantity by the given [scalar].
+   *
+   * @param scalar The scalar multiplier.
+   * @return A quantity representing this value multiplied by [scalar].
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   */
+  operator fun times(
+    scalar: Int,
+  ): Quantity<D> =
+    times(scalar.toLong())
+
+  /**
+   * Scales this quantity by the given [scalar].
+   *
+   * @param scalar The scalar multiplier.
+   * @return A quantity representing this value multiplied by [scalar].
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   */
+  operator fun times(
+    scalar: Short,
+  ): Quantity<D> =
+    times(scalar.toLong())
+
+  /**
+   * Scales this quantity by the given [scalar].
+   *
+   * @param scalar The scalar multiplier.
+   * @return A quantity representing this value multiplied by [scalar].
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   */
+  operator fun times(
+    scalar: Byte,
+  ): Quantity<D> =
+    times(scalar.toLong())
+
+  /**
    * Scales this quantity by `1.0 / scalar`.
    *
    * @param scalar The scalar divisor.
@@ -205,6 +390,70 @@ interface Quantity<D : Dimension<D>> {
     scalar: Double,
   ): Quantity<D> =
     times(scalar.reciprocalExact())
+
+  /**
+   * Scales this quantity by `1.0 / scalar`.
+   *
+   * @param scalar The scalar divisor.
+   * @return A quantity representing this value divided by [scalar].
+   */
+  operator fun div(
+    scalar: Long,
+  ): Quantity<D> =
+    TODO()
+
+  /**
+   * Scales this quantity by `1.0 / scalar`.
+   *
+   * @param scalar The scalar divisor.
+   * - Must be finite
+   * - Must not be 0.0
+   * @return A quantity representing this value divided by [scalar].
+   * @throws IllegalArgumentException
+   * - If [scalar] is 0.0
+   * - If [scalar] is NaN
+   * - If [scalar] is positive infinity or negative infinity
+   * @throws ArithmeticException
+   * - If scaling overflows internally because the scaled magnitude becomes too large
+   * (for example, when dividing by a very small nonzero scalar)
+   */
+  operator fun div(
+    scalar: Float,
+  ): Quantity<D> =
+    div(scalar.toDouble())
+
+  /**
+   * Scales this quantity by `1.0 / scalar`.
+   *
+   * @param scalar The scalar divisor.
+   * @return A quantity representing this value divided by [scalar].
+   */
+  operator fun div(
+    scalar: Int,
+  ): Quantity<D> =
+    div(scalar.toLong())
+
+  /**
+   * Scales this quantity by `1.0 / scalar`.
+   *
+   * @param scalar The scalar divisor.
+   * @return A quantity representing this value divided by [scalar].
+   */
+  operator fun div(
+    scalar: Short,
+  ): Quantity<D> =
+    div(scalar.toLong())
+
+  /**
+   * Scales this quantity by `1.0 / scalar`.
+   *
+   * @param scalar The scalar divisor.
+   * @return A quantity representing this value divided by [scalar].
+   */
+  operator fun div(
+    scalar: Byte,
+  ): Quantity<D> =
+    div(scalar.toLong())
 
   /**
    * Returns this quantity itself.
