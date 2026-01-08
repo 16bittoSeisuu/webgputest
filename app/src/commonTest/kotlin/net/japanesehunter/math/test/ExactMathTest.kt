@@ -10,6 +10,7 @@ import net.japanesehunter.math.test.ExactMath.descaleExact
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
+import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.ExactMath.timesExact
 
@@ -230,6 +231,28 @@ class ExactMathTest :
 
     test("descaleExact returns correctly for negative operands") {
       (-123L) descaleExact (-5.0) shouldBe 24L
+    }
+    // endregion
+    // region reciprocalExact
+    test("reciprocalExact returns the exact reciprocal") {
+      5.0.reciprocalExact() shouldBe 0.2
+    }
+
+    test("reciprocalExact throws on zero") {
+      shouldThrow<IllegalArgumentException> {
+        0.0.reciprocalExact()
+      }
+    }
+
+    test("reciprocalExact throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Double.MIN_VALUE
+          .reciprocalExact()
+      }
+    }
+
+    test("reciprocalExact returns the exact reciprocal of negative number") {
+      (-5.0).reciprocalExact() shouldBe -0.2
     }
     // endregion
   })

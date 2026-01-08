@@ -1,5 +1,6 @@
 package net.japanesehunter.math.test.length
 
+import net.japanesehunter.math.test.ExactMath.descaleExact
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
@@ -84,15 +85,11 @@ value class NanometerLength private constructor(
 
   override fun times(
     scalar: Double,
-  ): LengthQuantity {
-    require(scalar.isFinite()) {
-      "The scalar must be finite, but was $scalar."
-    }
-    return NanometerLength(nanometerCount scaleExact scalar)
-  }
+  ): LengthQuantity =
+    NanometerLength(nanometerCount scaleExact scalar)
 
   override fun div(
     scalar: Double,
   ): LengthQuantity =
-    super.div(scalar)
+    NanometerLength(nanometerCount descaleExact scalar)
 }
