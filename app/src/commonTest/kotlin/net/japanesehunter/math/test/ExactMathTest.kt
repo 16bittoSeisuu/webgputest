@@ -7,12 +7,14 @@ import korlibs.time.seconds
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import net.japanesehunter.math.test.ExactMath.minusExact
+import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.ExactMath.timesExact
 
 class ExactMathTest :
   FunSpec({
+    // region addExact
     test("addExact throws on positive overflow") {
       shouldThrow<ArithmeticException> {
         Long.MAX_VALUE plusExact 1L
@@ -28,7 +30,21 @@ class ExactMathTest :
     test("addExact returns the exact sum") {
       10L plusExact -3L shouldBe 7L
     }
+    // endregion
+    // region negateExact
+    test("negateExact returns the exact negation") {
+      1L.negateExact() shouldBe -1L
+      (-1L).negateExact() shouldBe 1L
+    }
 
+    test("negateExact should throw on Long.MIN_VALUE") {
+      shouldThrow<ArithmeticException> {
+        Long.MIN_VALUE
+          .negateExact()
+      }
+    }
+    // endregion
+    // region minusExact
     test("minusExact throws on negative overflow") {
       shouldThrow<ArithmeticException> {
         Long.MIN_VALUE minusExact 1L
@@ -52,37 +68,40 @@ class ExactMathTest :
     }
 
     test(
-      "minusExact returns the correct difference with Long.MIN_VALUE subtrahend",
+      "minusExact returns the correct difference with " +
+        "Long.MIN_VALUE subtrahend",
     ) {
       (-1L) minusExact Long.MIN_VALUE shouldBe Long.MAX_VALUE
     }
-
-    test("multiplyExact throws on overflow") {
+    // endregion
+    // region timesExact
+    test("timesExact throws on overflow") {
       shouldThrow<ArithmeticException> {
         Long.MAX_VALUE timesExact 2L
       }
     }
 
-    test("multiplyExact returns the exact product") {
+    test("timesExact returns the exact product") {
       6L timesExact -7L shouldBe -42L
     }
-
+    // endregion
+    // region scaleExact
     test("scaleExact returns the exact product") {
       123_456_789_123_456_789L scaleExact 10.0 shouldBe
-              1_234_567_891_234_567_890L
+        1_234_567_891_234_567_890L
     }
 
     test("scaleExact returns the exact quotient and truncates towards zero") {
       123_456_789_123_456_789L scaleExact 0.2 shouldBe
-              24_691_357_824_691_357L
+        24_691_357_824_691_357L
     }
 
     test(
       "scaleExact returns the exact quotient with negative scale and " +
-              "truncates towards zero",
+        "truncates towards zero",
     ) {
       (-123_456_789_123_456_789L) scaleExact 0.2 shouldBe
-              -24_691_357_824_691_357L
+        -24_691_357_824_691_357L
     }
 
     test("scaleExact throws on non-finite scale") {
@@ -132,4 +151,5 @@ class ExactMathTest :
         }
       }
     }
+    // endregion
   })
