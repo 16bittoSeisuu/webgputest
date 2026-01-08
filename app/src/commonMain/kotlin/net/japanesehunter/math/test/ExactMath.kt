@@ -39,16 +39,7 @@ object ExactMath {
   infix fun Long.minusExact(
     other: Long,
   ): Long =
-    run {
-      val result = this - other
-      val overflow = (this xor other) and (this xor result)
-      if (0L > overflow) {
-        throw ArithmeticException(
-          "Overflow while subtracting $other from $this.",
-        )
-      }
-      result
-    }
+    plusExact(other.negateExact())
 
   /**
    * Multiplies this [Long] value by the given [other] [Long] value exactly,
@@ -75,6 +66,19 @@ object ExactMath {
       throw ArithmeticException("Overflow while multiplying $this and $other.")
     }
     return result
+  }
+
+  /**
+   * Negates this [Long] value exactly, throwing an exception if the result overflows the range of [Long].
+   *
+   * @return The negated [Long] value.
+   * @throws ArithmeticException If the negation results in overflow.
+   */
+  inline fun Long.negateExact(): Long {
+    if (this == Long.MIN_VALUE) {
+      throw ArithmeticException("Overflow while negating $this.")
+    }
+    return -this
   }
 
   /**
