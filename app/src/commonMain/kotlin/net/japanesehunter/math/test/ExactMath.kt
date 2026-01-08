@@ -38,8 +38,17 @@ object ExactMath {
    */
   infix fun Long.minusExact(
     other: Long,
-  ): Long =
-    plusExact(other.negateExact())
+  ): Long {
+    if (other == Long.MIN_VALUE) {
+      if (0 <= this) {
+        throw ArithmeticException(
+          "Overflow while subtracting $this from $other.",
+        )
+      }
+      return Long.MAX_VALUE + (this + 1L)
+    }
+    return this plusExact -other
+  }
 
   /**
    * Multiplies this [Long] value by the given [other] [Long] value exactly,
