@@ -147,6 +147,24 @@ class NanometerLengthTest :
       (3.meters * -2.0).toLong(meters) shouldBe -6L
     }
 
+    test("times(Long) throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Long.MAX_VALUE.nanometers * 2L
+      }
+    }
+
+    test("times(Long) scales the physical amount") {
+      (3.meters * 2L).toLong(meters) shouldBe 6L
+      (3.meters * -2L).toLong(meters) shouldBe -6L
+    }
+
+    test("times works with other numeric types") {
+      (3.meters * 2).toLong(meters) shouldBe 6L // Int
+      (3.meters * 2.toShort()).toLong(meters) shouldBe 6L // Short
+      (3.meters * 2.toByte()).toLong(meters) shouldBe 6L // Byte
+      (3.meters * 2.0f).toLong(meters) shouldBe 6L // Float
+    }
+
     test("div rejects zero divisor") {
       shouldThrow<IllegalArgumentException> {
         1.nanometers / 0.0
@@ -168,6 +186,30 @@ class NanometerLengthTest :
     test("div scales the physical amount") {
       (10.nanometers / 2.0).toLong(nanometers) shouldBe 5L
       (10.nanometers / -2.0).toLong(nanometers) shouldBe -5L
+    }
+
+    test("div(Long) throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Long.MIN_VALUE.nanometers / -1L
+      }
+    }
+
+    test("div(Long) throws on division by zero") {
+      shouldThrow<IllegalArgumentException> {
+        1.nanometers / 0L
+      }
+    }
+
+    test("div(Long) scales the physical amount") {
+      (10.nanometers / 2L).toLong(nanometers) shouldBe 5L
+      (10.nanometers / -2L).toLong(nanometers) shouldBe -5L
+    }
+
+    test("div works with other numeric types") {
+      (10.nanometers / 2).toLong(nanometers) shouldBe 5L // Int
+      (10.nanometers / 2.toShort()).toLong(nanometers) shouldBe 5L // Short
+      (10.nanometers / 2.toByte()).toLong(nanometers) shouldBe 5L // Byte
+      (10.nanometers / 2.0f).toLong(nanometers) shouldBe 5L // Float
     }
 
     test("toInt keeps the lower 32 bits") {
