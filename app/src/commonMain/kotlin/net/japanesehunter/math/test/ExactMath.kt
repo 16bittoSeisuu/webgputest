@@ -78,6 +78,25 @@ object ExactMath {
   }
 
   /**
+   * Divides this [Long] value by the specified [other] [Long] value exactly,
+   * throwing an exception if an overflow occurs or if the divisor is zero.
+   *
+   * @param other The divisor by which to divide this value.
+   * @return The result of the division as a [Long].
+   * @throws ArithmeticException If the result overflows (Long.MIN_VALUE / -1L).
+   * @throws IllegalArgumentException If the divisor is zero.
+   */
+  inline infix fun Long.divExact(
+    other: Long,
+  ): Long {
+    require(other != 0L) { "Divisor must not be zero" }
+    if (this == Long.MIN_VALUE && other == -1L) {
+      throw ArithmeticException("Overflow while dividing $this by $other.")
+    }
+    return this / other
+  }
+
+  /**
    * Negates this [Long] value exactly, throwing an exception if the result overflows the range of [Long].
    *
    * @return The negated [Long] value.
