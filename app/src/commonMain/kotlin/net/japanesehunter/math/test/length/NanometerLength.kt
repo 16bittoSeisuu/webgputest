@@ -28,6 +28,8 @@ import net.japanesehunter.math.test.length.nanometers as nanometers_unit
  */
 class NanometerLength private constructor(private val nanometerCount: Long) :
   LengthQuantity() {
+    override val resolution: QuantityUnit<Length> = nanometers_unit
+
     companion object : LengthProvider {
       override fun Long.times(
         unit: LengthUnit,

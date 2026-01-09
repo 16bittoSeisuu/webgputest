@@ -3,6 +3,9 @@ package net.japanesehunter.math.test.length
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import net.japanesehunter.math.test.Dimension
+import net.japanesehunter.math.test.Quantity
+import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.NanometerLength.Companion.meters
 import net.japanesehunter.math.test.length.NanometerLength.Companion.nanometers
 
@@ -28,23 +31,25 @@ class LengthQuantityTest :
     test("NaN values are equal to each other") {
       val nanQuantity =
         object : LengthQuantity() {
+          override val resolution: QuantityUnit<Length> = nanometers
+
           override fun toDouble(
-            unit: net.japanesehunter.math.test.QuantityUnit<Length>,
+            unit: QuantityUnit<Length>,
           ): Double =
             Double.NaN
 
           override fun roundToLong(
-            unit: net.japanesehunter.math.test.QuantityUnit<Length>,
+            unit: QuantityUnit<Length>,
           ): Long =
             0L
 
           override fun toLong(
-            unit: net.japanesehunter.math.test.QuantityUnit<Length>,
+            unit: QuantityUnit<Length>,
           ): Long =
             0L
 
           override fun plus(
-            other: net.japanesehunter.math.test.Quantity<Length>,
+            other: Quantity<Length>,
           ): LengthQuantity =
             this
 
@@ -75,5 +80,65 @@ class LengthQuantityTest :
           .hashCode()
     }
 
-    // TODO: we need a test for different dimension quantities equality
+    test("Different dimension quantities are not equal") {
+      val length = 1.0.meters
+      val otherQuantity = OtherQuantity() // always represents 1
+      length shouldNotBe otherQuantity
+    }
   })
+
+private class OtherDimension : Dimension<OtherDimension> {
+  override val canonicalUnit:
+    QuantityUnit<OtherDimension> by lazy {
+      QuantityUnit
+        .base(this, "Other", "o")
+    }
+}
+
+private class OtherQuantity : Quantity<OtherDimension> {
+  override val resolution:
+    QuantityUnit<OtherDimension> =
+    OtherDimension()
+      .canonicalUnit
+
+  override fun toDouble(
+    unit: QuantityUnit<OtherDimension>,
+  ): Double =
+    1.0
+
+  override fun toLong(
+    unit: QuantityUnit<OtherDimension>,
+  ): Long =
+    1L
+
+  override fun roundToLong(
+    unit: QuantityUnit<OtherDimension>,
+  ): Long =
+    1L
+
+  override fun plus(
+    other: Quantity<OtherDimension>,
+  ): Quantity<OtherDimension> =
+    this
+
+  override fun times(
+    scalar: Double,
+  ): Quantity<OtherDimension> =
+    this
+
+  override fun times(
+    scalar: Long,
+  ): Quantity<OtherDimension> =
+    this
+
+  override fun toString(): String =
+    "Other"
+
+  override fun equals(
+    other: Any?,
+  ): Boolean =
+    false
+
+  override fun hashCode(): Int =
+    0
+}

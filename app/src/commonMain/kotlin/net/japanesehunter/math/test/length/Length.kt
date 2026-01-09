@@ -30,6 +30,8 @@ data object Length : Dimension<Length> {
  * or the unit used at construction.
  */
 abstract class LengthQuantity : Quantity<Length> {
+  abstract override val resolution: QuantityUnit<Length>
+
   abstract override fun toDouble(
     unit: QuantityUnit<Length>,
   ): Double

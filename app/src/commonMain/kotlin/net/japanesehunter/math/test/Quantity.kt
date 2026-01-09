@@ -26,6 +26,11 @@ import net.japanesehunter.math.test.ExactMath.reciprocalExact
  * @param D The dimension of the quantity.
  */
 interface Quantity<D : Dimension<D>> {
+  /**
+   * Returns the smallest unit that can be represented by this quantity.
+   */
+  val resolution: QuantityUnit<D>
+
   companion object {
     /**
      * Scales given [quantity] by the receiver.
