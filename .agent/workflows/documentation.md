@@ -73,3 +73,12 @@ fun openConnection(): DatabaseConnection {
 - **句読点**: 句点がある文はピリオド `.` を打ち、句点がない文は打たない。
 - **スタイル**: ヘッダー `#` や箇条書き `-` を活用して構造化する。空行を適切に入れて読みやすくする。
 - **整合性**: `@param` や `@return` の制約は、必ず `@throws` の条件と一致させる。
+
+## 3. コンパイルとフォーマット
+
+```bash
+cd <project root> && ./gradlew check
+cd <project root>/app/src && ktlint -F
+```
+
+を実行。コンパイルエラーがあれば修正せず、ユーザーに報告して終了。
