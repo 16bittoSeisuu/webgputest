@@ -29,20 +29,20 @@ data object Length : Dimension<Length> {
  * Equality must be based on the represented physical amount, not on the source numeric type
  * or the unit used at construction.
  */
-interface LengthQuantity : Quantity<Length> {
-  override fun toDouble(
+abstract class LengthQuantity : Quantity<Length> {
+  abstract override fun toDouble(
     unit: QuantityUnit<Length>,
   ): Double
 
-  override fun roundToLong(
+  abstract override fun roundToLong(
     unit: QuantityUnit<Length>,
   ): Long
 
-  override fun toLong(
+  abstract override fun toLong(
     unit: QuantityUnit<Length>,
   ): Long
 
-  override fun plus(
+  abstract override fun plus(
     other: Quantity<Length>,
   ): LengthQuantity
 
@@ -51,11 +51,11 @@ interface LengthQuantity : Quantity<Length> {
   ): LengthQuantity =
     plus(-other)
 
-  override fun times(
+  abstract override fun times(
     scalar: Double,
   ): LengthQuantity
 
-  override fun times(
+  abstract override fun times(
     scalar: Long,
   ): LengthQuantity
 
@@ -115,11 +115,13 @@ interface LengthQuantity : Quantity<Length> {
   override fun unaryMinus(): LengthQuantity =
     times(-1.0)
 
-  override fun toString(): String
+  abstract override fun toString(): String
 
-  override fun equals(
+  final override fun equals(
     other: Any?,
-  ): Boolean
+  ): Boolean =
+    Length.areEqual(this, other)
 
-  override fun hashCode(): Int
+  final override fun hashCode(): Int =
+    Length.calculateHashCode(this)
 }
