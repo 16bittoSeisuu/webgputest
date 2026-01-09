@@ -9,8 +9,10 @@ import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.ExactMath.timesExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
+import net.japanesehunter.math.test.speed.SpeedQuantity
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlin.time.Duration
 import net.japanesehunter.math.test.length.nanometers as nanometers_unit
 
 /**
@@ -125,6 +127,12 @@ class NanometerLength private constructor(private val nanometerCount: Long) :
       scalar: Long,
     ): LengthQuantity =
       NanometerLength(nanometerCount divExact scalar)
+
+    override fun div(
+      duration: Duration,
+    ): SpeedQuantity {
+      TODO()
+    }
 
     override fun unaryMinus(): LengthQuantity =
       NanometerLength(nanometerCount.negateExact())

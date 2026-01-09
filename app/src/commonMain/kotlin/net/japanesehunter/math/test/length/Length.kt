@@ -5,6 +5,8 @@ import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.meters
+import net.japanesehunter.math.test.speed.SpeedQuantity
+import kotlin.time.Duration
 import net.japanesehunter.math.test.length.meters as meters_unit
 
 /**
@@ -52,6 +54,17 @@ abstract class LengthQuantity : Quantity<Length> {
 
   abstract override val absoluteValue: LengthQuantity
 
+  /**
+   * Calculates the speed from traveling this distance over the given [duration].
+   *
+   * @param duration The time period over which the distance is traveled.
+   * @return The resulting speed as a [SpeedQuantity].
+   * @throws IllegalArgumentException If [duration] is zero.
+   */
+  abstract operator fun div(
+    duration: Duration,
+  ): SpeedQuantity
+
   abstract override fun plus(
     other: Quantity<Length>,
   ): LengthQuantity
@@ -94,10 +107,9 @@ abstract class LengthQuantity : Quantity<Length> {
   ): LengthQuantity =
     times(scalar.reciprocalExact())
 
-  override fun div(
+  abstract override fun div(
     scalar: Long,
-  ): LengthQuantity =
-    TODO()
+  ): LengthQuantity
 
   override fun div(
     scalar: Float,

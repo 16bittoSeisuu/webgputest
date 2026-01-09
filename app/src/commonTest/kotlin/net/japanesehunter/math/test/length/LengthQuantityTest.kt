@@ -8,6 +8,8 @@ import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.NanometerLength.Companion.meters
 import net.japanesehunter.math.test.length.NanometerLength.Companion.nanometers
+import net.japanesehunter.math.test.speed.SpeedQuantity
+import kotlin.time.Duration
 
 class LengthQuantityTest :
   FunSpec({
@@ -61,16 +63,29 @@ class LengthQuantityTest :
           override val absoluteValue: LengthQuantity
             get() = this
 
-          override fun isPositive(): Boolean = false
+          override fun isPositive(): Boolean =
+            false
 
-          override fun isNegative(): Boolean = false
+          override fun isNegative(): Boolean =
+            false
 
-          override fun isZero(): Boolean = false
+          override fun isZero(): Boolean =
+            false
 
           override fun times(
             scalar: Long,
           ): LengthQuantity =
             this
+
+          override fun div(
+            scalar: Long,
+          ): LengthQuantity =
+            this
+
+          override fun div(
+            duration: Duration,
+          ): SpeedQuantity =
+            throw UnsupportedOperationException()
 
           override fun toString(): String =
             "NaN"
@@ -140,11 +155,14 @@ private class OtherQuantity : Quantity<OtherDimension> {
   ): Quantity<OtherDimension> =
     this
 
-  override fun isPositive(): Boolean = true
+  override fun isPositive(): Boolean =
+    true
 
-  override fun isNegative(): Boolean = false
+  override fun isNegative(): Boolean =
+    false
 
-  override fun isZero(): Boolean = false
+  override fun isZero(): Boolean =
+    false
 
   override val absoluteValue: Quantity<OtherDimension>
     get() = this
