@@ -396,8 +396,10 @@ interface Quantity<D : Dimension<D>> {
    *
    * @param scalar The scalar divisor.
    * @return A quantity representing this value divided by [scalar].
+   * @throws IllegalArgumentException
+   *  - If [scalar] is 0L
    * @throws ArithmeticException
-   * - If [scalar] is -1 and the receiver has the min value representation in the implementation.
+   * - If [scalar] is -1L and the receiver has the min value representation in the implementation.
    */
   operator fun div(
     scalar: Long,
@@ -429,6 +431,8 @@ interface Quantity<D : Dimension<D>> {
    *
    * @param scalar The scalar divisor.
    * @return A quantity representing this value divided by [scalar].
+   * @throws IllegalArgumentException
+   * - If [scalar] is 0
    * @throws ArithmeticException
    * - If [scalar] is -1 and the receiver has the min value representation in the implementation.
    */
@@ -442,6 +446,8 @@ interface Quantity<D : Dimension<D>> {
    *
    * @param scalar The scalar divisor.
    * @return A quantity representing this value divided by [scalar].
+   * @throws IllegalArgumentException
+   * - If [scalar] is 0
    * @throws ArithmeticException
    * - If [scalar] is -1 and the receiver has the min value representation in the implementation.
    */
@@ -455,6 +461,8 @@ interface Quantity<D : Dimension<D>> {
    *
    * @param scalar The scalar divisor.
    * @return A quantity representing this value divided by [scalar].
+   * @throws IllegalArgumentException
+   * - If [scalar] is 0
    * @throws ArithmeticException
    * - If [scalar] is -1 and the receiver has the min value representation in the implementation.
    */
