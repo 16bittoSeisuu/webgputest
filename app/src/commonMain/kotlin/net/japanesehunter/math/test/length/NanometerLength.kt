@@ -1,10 +1,12 @@
 package net.japanesehunter.math.test.length
 
 import net.japanesehunter.math.test.ExactMath.descaleExact
+import net.japanesehunter.math.test.ExactMath.divExact
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
 import net.japanesehunter.math.test.ExactMath.scaleExact
+import net.japanesehunter.math.test.ExactMath.timesExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import kotlin.math.abs
@@ -91,9 +93,8 @@ value class NanometerLength private constructor(
 
   override fun times(
     scalar: Long,
-  ): LengthQuantity {
-    TODO()
-  }
+  ): LengthQuantity =
+    NanometerLength(nanometerCount timesExact scalar)
 
   override fun div(
     scalar: Double,
@@ -102,9 +103,8 @@ value class NanometerLength private constructor(
 
   override fun div(
     scalar: Long,
-  ): LengthQuantity {
-    TODO()
-  }
+  ): LengthQuantity =
+    NanometerLength(nanometerCount divExact scalar)
 
   override fun unaryMinus(): LengthQuantity =
     NanometerLength(nanometerCount.negateExact())
