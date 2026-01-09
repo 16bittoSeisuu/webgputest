@@ -7,6 +7,9 @@ package net.japanesehunter.math.test
  *
  * A dimension provides a canonical unit used as the normalization target for conversions.
  *
+ * Implementations must ensure that two [Dimension] objects representing the same physical
+ * dimension are considered equal via [equals] and have the same [hashCode].
+ *
  * @param D The concrete self-type of the dimension.
  */
 interface Dimension<D : Dimension<D>> {
@@ -31,7 +34,7 @@ interface Dimension<D : Dimension<D>> {
     if (thisQuantity === other) return true
     if (other !is Quantity<*>) return false
 
-    if (other.resolution.dimension !== this) return false
+    if (other.resolution.dimension != this) return false
 
     @Suppress("UNCHECKED_CAST")
     val otherQuantity = other as Quantity<D>
