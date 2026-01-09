@@ -270,6 +270,52 @@ interface Quantity<D : Dimension<D>> {
     toLong(unit).toByte()
 
   /**
+   * Returns true if this quantity is strictly greater than zero.
+   *
+   * ## Description
+   *
+   * A positive quantity represents a value that is physically greater than the zero point
+   * in its dimension.
+   *
+   * @return True if the internal magnitude is positive, false otherwise.
+   */
+  fun isPositive(): Boolean
+
+  /**
+   * Returns true if this quantity is strictly less than zero.
+   *
+   * ## Description
+   *
+   * A negative quantity represents a value that is physically less than the zero point
+   * in its dimension.
+   *
+   * @return True if the internal magnitude is negative, false otherwise.
+   */
+  fun isNegative(): Boolean
+
+  /**
+   * Returns true if this quantity represents a zero value.
+   *
+   * ## Description
+   *
+   * A zero quantity represents the additive identity of its dimension.
+   *
+   * @return True if the internal magnitude is exactly zero, false otherwise.
+   */
+  fun isZero(): Boolean
+
+  /**
+   * Returns the absolute value of this quantity.
+   *
+   * ## Description
+   *
+   * The absolute value is a quantity with the same magnitude but a non-negative sign.
+   *
+   * @return A quantity whose magnitude is the absolute magnitude of this quantity.
+   */
+  val absoluteValue: Quantity<D>
+
+  /**
    * Adds another quantity to this quantity.
    *
    * @param other The quantity to add.

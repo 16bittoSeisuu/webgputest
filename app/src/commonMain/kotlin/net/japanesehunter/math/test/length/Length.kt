@@ -44,6 +44,14 @@ abstract class LengthQuantity : Quantity<Length> {
     unit: QuantityUnit<Length>,
   ): Long
 
+  abstract override fun isPositive(): Boolean
+
+  abstract override fun isNegative(): Boolean
+
+  abstract override fun isZero(): Boolean
+
+  abstract override val absoluteValue: LengthQuantity
+
   abstract override fun plus(
     other: Quantity<Length>,
   ): LengthQuantity

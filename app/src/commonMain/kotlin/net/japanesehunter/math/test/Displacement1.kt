@@ -19,6 +19,19 @@ interface Displacement1<D : Dimension<D>> {
   val dx: Quantity<D>
 
   /**
+   * Returns the absolute magnitude of this displacement.
+   *
+   * ## Description
+   *
+   * The absolute value of a displacement is the [Quantity.absoluteValue] of its
+   * [dx] component.
+   *
+   * @return The absolute magnitude as a quantity.
+   */
+  val absoluteValue: Quantity<D> get() =
+    dx.absoluteValue
+
+  /**
    * Destructures this displacement into its component.
    *
    * @return The displacement along the axis.

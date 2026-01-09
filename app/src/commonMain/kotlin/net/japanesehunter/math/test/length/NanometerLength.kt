@@ -79,6 +79,23 @@ class NanometerLength private constructor(private val nanometerCount: Long) :
       return nanometerCount scaleExact (unit per nanometers_unit)
     }
 
+    override fun isPositive(): Boolean =
+      nanometerCount > 0L
+
+    override fun isNegative(): Boolean =
+      nanometerCount < 0L
+
+    override fun isZero(): Boolean =
+      nanometerCount == 0L
+
+    override val absoluteValue: LengthQuantity
+      get() =
+        if (nanometerCount >= 0L) {
+          this
+        } else {
+          NanometerLength(nanometerCount.negateExact())
+        }
+
     override fun plus(
       other: Quantity<Length>,
     ): LengthQuantity =
