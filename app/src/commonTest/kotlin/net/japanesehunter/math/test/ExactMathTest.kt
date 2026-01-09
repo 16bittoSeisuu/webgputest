@@ -7,6 +7,7 @@ import korlibs.time.seconds
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import net.japanesehunter.math.test.ExactMath.descaleExact
+import net.japanesehunter.math.test.ExactMath.divExact
 import net.japanesehunter.math.test.ExactMath.minusExact
 import net.japanesehunter.math.test.ExactMath.negateExact
 import net.japanesehunter.math.test.ExactMath.plusExact
@@ -85,6 +86,24 @@ class ExactMathTest :
 
     test("timesExact returns the exact product") {
       6L timesExact -7L shouldBe -42L
+    }
+    // endregion
+    // region divExact
+    test("divExact throws on division by zero") {
+      shouldThrow<IllegalArgumentException> {
+        1L divExact 0L
+      }
+    }
+
+    test("divExact throws on overflow") {
+      shouldThrow<ArithmeticException> {
+        Long.MIN_VALUE divExact -1L
+      }
+    }
+
+    test("divExact returns the exact quotient") {
+      10L divExact 2L shouldBe 5L
+      10L divExact -2L shouldBe -5L
     }
     // endregion
     // region scaleExact
