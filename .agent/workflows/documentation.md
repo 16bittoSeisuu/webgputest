@@ -1,3 +1,9 @@
+---
+description: シグネチャ、KDocによって仕様を決めるワークフロー
+---
+
+
+
 # Kotlin Specification Definition Workflow
 
 このワークフローは、Kotlinでプログラムを作成する際の最初のステップである「仕様定義」の手順を規定します。
