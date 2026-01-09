@@ -16,21 +16,24 @@ import net.japanesehunter.math.test.ExactMath.reciprocalExact
  *
  * ## Equality
  *
- * Implementations must ensure that two quantities representing the same physical amount
- * are considered equal, regardless of their internal representation derived from the
- * source numeric type.
+ * Equality of quantities is defined by their [Dimension] using [Dimension.areEqual].
+ * Two quantities are equal if they represent the same physical amount, even if their
+ * internal representations differ.
  *
- * Specifically, `1000L.millimeters` must be equal to `1.0.meters`.
- * Also, `1L.meters` must be equal to `1.0.meters`.
+ * Dimension implementations must provide an [Dimension.areEqual] method and a
+ * [Dimension.calculateHashCode] method that satisfy the following axioms:
+ * 1. Reflexivity: `a == a` is always true.
+ * 2. Symmetry: `a == b` if and only if `b == a`.
+ * 3. Transitivity: If `a == b` and `b == c`, then `a == c`.
+ * 4. Hash Code Consistency: If `a == b`, then `a.hashCode() == b.hashCode()`.
+ *
+ * Implementations should delegate [equals] and [hashCode] to their respective
+ * dimension objects to ensure consistent behavior across different concrete types of
+ * the same dimension.
  *
  * @param D The dimension of the quantity.
  */
 interface Quantity<D : Dimension<D>> {
-  /**
-   * Returns the smallest unit that can be represented by this quantity.
-   */
-  val resolution: QuantityUnit<D>
-
   companion object {
     /**
      * Scales given [quantity] by the receiver.
@@ -135,6 +138,11 @@ interface Quantity<D : Dimension<D>> {
     ): Quantity<D> =
       quantity * this
   }
+
+  /**
+   * Returns the smallest unit that can be represented by this quantity.
+   */
+  val resolution: QuantityUnit<D>
 
   /**
    * Converts this quantity into a [Double] value expressed in [unit].
