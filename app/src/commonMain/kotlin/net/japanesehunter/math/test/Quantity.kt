@@ -302,7 +302,8 @@ interface Quantity<D : Dimension<D>> {
    *
    * @return True if the internal magnitude is exactly zero, false otherwise.
    */
-  fun isZero(): Boolean
+  fun isZero(): Boolean =
+    !isPositive() && !isNegative()
 
   /**
    * Returns the absolute value of this quantity.
@@ -313,7 +314,8 @@ interface Quantity<D : Dimension<D>> {
    *
    * @return A quantity whose magnitude is the absolute magnitude of this quantity.
    */
-  val absoluteValue: Quantity<D>
+  val absoluteValue: Quantity<D> get() =
+    if (isNegative()) -this else this
 
   /**
    * Adds another quantity to this quantity.
