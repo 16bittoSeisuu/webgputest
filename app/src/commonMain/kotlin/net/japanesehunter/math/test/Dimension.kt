@@ -30,18 +30,15 @@ interface Dimension<D : Dimension<D>> {
   ): Boolean {
     if (thisQuantity === other) return true
     if (other !is Quantity<*>) return false
-    val otherDouble =
-      try {
-        // TODO: fix this hack
-        @Suppress("UNCHECKED_CAST")
-        (other as Quantity<D>).toDouble(canonicalUnit)
-      } catch (_: ClassCastException) {
-        return false
-      }
+
+    if (other.resolution.dimension !== this) return false
+
+    @Suppress("UNCHECKED_CAST")
+    val otherQuantity = other as Quantity<D>
 
     return thisQuantity
       .toDouble(canonicalUnit)
-      .compareTo(otherDouble) == 0
+      .compareTo(otherQuantity.toDouble(canonicalUnit)) == 0
   }
 
   /**
