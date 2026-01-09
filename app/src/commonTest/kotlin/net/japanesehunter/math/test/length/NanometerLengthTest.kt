@@ -246,4 +246,34 @@ class NanometerLengthTest :
       (-a).toLong(nanometers) shouldBe -123L
       (-a) shouldNotBe a
     }
+
+    test("isPositive returns true if strictly greater than zero") {
+      1.nanometers.isPositive() shouldBe true
+      0.nanometers.isPositive() shouldBe false
+      (-1).nanometers.isPositive() shouldBe false
+    }
+
+    test("isNegative returns true if strictly less than zero") {
+      (-1).nanometers.isNegative() shouldBe true
+      0.nanometers.isNegative() shouldBe false
+      1.nanometers.isNegative() shouldBe false
+    }
+
+    test("isZero returns true if exactly zero") {
+      0.nanometers.isZero() shouldBe true
+      1.nanometers.isZero() shouldBe false
+      (-1).nanometers.isZero() shouldBe false
+    }
+
+    test("absoluteValue returns a non-negative quantity with the same magnitude") {
+      123.nanometers.absoluteValue.toLong(nanometers) shouldBe 123L
+      (-123).nanometers.absoluteValue.toLong(nanometers) shouldBe 123L
+      0.nanometers.absoluteValue.toLong(nanometers) shouldBe 0L
+    }
+
+    test("absoluteValue of Min Value throws ArithmeticException") {
+      shouldThrow<ArithmeticException> {
+        Long.MIN_VALUE.nanometers.absoluteValue
+      }
+    }
   })

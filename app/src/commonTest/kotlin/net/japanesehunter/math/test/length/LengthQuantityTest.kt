@@ -58,6 +58,15 @@ class LengthQuantityTest :
           ): LengthQuantity =
             this
 
+          override val absoluteValue: LengthQuantity
+            get() = this
+
+          override fun isPositive(): Boolean = false
+
+          override fun isNegative(): Boolean = false
+
+          override fun isZero(): Boolean = false
+
           override fun times(
             scalar: Long,
           ): LengthQuantity =
@@ -130,6 +139,15 @@ private class OtherQuantity : Quantity<OtherDimension> {
     scalar: Long,
   ): Quantity<OtherDimension> =
     this
+
+  override fun isPositive(): Boolean = true
+
+  override fun isNegative(): Boolean = false
+
+  override fun isZero(): Boolean = false
+
+  override val absoluteValue: Quantity<OtherDimension>
+    get() = this
 
   override fun toString(): String =
     "Other"
