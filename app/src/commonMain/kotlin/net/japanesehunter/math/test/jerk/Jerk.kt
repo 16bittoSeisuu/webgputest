@@ -29,8 +29,9 @@ data object Jerk : Dimension<Jerk> {
  *
  * @property amountPerSecond The acceleration change in one second.
  */
-class JerkQuantity(val amountPerSecond: AccelerationQuantity) :
-  Quantity<Jerk> {
+class JerkQuantity internal constructor(
+  val amountPerSecond: AccelerationQuantity,
+) : Quantity<Jerk> {
   override val resolution: QuantityUnit<Jerk>
     get() = TODO()
 

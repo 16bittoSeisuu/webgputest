@@ -30,8 +30,9 @@ data object Acceleration : Dimension<Acceleration> {
  *
  * @property amountPerSecond The speed change in one second.
  */
-class AccelerationQuantity(val amountPerSecond: SpeedQuantity) :
-  Quantity<Acceleration> {
+class AccelerationQuantity internal constructor(
+  val amountPerSecond: SpeedQuantity,
+) : Quantity<Acceleration> {
   override val resolution: QuantityUnit<Acceleration>
     get() = TODO()
 
