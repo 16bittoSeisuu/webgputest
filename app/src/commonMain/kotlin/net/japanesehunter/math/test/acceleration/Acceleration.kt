@@ -1,10 +1,13 @@
 package net.japanesehunter.math.test.acceleration
 
+import korlibs.time.seconds
 import net.japanesehunter.math.test.Dimension
+import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.jerk.JerkQuantity
 import net.japanesehunter.math.test.speed.SpeedQuantity
+import net.japanesehunter.math.test.time.TimeUnit
 import kotlin.time.Duration
 
 /**
@@ -104,6 +107,20 @@ class AccelerationQuantity internal constructor(
     duration: Duration,
   ): JerkQuantity =
     TODO()
+
+  infix fun per(
+    duration: Duration,
+  ): JerkQuantity =
+    div(duration)
+
+  infix fun per(
+    timeUnit: TimeUnit,
+  ): JerkQuantity =
+    div(
+      timeUnit.thisToCanonicalFactor
+        .reciprocalExact()
+        .seconds,
+    )
 
   override fun toString(): String =
     TODO()

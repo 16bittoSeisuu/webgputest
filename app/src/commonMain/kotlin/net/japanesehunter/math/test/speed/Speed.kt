@@ -1,10 +1,13 @@
 package net.japanesehunter.math.test.speed
 
+import korlibs.time.seconds
 import net.japanesehunter.math.test.Dimension
+import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.acceleration.AccelerationQuantity
 import net.japanesehunter.math.test.length.LengthQuantity
+import net.japanesehunter.math.test.time.TimeUnit
 import kotlin.time.Duration
 
 /**
@@ -98,11 +101,48 @@ class SpeedQuantity internal constructor(val amountPerSecond: LengthQuantity) :
      *
      * @param duration The time period over which the speed change occurs.
      * @return The resulting acceleration as an [AccelerationQuantity].
+     * @throws IllegalArgumentException
+     * - If [duration] is zero.
+     * - If [duration] is infinite.
+     * @throws ArithmeticException
+     * - If the result's internal representation overflows.
      */
     operator fun div(
       duration: Duration,
     ): AccelerationQuantity =
       TODO()
+
+    /**
+     * Calculates the acceleration resulting from a speed change of this magnitude over [duration].
+     *
+     * @param duration The time period over which the speed change occurs.
+     * @return The resulting acceleration as an [AccelerationQuantity].
+     * @throws IllegalArgumentException
+     * - If [duration] is zero.
+     * - If [duration] is infinite.
+     * @throws ArithmeticException
+     * - If the result's internal representation overflows.
+     */
+    infix fun per(
+      duration: Duration,
+    ): AccelerationQuantity =
+      div(duration)
+
+    /**
+     * Calculates the acceleration resulting from a speed change of this magnitude over the given [timeUnit].
+     * @param timeUnit The time unit over which the speed change occurs.
+     * @return The resulting acceleration as an [AccelerationQuantity].
+     * @throws ArithmeticException
+     * - If the result's internal representation overflows.
+     */
+    infix fun per(
+      timeUnit: TimeUnit,
+    ): AccelerationQuantity =
+      div(
+        timeUnit.thisToCanonicalFactor
+          .reciprocalExact()
+          .seconds,
+      )
 
     override fun toString(): String =
       TODO()

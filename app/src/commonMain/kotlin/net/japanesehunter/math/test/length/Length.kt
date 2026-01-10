@@ -6,7 +6,9 @@ import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.meter
 import net.japanesehunter.math.test.speed.SpeedQuantity
+import net.japanesehunter.math.test.time.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import net.japanesehunter.math.test.length.meter as meters_unit
 
 /**
@@ -58,12 +60,52 @@ abstract class LengthQuantity : Quantity<Length> {
    * Calculates the speed from traveling this distance over the given [duration].
    *
    * @param duration The time period over which the distance is traveled.
+   * - Must not be zero.
+   * - Must be finite.
    * @return The resulting speed as a [SpeedQuantity].
-   * @throws IllegalArgumentException If [duration] is zero.
+   * @throws IllegalArgumentException
+   * - If [duration] is zero.
+   * - If [duration] is infinite.
+   * @throws ArithmeticException
+   * - If the result's internal representation overflows.
    */
   abstract operator fun div(
     duration: Duration,
   ): SpeedQuantity
+
+  /**
+   * Calculates the speed from traveling this distance over the given [duration].
+   *
+   * @param duration The time period over which the distance is traveled.
+   * - Must not be zero.
+   * - Must be finite.
+   * @return The resulting speed as a [SpeedQuantity].
+   * @throws IllegalArgumentException
+   * - If [duration] is zero.
+   * - If [duration] is infinite.
+   * @throws ArithmeticException
+   * - If the result's internal representation overflows.
+   */
+  open infix fun per(
+    duration: Duration,
+  ): SpeedQuantity =
+    this / duration
+
+  /**
+   * Calculates the speed from traveling this distance over the given 1-[timeUnit].
+   *
+   * @param timeUnit The time unit over which the distance is traveled.
+   * @return The resulting speed as a [SpeedQuantity].
+   * @throws ArithmeticException
+   * - If the result's internal representation overflows.
+   */
+  open infix fun per(
+    timeUnit: TimeUnit,
+  ): SpeedQuantity =
+    this /
+      timeUnit.thisToCanonicalFactor
+        .reciprocalExact()
+        .seconds
 
   abstract override fun plus(
     other: Quantity<Length>,
