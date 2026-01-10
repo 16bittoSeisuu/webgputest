@@ -1,10 +1,18 @@
 package net.japanesehunter.math.test.jerk
 
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.test.Dimension
+import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.acceleration.AccelerationQuantity
+import net.japanesehunter.math.test.acceleration.div
+import net.japanesehunter.math.test.acceleration.metersPerSecondSquared
+import net.japanesehunter.math.test.length.nanometer
+import net.japanesehunter.math.test.speed.div
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 /**
  * Defines the jerk dimension.
@@ -32,23 +40,29 @@ data object Jerk : Dimension<Jerk> {
 class JerkQuantity internal constructor(
   val amountPerSecond: AccelerationQuantity,
 ) : Quantity<Jerk> {
-  override val resolution: QuantityUnit<Jerk>
-    get() = TODO()
+  override val resolution: JerkUnit
+    get() = amountPerSecond.resolution / 1.seconds
 
   override fun toDouble(
     unit: QuantityUnit<Jerk>,
-  ): Double =
-    TODO()
+  ): Double {
+    val canonicalValue = amountPerSecond.toDouble(metersPerSecondSquared)
+    return canonicalValue * (Jerk.canonicalUnit per unit)
+  }
 
   override fun toLong(
     unit: QuantityUnit<Jerk>,
-  ): Long =
-    TODO()
+  ): Long {
+    val canonicalValue = amountPerSecond.toLong(metersPerSecondSquared)
+    return canonicalValue scaleExact (Jerk.canonicalUnit per unit)
+  }
 
   override fun roundToLong(
     unit: QuantityUnit<Jerk>,
-  ): Long =
-    TODO()
+  ): Long {
+    val canonicalValue = amountPerSecond.roundToLong(metersPerSecondSquared)
+    return canonicalValue scaleExact (Jerk.canonicalUnit per unit)
+  }
 
   override fun isPositive(): Boolean =
     amountPerSecond.isPositive()
@@ -59,18 +73,27 @@ class JerkQuantity internal constructor(
   override fun isZero(): Boolean =
     amountPerSecond.isZero()
 
-  override val absoluteValue: JerkQuantity
-    get() = JerkQuantity(amountPerSecond.absoluteValue)
+  override val absoluteValue: JerkQuantity by lazy {
+    if (isNegative()) -this else this
+  }
 
   override fun plus(
     other: Quantity<Jerk>,
   ): JerkQuantity =
-    TODO()
+    JerkQuantity(
+      amountPerSecond +
+        (
+          (other as? JerkQuantity)?.amountPerSecond ?: run {
+            val _ = other.toLong(nanometer / 1.seconds / 1.seconds / 1.seconds)
+            TODO()
+          }
+        ),
+    )
 
   override fun minus(
     other: Quantity<Jerk>,
   ): JerkQuantity =
-    TODO()
+    plus(-other)
 
   override fun times(
     scalar: Double,
@@ -82,6 +105,67 @@ class JerkQuantity internal constructor(
   ): JerkQuantity =
     JerkQuantity(amountPerSecond * scalar)
 
+  override fun times(
+    scalar: Float,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Int,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Short,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Byte,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    proportion: Proportion,
+  ): JerkQuantity =
+    times(proportion.toDouble())
+
+  override fun div(
+    scalar: Double,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Long,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Float,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Int,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Short,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Byte,
+  ): JerkQuantity =
+    JerkQuantity(amountPerSecond / scalar)
+
+  override fun unaryPlus(): JerkQuantity =
+    this
+
+  override fun unaryMinus(): JerkQuantity =
+    JerkQuantity(-amountPerSecond)
+
   /**
    * Calculates the acceleration change over the given [duration] at this jerk.
    *
@@ -91,10 +175,10 @@ class JerkQuantity internal constructor(
   operator fun times(
     duration: Duration,
   ): AccelerationQuantity =
-    TODO()
+    amountPerSecond * duration.toDouble(DurationUnit.SECONDS)
 
   override fun toString(): String =
-    TODO()
+    "$amountPerSecond/s"
 
   override fun equals(
     other: Any?,

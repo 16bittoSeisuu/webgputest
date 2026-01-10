@@ -13,6 +13,7 @@ import net.japanesehunter.math.test.speed.SpeedQuantity
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import net.japanesehunter.math.test.length.nanometer as nanometers_unit
 
 /**
@@ -30,8 +31,6 @@ import net.japanesehunter.math.test.length.nanometer as nanometers_unit
  */
 class NanometerLength private constructor(private val nanometerCount: Long) :
   LengthQuantity() {
-    override val resolution: QuantityUnit<Length> = nanometers_unit
-
     companion object : LengthProvider {
       override fun Long.times(
         unit: LengthUnit,
@@ -49,6 +48,9 @@ class NanometerLength private constructor(private val nanometerCount: Long) :
         )
       }
     }
+
+    override val resolution: QuantityUnit<Length> = nanometers_unit
+
 
     override fun toDouble(
       unit: QuantityUnit<Length>,
@@ -130,9 +132,8 @@ class NanometerLength private constructor(private val nanometerCount: Long) :
 
     override fun div(
       duration: Duration,
-    ): SpeedQuantity {
-      TODO()
-    }
+    ): SpeedQuantity =
+      SpeedQuantity(this * (1.seconds / duration))
 
     override fun unaryMinus(): LengthQuantity =
       NanometerLength(nanometerCount.negateExact())

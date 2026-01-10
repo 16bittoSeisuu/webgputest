@@ -1,14 +1,20 @@
 package net.japanesehunter.math.test.acceleration
 
-import korlibs.time.seconds
+import net.japanesehunter.math.Proportion
 import net.japanesehunter.math.test.Dimension
 import net.japanesehunter.math.test.ExactMath.reciprocalExact
+import net.japanesehunter.math.test.ExactMath.scaleExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.jerk.JerkQuantity
+import net.japanesehunter.math.test.length.nanometer
 import net.japanesehunter.math.test.speed.SpeedQuantity
+import net.japanesehunter.math.test.speed.div
+import net.japanesehunter.math.test.speed.metersPerSecond
 import net.japanesehunter.math.test.time.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 /**
  * Defines the acceleration dimension.
@@ -36,23 +42,32 @@ data object Acceleration : Dimension<Acceleration> {
 class AccelerationQuantity internal constructor(
   val amountPerSecond: SpeedQuantity,
 ) : Quantity<Acceleration> {
-  override val resolution: QuantityUnit<Acceleration>
-    get() = TODO()
+  override val resolution: AccelerationUnit
+    get() = amountPerSecond.resolution / 1.seconds
 
   override fun toDouble(
     unit: QuantityUnit<Acceleration>,
-  ): Double =
-    TODO()
+  ): Double {
+    val canonicalValue =
+      amountPerSecond.toDouble(metersPerSecond)
+    return canonicalValue * (Acceleration.canonicalUnit per unit)
+  }
 
   override fun toLong(
     unit: QuantityUnit<Acceleration>,
-  ): Long =
-    TODO()
+  ): Long {
+    val canonicalValue =
+      amountPerSecond.toLong(metersPerSecond)
+    return canonicalValue scaleExact (Acceleration.canonicalUnit per unit)
+  }
 
   override fun roundToLong(
     unit: QuantityUnit<Acceleration>,
-  ): Long =
-    TODO()
+  ): Long {
+    val canonicalValue =
+      amountPerSecond.roundToLong(metersPerSecond)
+    return canonicalValue scaleExact (Acceleration.canonicalUnit per unit)
+  }
 
   override fun isPositive(): Boolean =
     amountPerSecond.isPositive()
@@ -63,18 +78,29 @@ class AccelerationQuantity internal constructor(
   override fun isZero(): Boolean =
     amountPerSecond.isZero()
 
-  override val absoluteValue: AccelerationQuantity
-    get() = AccelerationQuantity(amountPerSecond.absoluteValue)
+  override val absoluteValue: AccelerationQuantity by lazy {
+    if (isNegative()) -this else this
+  }
 
   override fun plus(
     other: Quantity<Acceleration>,
   ): AccelerationQuantity =
-    TODO()
+    AccelerationQuantity(
+      amountPerSecond +
+        (
+          (other as? AccelerationQuantity)
+            ?.amountPerSecond
+            ?: run {
+              val _ = other.toLong(nanometer / 1.seconds / 1.seconds)
+              TODO()
+            }
+        ),
+    )
 
   override fun minus(
     other: Quantity<Acceleration>,
   ): AccelerationQuantity =
-    TODO()
+    plus(-other)
 
   override fun times(
     scalar: Double,
@@ -86,6 +112,67 @@ class AccelerationQuantity internal constructor(
   ): AccelerationQuantity =
     AccelerationQuantity(amountPerSecond * scalar)
 
+  override fun times(
+    scalar: Float,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Int,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Short,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    scalar: Byte,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond * scalar)
+
+  override fun times(
+    proportion: Proportion,
+  ): AccelerationQuantity =
+    times(proportion.toDouble())
+
+  override fun div(
+    scalar: Double,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Long,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Float,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Int,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Short,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun div(
+    scalar: Byte,
+  ): AccelerationQuantity =
+    AccelerationQuantity(amountPerSecond / scalar)
+
+  override fun unaryPlus(): AccelerationQuantity =
+    this
+
+  override fun unaryMinus(): AccelerationQuantity =
+    AccelerationQuantity(-amountPerSecond)
+
   /**
    * Calculates the speed change over the given [duration] at this acceleration.
    *
@@ -95,7 +182,7 @@ class AccelerationQuantity internal constructor(
   operator fun times(
     duration: Duration,
   ): SpeedQuantity =
-    TODO()
+    amountPerSecond * duration.toDouble(DurationUnit.SECONDS)
 
   /**
    * Calculates the jerk resulting from an acceleration change of this magnitude over [duration].
@@ -106,7 +193,7 @@ class AccelerationQuantity internal constructor(
   operator fun div(
     duration: Duration,
   ): JerkQuantity =
-    TODO()
+    JerkQuantity(this * (1.seconds / duration))
 
   infix fun per(
     duration: Duration,
@@ -123,7 +210,7 @@ class AccelerationQuantity internal constructor(
     )
 
   override fun toString(): String =
-    TODO()
+    "$amountPerSecond/s"
 
   override fun equals(
     other: Any?,

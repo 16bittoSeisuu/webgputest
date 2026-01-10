@@ -2,7 +2,9 @@ package net.japanesehunter.math.test.jerk
 
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.acceleration.AccelerationUnit
+import net.japanesehunter.math.test.acceleration.metersPerSecondSquared
 import kotlin.time.Duration
+import kotlin.time.DurationUnit.SECONDS
 
 /**
  * A unit of the [Jerk] dimension.
@@ -36,5 +38,17 @@ val metersPerSecondCubed: JerkUnit by lazy {
  */
 operator fun AccelerationUnit.div(
   duration: Duration,
-): JerkUnit =
-  TODO()
+): JerkUnit {
+  require(duration.isFinite()) { "Duration must be finite but was: $duration" }
+  require(duration > Duration.ZERO) {
+    "Duration must be positive but was: $duration"
+  }
+  val accelInMps2 =
+    this per metersPerSecondSquared
+  val durationInSeconds = duration.toDouble(SECONDS)
+  return metersPerSecondCubed.derive(
+    accelInMps2 / durationInSeconds,
+    name = "$name divided by $duration",
+    symbol = "$symbol/$duration",
+  )
+}

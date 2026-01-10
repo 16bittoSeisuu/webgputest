@@ -2,7 +2,9 @@ package net.japanesehunter.math.test.speed
 
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.length.LengthUnit
+import net.japanesehunter.math.test.length.meter
 import kotlin.time.Duration
+import kotlin.time.DurationUnit.SECONDS
 
 /**
  * A unit of the [Speed] dimension.
@@ -55,8 +57,19 @@ val kilometersPerHour: SpeedUnit by lazy {
  */
 operator fun LengthUnit.div(
   duration: Duration,
-): SpeedUnit =
-  TODO()
+): SpeedUnit {
+  require(duration.isFinite()) { "Duration must be finite but was: $duration" }
+  require(duration > Duration.ZERO) {
+    "Duration must be positive but was: $duration"
+  }
+  val lengthInMeters = this per meter
+  val durationInSeconds = duration.toDouble(SECONDS)
+  return metersPerSecond.derive(
+    lengthInMeters / durationInSeconds,
+    name = "$name divided by $duration",
+    symbol = "$symbol/$duration",
+  )
+}
 
 /**
  * Creates a speed unit by dividing this length unit by the given [duration].

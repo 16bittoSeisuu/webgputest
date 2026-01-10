@@ -2,7 +2,9 @@ package net.japanesehunter.math.test.acceleration
 
 import net.japanesehunter.math.test.QuantityUnit
 import net.japanesehunter.math.test.speed.SpeedUnit
+import net.japanesehunter.math.test.speed.metersPerSecond
 import kotlin.time.Duration
+import kotlin.time.DurationUnit.SECONDS
 
 /**
  * A unit of the [Acceleration] dimension.
@@ -36,5 +38,16 @@ val metersPerSecondSquared: AccelerationUnit by lazy {
  */
 operator fun SpeedUnit.div(
   duration: Duration,
-): AccelerationUnit =
-  TODO()
+): AccelerationUnit {
+  require(duration.isFinite()) { "Duration must be finite but was: $duration" }
+  require(duration > Duration.ZERO) {
+    "Duration must be positive but was: $duration"
+  }
+  val speedInMps = this per metersPerSecond
+  val durationInSeconds = duration.toDouble(SECONDS)
+  return metersPerSecondSquared.derive(
+    speedInMps / durationInSeconds,
+    name = "$name divided by $duration",
+    symbol = "$symbol/$duration",
+  )
+}
