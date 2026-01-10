@@ -13,10 +13,6 @@ typealias LengthUnit = QuantityUnit<Length>
 
 /**
  * The canonical unit of the [Length] dimension.
- *
- * ## Description
- *
- * `1 m = 1 m`.
  */
 val meter: LengthUnit by lazy {
   QuantityUnit.base(

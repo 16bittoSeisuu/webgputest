@@ -44,7 +44,14 @@ val kilometersPerHour: SpeedUnit by lazy {
  * Creates a speed unit by dividing this length unit by the given [duration].
  *
  * @param duration The time divisor.
+ * - Must be finite.
+ * - Must not be zero.
  * @return A speed unit.
+ * @throws IllegalArgumentException
+ * - If [duration] is zero.
+ * - If [duration] is infinite.
+ * @throws ArithmeticException
+ * - If the result overflows.
  */
 operator fun LengthUnit.div(
   duration: Duration,
@@ -55,9 +62,16 @@ operator fun LengthUnit.div(
  * Creates a speed unit by dividing this length unit by the given [duration].
  *
  * @param duration The time divisor.
+ * - Must be finite.
+ * - Must not be zero.
  * @return A speed unit.
+ * @throws IllegalArgumentException
+ * - If [duration] is zero.
+ * - If [duration] is infinite.
+ * @throws ArithmeticException
+ * - If the result overflows.
  */
 infix fun LengthUnit.per(
   duration: Duration,
 ): SpeedUnit =
-  this / duration
+  div(duration)
