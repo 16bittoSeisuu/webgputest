@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always_on
 description: Kotlinソースコードを編集するとき。
 ---
 
