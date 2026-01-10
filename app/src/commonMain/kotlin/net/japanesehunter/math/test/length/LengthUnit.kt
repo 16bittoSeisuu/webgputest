@@ -18,7 +18,7 @@ typealias LengthUnit = QuantityUnit<Length>
  *
  * `1 m = 1 m`.
  */
-val meters: LengthUnit by lazy {
+val meter: LengthUnit by lazy {
   QuantityUnit.base(
     Length,
     name = "Meter",
@@ -31,10 +31,10 @@ val meters: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [meters].
+ * This unit is derived from [meter].
  */
-val kilometers: LengthUnit by lazy {
-  meters.derive(1e3, name = "Kilometer", symbol = "km")
+val kilometer: LengthUnit by lazy {
+  meter.derive(1e3, name = "Kilometer", symbol = "km")
 }
 
 /**
@@ -42,10 +42,10 @@ val kilometers: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [meters].
+ * This unit is derived from [meter].
  */
-val centimeters: LengthUnit by lazy {
-  meters.derive(1e-2, name = "Centimeter", symbol = "cm")
+val centimeter: LengthUnit by lazy {
+  meter.derive(1e-2, name = "Centimeter", symbol = "cm")
 }
 
 /**
@@ -53,10 +53,10 @@ val centimeters: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [meters].
+ * This unit is derived from [meter].
  */
-val millimeters: LengthUnit by lazy {
-  meters.derive(1e-3, name = "Millimeter", symbol = "mm")
+val millimeter: LengthUnit by lazy {
+  meter.derive(1e-3, name = "Millimeter", symbol = "mm")
 }
 
 /**
@@ -64,10 +64,10 @@ val millimeters: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [millimeters].
+ * This unit is derived from [millimeter].
  */
-val micrometers: LengthUnit by lazy {
-  millimeters.derive(1e-3, name = "Micrometer", symbol = "μm")
+val micrometer: LengthUnit by lazy {
+  millimeter.derive(1e-3, name = "Micrometer", symbol = "μm")
 }
 
 /**
@@ -75,10 +75,10 @@ val micrometers: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [micrometers].
+ * This unit is derived from [micrometer].
  */
-val nanometers: LengthUnit by lazy {
-  micrometers.derive(1e-3, name = "Nanometer", symbol = "nm")
+val nanometer: LengthUnit by lazy {
+  micrometer.derive(1e-3, name = "Nanometer", symbol = "nm")
 }
 
 /**
@@ -86,10 +86,10 @@ val nanometers: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [kilometers].
+ * This unit is derived from [kilometer].
  */
-val miles: LengthUnit by lazy {
-  kilometers.derive(1.609344, name = "Mile", symbol = "mi")
+val mile: LengthUnit by lazy {
+  kilometer.derive(1.609344, name = "Mile", symbol = "mi")
 }
 
 /**
@@ -97,10 +97,10 @@ val miles: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [centimeters].
+ * This unit is derived from [centimeter].
  */
-val inches: LengthUnit by lazy {
-  centimeters.derive(2.54, name = "Inch", symbol = "in")
+val inch: LengthUnit by lazy {
+  centimeter.derive(2.54, name = "Inch", symbol = "in")
 }
 
 /**
@@ -108,8 +108,8 @@ val inches: LengthUnit by lazy {
  *
  * ## Description
  *
- * This unit is derived from [inches].
+ * This unit is derived from [inch].
  */
-val feet: LengthUnit by lazy {
-  inches.derive(12.0, name = "Foot", symbol = "ft")
+val foot: LengthUnit by lazy {
+  inch.derive(12.0, name = "Foot", symbol = "ft")
 }

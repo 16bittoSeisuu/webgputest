@@ -1,14 +1,14 @@
 package net.japanesehunter.math.test.length
 
-import net.japanesehunter.math.test.length.centimeters as centimeter_unit
-import net.japanesehunter.math.test.length.feet as feet_unit
-import net.japanesehunter.math.test.length.inches as inch_unit
-import net.japanesehunter.math.test.length.kilometers as kilometer_unit
-import net.japanesehunter.math.test.length.meters as meter_unit
-import net.japanesehunter.math.test.length.micrometers as micrometer_unit
-import net.japanesehunter.math.test.length.miles as mile_unit
-import net.japanesehunter.math.test.length.millimeters as millimeter_unit
-import net.japanesehunter.math.test.length.nanometers as nanometer_unit
+import net.japanesehunter.math.test.length.centimeter as centimeter_unit
+import net.japanesehunter.math.test.length.foot as feet_unit
+import net.japanesehunter.math.test.length.inch as inch_unit
+import net.japanesehunter.math.test.length.kilometer as kilometer_unit
+import net.japanesehunter.math.test.length.meter as meter_unit
+import net.japanesehunter.math.test.length.micrometer as micrometer_unit
+import net.japanesehunter.math.test.length.mile as mile_unit
+import net.japanesehunter.math.test.length.millimeter as millimeter_unit
+import net.japanesehunter.math.test.length.nanometer as nanometer_unit
 
 /**
  * Provides constructors and unit accessors for [LengthQuantity].

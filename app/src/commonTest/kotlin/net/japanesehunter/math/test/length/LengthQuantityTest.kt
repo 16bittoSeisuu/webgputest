@@ -33,7 +33,7 @@ class LengthQuantityTest :
     test("NaN values are equal to each other") {
       val nanQuantity =
         object : LengthQuantity() {
-          override val resolution: QuantityUnit<Length> = nanometers
+          override val resolution: QuantityUnit<Length> = nanometer
 
           override fun toDouble(
             unit: QuantityUnit<Length>,

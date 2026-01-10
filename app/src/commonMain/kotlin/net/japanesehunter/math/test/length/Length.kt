@@ -4,17 +4,17 @@ import net.japanesehunter.math.test.Dimension
 import net.japanesehunter.math.test.ExactMath.reciprocalExact
 import net.japanesehunter.math.test.Quantity
 import net.japanesehunter.math.test.QuantityUnit
-import net.japanesehunter.math.test.length.meters
+import net.japanesehunter.math.test.length.meter
 import net.japanesehunter.math.test.speed.SpeedQuantity
 import kotlin.time.Duration
-import net.japanesehunter.math.test.length.meters as meters_unit
+import net.japanesehunter.math.test.length.meter as meters_unit
 
 /**
  * Defines the length dimension.
  *
  * ## Description
  *
- * The canonical unit of this dimension is [meters].
+ * The canonical unit of this dimension is [meter].
  */
 data object Length : Dimension<Length> {
   override val canonicalUnit: QuantityUnit<Length> by lazy {

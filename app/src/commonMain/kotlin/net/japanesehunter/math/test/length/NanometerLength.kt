@@ -13,7 +13,7 @@ import net.japanesehunter.math.test.speed.SpeedQuantity
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration
-import net.japanesehunter.math.test.length.nanometers as nanometers_unit
+import net.japanesehunter.math.test.length.nanometer as nanometers_unit
 
 /**
  * Fixed-point implementation of [LengthQuantity] backed by a signed nanometer count in a [Long].
